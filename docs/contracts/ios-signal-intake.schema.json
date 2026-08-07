@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/ios-signal-intake.schema.json",
+  "title": "IOSSignalIntakeDraft",
+  "description": "iOS 结构化身体信号录入的客户端投影；永远不是 BodySignalEvent、ApprovalIntent 或报告。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "session_id",
+    "draft_revision",
+    "phase",
+    "locations",
+    "facts",
+    "safety",
+    "reviewed_groups",
+    "unknown_groups",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.1"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "draft_revision": {"type": "integer", "minimum": 1},
+    "phase": {
+      "type": "string",
+      "enum": ["choosing_location", "collecting_facts", "safety_review", "safety_action", "agent_draft", "review_facts", "awaiting_approval", "offline_draft", "failed"]
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {"$ref": "body-location.schema.json"}
+    },
+    "facts": {"$ref": "#/$defs/SignalFacts"},
+    "safety": {"$ref": "#/$defs/SafetyState"},
+    "reviewed_groups": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/FactGroup"}},
+    "unknown_groups": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/FactGroup"}},
+    "last_error_code": {"type": "string", "maxLength": 120},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "FactGroup": {
+      "type": "string",
+      "enum": ["location", "sensation", "intensity", "temporal", "aggravating_factors", "relieving_factors", "functional_impact", "background"]
+    },
+    "Source": {
+      "type": "string",
+      "enum": ["user", "agent_candidate", "profile", "system"]
+    },
+    "FactStatus": {
+      "type": "string",
+      "enum": ["user_entered", "candidate", "reviewed", "unknown"]
+    },
+    "Sensation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sensation_id", "code", "location_marker_ids", "source", "status"],
+      "properties": {
+        "sensation_id": {"type": "string", "format": "uuid"},
+        "code": {"type": "string", "minLength": 1, "maxLength": 64},
+        "user_label": {"type": "string", "maxLength": 200},
+        "location_marker_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {"type": "string", "format": "uuid"}
+        },
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "Intensity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "value", "source", "status"],
+      "properties": {
+        "context": {"type": "string", "enum": ["current", "peak", "rest", "during_activity", "after_activity"]},
+        "value": {"type": "integer", "minimum": 0, "maximum": 10},
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "Temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["onset_mode", "course", "source", "status"],
+      "properties": {
+        "onset_mode": {"type": "string", "enum": ["sudden", "gradual", "after_specific_event", "unknown"]},
+        "course": {"type": "string", "enum": ["continuous", "intermittent", "recurrent", "single_occurrence", "unknown"]},
+        "user_text": {"type": "string", "maxLength": 500},
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "Factor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factor_id", "label", "effect", "source", "status"],
+      "properties": {
+        "factor_id": {"type": "string", "format": "uuid"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "effect": {"type": "string", "enum": ["worse", "better", "uncertain"]},
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "FunctionalImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["impact_id", "domain", "severity", "source", "status"],
+      "properties": {
+        "impact_id": {"type": "string", "format": "uuid"},
+        "domain": {"type": "string", "enum": ["sleep", "sitting", "standing", "walking", "running", "stairs", "lifting", "work", "training", "self_care", "other"]},
+        "severity": {"type": "string", "enum": ["none", "mild", "moderate", "severe", "unable", "unknown"]},
+        "user_text": {"type": "string", "maxLength": 500},
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "BackgroundFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_id", "category", "value", "source", "status"],
+      "properties": {
+        "fact_id": {"type": "string", "format": "uuid"},
+        "category": {"type": "string", "enum": ["activity_change", "specific_incident", "work_context", "prior_same_region_issue", "surgery_history", "medication_context", "health_context", "other"]},
+        "value": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "source": {"$ref": "#/$defs/Source"},
+        "status": {"$ref": "#/$defs/FactStatus"}
+      }
+    },
+    "SignalFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sensations", "aggravating_factors", "relieving_factors", "functional_impacts", "background_facts"],
+      "properties": {
+        "sensations": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/Sensation"}},
+        "intensity": {"$ref": "#/$defs/Intensity"},
+        "temporal": {"$ref": "#/$defs/Temporal"},
+        "aggravating_factors": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/Factor"}},
+        "relieving_factors": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/Factor"}},
+        "functional_impacts": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/FunctionalImpact"}},
+        "background_facts": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/BackgroundFact"}},
+        "raw_user_text": {"type": "string", "maxLength": 4000}
+      }
+    },
+    "SafetyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "ordinary_agent_allowed"],
+      "properties": {
+        "status": {"type": "string", "enum": ["not_run", "no_rule_triggered", "r0", "r1", "r2", "undetermined", "unavailable"]},
+        "ordinary_agent_allowed": {"type": "boolean"},
+        "rule_set_version": {"type": "string", "maxLength": 64},
+        "display_message": {"type": "string", "maxLength": 500}
+      }
+    }
+  }
+}

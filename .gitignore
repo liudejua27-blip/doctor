@@ -1,0 +1,13 @@
+.venv/
+.venv*/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.egg-info/
+.coverage
+htmlcov/
+ios/BodyCompanion/.build/
+ios/BodyCompanion/.swiftpm/
+DerivedData/
+*.xcresult
+.DS_Store

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/agent-turn-application-result.schema.json",
+  "title": "AgentTurnApplicationResult",
+  "description": "P1H transient Agent Turn Application result; it is not a persisted AgentTurn or formal health resource.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "session_id",
+    "turn_id",
+    "sequence",
+    "draft_revision",
+    "status",
+    "state",
+    "handoff_status",
+    "agent_result_status",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "turn_id": {"type": "string", "format": "uuid"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "draft_revision": {"type": "integer", "minimum": 1},
+    "in_reply_to_turn_id": {"type": "string", "format": "uuid"},
+    "status": {"type": "string", "enum": ["accepted", "rejected"]},
+    "state": {
+      "type": "string",
+      "enum": ["awaiting_user", "awaiting_confirmation", "safety_action_required", "offline_only", "failed", "rejected"]
+    },
+    "handoff_status": {
+      "type": "string",
+      "enum": ["ready_for_agent", "safety_action_required", "offline_only", "rejected"]
+    },
+    "agent_result_status": {
+      "type": "string",
+      "enum": ["agent_completed", "agent_output_rejected", "agent_unavailable", "safety_action_required", "offline_only", "rejected"]
+    },
+    "candidate": {
+      "oneOf": [
+        {"$ref": "agent-turn.schema.json#/$defs/AskQuestionOutput"},
+        {"$ref": "agent-turn.schema.json#/$defs/DraftReadyOutput"}
+      ]
+    },
+    "agent_source_ids": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    },
+    "agent_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "prompt_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "error_code": {"type": "string", "pattern": "^[A-Z0-9._-]{1,120}$"},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "rejected"}}, "required": ["status"]},
+      "then": {
+        "required": ["error_code"],
+        "not": {"required": ["candidate", "agent_version", "prompt_version"]},
+        "properties": {"state": {"const": "rejected"}, "handoff_status": {"const": "rejected"}, "agent_result_status": {"const": "rejected"}}
+      }
+    },
+    {
+      "if": {"properties": {"agent_result_status": {"const": "agent_completed"}}, "required": ["agent_result_status"]},
+      "then": {
+        "required": ["candidate", "agent_version", "prompt_version"],
+        "properties": {"status": {"const": "accepted"}, "handoff_status": {"const": "ready_for_agent"}},
+        "not": {"required": ["error_code"]}
+      }
+    },
+    {
+      "if": {"properties": {"agent_result_status": {"enum": ["agent_output_rejected", "agent_unavailable"]}}, "required": ["agent_result_status"]},
+      "then": {
+        "required": ["error_code"],
+        "properties": {"status": {"const": "accepted"}, "handoff_status": {"const": "ready_for_agent"}, "state": {"const": "failed"}},
+        "not": {"required": ["candidate", "agent_version", "prompt_version"]}
+      }
+    },
+    {
+      "if": {"properties": {"agent_result_status": {"const": "safety_action_required"}}, "required": ["agent_result_status"]},
+      "then": {
+        "properties": {"status": {"const": "accepted"}, "state": {"const": "safety_action_required"}, "handoff_status": {"const": "safety_action_required"}},
+        "not": {"required": ["candidate", "agent_version", "prompt_version"]}
+      }
+    },
+    {
+      "if": {"properties": {"agent_result_status": {"const": "offline_only"}}, "required": ["agent_result_status"]},
+      "then": {
+        "properties": {"status": {"const": "accepted"}, "state": {"const": "offline_only"}, "handoff_status": {"const": "offline_only"}},
+        "not": {"required": ["candidate", "agent_version", "prompt_version"]}
+      }
+    }
+  ]
+}

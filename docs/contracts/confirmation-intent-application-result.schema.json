@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/confirmation-intent-application-result.schema.json",
+  "title": "ConfirmationIntentApplicationResult",
+  "description": "P2B internal pending ApprovalIntent application result; it is not an executed Event or a public API response.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "approval", "source_session_id", "source_turn_id", "previous_session_revision", "proposed_session_revision", "approval_projection", "created_at"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "approval": {"$ref": "#/$defs/ApprovalIntent"},
+    "source_session_id": {"type": "string", "format": "uuid"},
+    "source_turn_id": {"type": "string", "format": "uuid"},
+    "previous_session_revision": {"type": "integer", "minimum": 1},
+    "proposed_session_revision": {"type": "integer", "minimum": 2},
+    "approval_projection": {"$ref": "#/$defs/ApprovalRequiredProjection"},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "ApprovalIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_id", "source_session_id", "target_ref", "action_type", "redacted", "display_summary", "intent_digest", "resource_revision", "revision", "status", "created_at", "expires_at"],
+      "properties": {
+        "approval_id": {"type": "string", "format": "uuid"},
+        "source_session_id": {"type": "string", "format": "uuid"},
+        "target_ref": {"$ref": "#/$defs/ResourceRef"},
+        "action_type": {"type": "string", "const": "confirm_body_signal_event"},
+        "redacted": {"type": "boolean", "const": false},
+        "display_summary": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "intent_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "resource_revision": {"type": "integer", "minimum": 1},
+        "revision": {"type": "integer", "const": 1},
+        "status": {"type": "string", "const": "pending"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [{"properties": {"target_ref": {"properties": {"id": {"$ref": "#/$defs/Uuid"}}}}}]
+    },
+    "ResourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {"type": {"type": "string", "const": "session"}, "id": {"$ref": "#/$defs/Uuid"}}
+    },
+    "Uuid": {"type": "string", "format": "uuid"},
+    "ApprovalRequiredProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turn_id", "session_id", "source_turn_id", "sequence", "revision", "status", "state", "output_origin", "approval_id", "approval_revision", "resource_revision", "action_type", "target_ref", "intent_digest", "display_summary", "expires_at"],
+      "properties": {
+        "turn_id": {"$ref": "#/$defs/Uuid"},
+        "session_id": {"$ref": "#/$defs/Uuid"},
+        "source_turn_id": {"$ref": "#/$defs/Uuid"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "revision": {"type": "integer", "minimum": 2},
+        "status": {"type": "string", "const": "approval_required"},
+        "state": {"type": "string", "const": "awaiting_approval"},
+        "output_origin": {"type": "string", "const": "application"},
+        "approval_id": {"$ref": "#/$defs/Uuid"},
+        "approval_revision": {"type": "integer", "const": 1},
+        "resource_revision": {"type": "integer", "minimum": 1},
+        "action_type": {"type": "string", "const": "confirm_body_signal_event"},
+        "target_ref": {"$ref": "#/$defs/ResourceRef"},
+        "intent_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "display_summary": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "expires_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "approval": {"properties": {"source_session_id": {"$ref": "#/$defs/Uuid"}, "target_ref": {"properties": {"id": {"$ref": "#/$defs/Uuid"}}}}},
+        "approval_projection": {"properties": {"session_id": {"$ref": "#/$defs/Uuid"}, "target_ref": {"properties": {"id": {"$ref": "#/$defs/Uuid"}}}}}
+      }
+    }
+  ]
+}

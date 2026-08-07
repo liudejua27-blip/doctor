@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/ios-signal-intake-adapter-result.schema.json",
+  "title": "IOSSignalIntakeAdapterResult",
+  "description": "服务端内部适配结果；不创建正式 Event、Approval、Episode 或报告。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "draft_revision", "status", "client_safety_status"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "draft_revision": {"type": "integer", "minimum": 1},
+    "status": {
+      "type": "string",
+      "enum": ["needs_safety_precheck", "ready_for_agent", "safety_action_required", "offline_only", "rejected"]
+    },
+    "client_safety_status": {
+      "type": "string",
+      "enum": ["not_run", "no_rule_triggered", "r0", "r1", "r2", "undetermined", "unavailable"]
+    },
+    "server_safety_tier": {"type": "string", "enum": ["R0", "R1", "R2", "R3", "undetermined"]},
+    "assessment_draft": {
+      "$ref": "agent-turn.schema.json#/$defs/AssessmentDraft"
+    },
+    "error_code": {"type": "string", "pattern": "^[A-Z0-9._-]{1,120}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "ready_for_agent"}}, "required": ["status"]},
+      "then": {"required": ["assessment_draft", "server_safety_tier"]}
+    },
+    {
+      "if": {"properties": {"status": {"const": "rejected"}}, "required": ["status"]},
+      "then": {"required": ["error_code"], "not": {"required": ["assessment_draft"]}}
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["needs_safety_precheck", "safety_action_required", "offline_only"]}}, "required": ["status"]},
+      "then": {"not": {"required": ["assessment_draft"]}}
+    }
+  ]
+}

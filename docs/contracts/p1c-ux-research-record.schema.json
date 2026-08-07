@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/p1c-ux-research-record.schema.json",
+  "title": "P1CUXResearchRecord",
+  "description": "脱敏的 P1-C 内部体验研究记录。只允许记录任务、版本、模式、时间、错误类别、停止规则和理解结果；不得承载身体位置、感觉、强度、原话、录音、录屏或身份标识。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "participant_alias",
+    "task_id",
+    "build_version",
+    "feature_flags",
+    "entry_mode",
+    "started_at",
+    "ended_at",
+    "outcome",
+    "error_categories",
+    "stop_rule",
+    "position_understanding",
+    "safety_action_understanding",
+    "unconfirmed_boundary_understanding",
+    "fallback_used",
+    "researcher_clarification_count"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "record_id": {"$ref": "#/$defs/Uuid"},
+    "participant_alias": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$"},
+    "task_id": {"type": "string", "enum": ["UX-P1C-01", "UX-P1C-02", "UX-P1C-03", "UX-P1C-04", "UX-P1C-05"]},
+    "build_version": {"type": "string", "pattern": "^[A-Za-z0-9._+/-]{1,80}$"},
+    "feature_flags": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Z0-9._-]{1,80}$"}
+    },
+    "entry_mode": {"type": "string", "enum": ["2d", "3d", "list"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "outcome": {"type": "string", "enum": ["completed", "stopped", "cancelled", "failed"]},
+    "error_categories": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": [
+        "location_misunderstood",
+        "sensation_confused",
+        "safety_action_delayed",
+        "ordinary_suggestion_chosen",
+        "fallback_restart_required",
+        "unconfirmed_as_saved",
+        "health_content_logged",
+        "accessibility_blocked",
+        "other"
+      ]}
+    },
+    "stop_rule": {
+      "type": ["string", "null"],
+      "enum": [
+        "missed_safety_action",
+        "marker_interpreted_as_diagnosis",
+        "three_d_fallback_blocked",
+        "unconfirmed_as_saved",
+        "health_content_logged",
+        "accessibility_blocked",
+        null
+      ]
+    },
+    "position_understanding": {"$ref": "#/$defs/Understanding"},
+    "safety_action_understanding": {"$ref": "#/$defs/Understanding"},
+    "unconfirmed_boundary_understanding": {"$ref": "#/$defs/Understanding"},
+    "fallback_used": {"type": "boolean"},
+    "researcher_clarification_count": {"type": "integer", "minimum": 0, "maximum": 99}
+  },
+  "$defs": {
+    "Uuid": {"type": "string", "format": "uuid"},
+    "Understanding": {"type": "string", "enum": ["correct", "incorrect", "not_asked"]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"outcome": {"const": "stopped"}}, "required": ["outcome"]},
+      "then": {"properties": {"stop_rule": {"type": "string"}}}
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "completed"}}, "required": ["outcome"]},
+      "then": {"properties": {"stop_rule": {"type": "null"}}}
+    }
+  ]
+}

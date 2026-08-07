@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/ios-signal-intake-application-handoff.schema.json",
+  "title": "IOSSignalIntakeApplicationHandoff",
+  "description": "Application Service 的内部 P1F 交接结果；先由服务端运行 Safety，再决定是否可把 typed AssessmentDraft 交给后续 Agent 用例；不创建正式资源。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "draft_revision", "status", "client_safety_status"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "draft_revision": {"type": "integer", "minimum": 1},
+    "status": {
+      "type": "string",
+      "enum": ["ready_for_agent", "safety_action_required", "offline_only", "rejected"]
+    },
+    "client_safety_status": {
+      "type": "string",
+      "enum": ["not_run", "no_rule_triggered", "r0", "r1", "r2", "undetermined", "unavailable"]
+    },
+    "server_safety": {"$ref": "#/$defs/ServerSafetyProjection"},
+    "assessment_draft": {"$ref": "agent-turn.schema.json#/$defs/AssessmentDraft"},
+    "error_code": {"type": "string", "pattern": "^[A-Z0-9._-]{1,120}$"}
+  },
+  "$defs": {
+    "ServerSafetyProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tier",
+        "rule_outcome",
+        "triggered_rule_ids",
+        "required_question_ids",
+        "rule_set_version",
+        "all_current_rules_executed",
+        "scenario_support",
+        "unresolved_safety",
+        "ordinary_agent_allowed",
+        "evaluated_at"
+      ],
+      "properties": {
+        "status": {"type": "string", "enum": ["complete", "incomplete", "unavailable"]},
+        "tier": {"type": "string", "enum": ["R0", "R1", "R2", "R3", "undetermined"]},
+        "rule_outcome": {"type": "string", "enum": ["triggered", "no_rule_triggered", "unresolved", "unavailable"]},
+        "triggered_rule_ids": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "maxLength": 120}},
+        "required_question_ids": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "maxLength": 120}},
+        "rule_set_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "all_current_rules_executed": {"type": "boolean"},
+        "scenario_support": {"type": "string", "enum": ["supported", "unsupported"]},
+        "unresolved_safety": {"type": "boolean"},
+        "ordinary_agent_allowed": {"type": "boolean"},
+        "required_action_code": {"type": "string", "maxLength": 120},
+        "content_id": {"type": "string", "maxLength": 160},
+        "content_release_id": {"type": "string", "maxLength": 64},
+        "evaluated_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "ready_for_agent"}}, "required": ["status"]},
+      "then": {
+        "required": ["server_safety", "assessment_draft"],
+        "properties": {
+          "server_safety": {"properties": {"status": {"const": "complete"}, "tier": {"enum": ["R2", "R3"]}, "ordinary_agent_allowed": {"const": true}, "unresolved_safety": {"const": false}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["safety_action_required", "offline_only"]}}, "required": ["status"]},
+      "then": {
+        "required": ["server_safety"],
+        "not": {"required": ["assessment_draft"]}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "rejected"}}, "required": ["status"]},
+      "then": {
+        "required": ["error_code"],
+        "not": {"required": ["server_safety", "assessment_draft"]}
+      }
+    }
+  ]
+}

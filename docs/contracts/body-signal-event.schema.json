@@ -1,0 +1,1788 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/body-signal-event.schema.json",
+  "title": "BodySignalEvent",
+  "description": "用户某一时点或时段的身体信号快照。正式事件必须经服务端校验和用户确认；AI 解释不是诊断。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "user_id",
+    "lifecycle",
+    "resource_revision",
+    "correction_sequence",
+    "raw_input",
+    "locations",
+    "sensations",
+    "temporal",
+    "trend",
+    "aggravating_factors",
+    "relieving_factors",
+    "functional_impacts",
+    "background_facts",
+    "safety_assessment",
+    "action_plan",
+    "provenance",
+    "occurred_at",
+    "recorded_at",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "服务端从认证主体赋值；不得信任客户端提供的所有者。"
+    },
+    "episode_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_turn_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": ["draft", "discarded", "confirmed", "superseded", "voided"]
+    },
+    "resource_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "单个 Event 资源的乐观并发/ETag 版本；生命周期元数据变化时递增。"
+    },
+    "correction_sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "同一 Episode 修订链中的序号；首个正式 Event 为 1，替代节点为直接前驱 + 1。"
+    },
+    "supersedes_event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "superseded_by_event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "raw_input": {
+      "$ref": "#/$defs/RawInput"
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "body-location.schema.json"
+      }
+    },
+    "sensations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/Sensation"
+      }
+    },
+    "temporal": {
+      "$ref": "#/$defs/TemporalPattern"
+    },
+    "trend": {
+      "type": "string",
+      "enum": ["improving", "stable", "worsening", "fluctuating", "unknown"]
+    },
+    "aggravating_factors": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "$ref": "#/$defs/AggravatingFactor"
+      }
+    },
+    "relieving_factors": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "$ref": "#/$defs/RelievingFactor"
+      }
+    },
+    "functional_impacts": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "$ref": "#/$defs/FunctionalImpact"
+      }
+    },
+    "background_facts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/BackgroundFact"
+      }
+    },
+    "safety_assessment": {
+      "$ref": "#/$defs/SafetyAssessment"
+    },
+    "ai_interpretation": {
+      "$ref": "#/$defs/AIInterpretation"
+    },
+    "action_plan": {
+      "$ref": "#/$defs/ActionPlan"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "confirmation": {
+      "$ref": "#/$defs/Confirmation"
+    },
+    "occurred_at": {
+      "$ref": "#/$defs/ApproximateDateTime"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "examples": ["Asia/Shanghai"]
+    },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"processing_mode": {"enum": ["manual", "unsupported", "emergency", "urgent", "degraded"]}},
+            "required": ["processing_mode"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {"not": {"required": ["ai_interpretation"]}}
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"processing_mode": {"enum": ["manual", "unsupported"]}},
+            "required": ["processing_mode"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "not": {"required": ["check_in_at"]},
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {"not": {"type": "object", "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}}, "required": ["category"]}}
+              },
+              "escalation_conditions": {
+                "type": "array",
+                "items": {"not": {"type": "object", "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}}, "required": ["category"]}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"processing_mode": {"const": "degraded"}},
+            "required": ["processing_mode"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {"lifecycle": {"enum": ["draft", "discarded"]}},
+        "not": {"anyOf": [
+          {"required": ["confirmation"]},
+          {"required": ["content_digest"]},
+          {"required": ["ai_interpretation"]}
+        ]}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"processing_mode": {"const": "normal"}},
+            "required": ["processing_mode"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "provenance": {
+            "type": "object",
+            "properties": {"ai_runtime": {"type": "object", "properties": {"used": {"const": true}}, "required": ["used"]}},
+            "required": ["ai_runtime"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"processing_mode": {"enum": ["manual", "unsupported", "emergency", "urgent", "degraded"]}},
+            "required": ["processing_mode"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "provenance": {
+            "type": "object",
+            "properties": {"ai_runtime": {"type": "object", "properties": {"used": {"const": false}}, "required": ["used"]}},
+            "required": ["ai_runtime"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {"enum": ["confirmed", "superseded", "voided"]}
+        },
+        "required": ["lifecycle"]
+      },
+      "then": {
+        "required": ["episode_id", "confirmation", "content_digest"],
+        "properties": {
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mapping": {
+                  "type": "object",
+                  "properties": {"reviewed_by_user": {"const": true}},
+                  "required": ["reviewed_by_user"]
+                }
+              },
+              "required": ["mapping"]
+            }
+          },
+          "background_facts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {"status": {"const": "user_confirmed"}},
+              "required": ["status"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"lifecycle": {"enum": ["draft", "discarded"]}},
+        "required": ["lifecycle"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {"required": ["confirmation"]},
+            {"required": ["content_digest"]}
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"enum": ["R0", "R1", "undetermined"]}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "not": {"required": ["ai_interpretation"]},
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "not": {"required": ["check_in_at"]}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"status": {"enum": ["incomplete", "unavailable"]}},
+            "required": ["status"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "not": {"required": ["ai_interpretation"]},
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "not": {"required": ["check_in_at"]},
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              },
+              "escalation_conditions": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["supersedes_event_id"]
+      },
+      "then": {
+        "required": ["episode_id"],
+        "properties": {
+          "lifecycle": {"enum": ["confirmed", "superseded", "voided"]},
+          "correction_sequence": {"type": "integer", "minimum": 2}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"lifecycle": {"enum": ["confirmed", "superseded", "voided"]}},
+        "required": ["lifecycle"],
+        "not": {"required": ["supersedes_event_id"]}
+      },
+      "then": {
+        "properties": {"correction_sequence": {"const": 1}}
+      }
+    },
+    {
+      "if": {
+        "required": ["superseded_by_event_id"]
+      },
+      "then": {
+        "required": ["episode_id"],
+        "properties": {
+          "lifecycle": {"const": "superseded"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"lifecycle": {"const": "superseded"}},
+        "required": ["lifecycle"]
+      },
+      "then": {
+        "required": ["superseded_by_event_id"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"const": "R0"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "properties": {
+              "tier": {"const": "R0"},
+              "items": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"category": {"const": "urgent_help"}},
+                  "required": ["category"]
+                },
+                "minContains": 1,
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              },
+              "escalation_conditions": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              }
+            },
+            "required": ["tier", "items"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"const": "R1"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "properties": {
+              "tier": {"const": "R1"},
+              "items": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"category": {"const": "professional_review"}},
+                  "required": ["category"]
+                },
+                "minContains": 1,
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              },
+              "escalation_conditions": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              }
+            },
+            "required": ["tier", "items"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"const": "R2"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "properties": {
+              "tier": {"const": "R2"},
+              "items": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"category": {"const": "professional_review"}},
+                  "required": ["category"]
+                },
+                "minContains": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"const": "R3"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {"properties": {"action_plan": {"type": "object", "properties": {"tier": {"const": "R3"}}}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_assessment": {
+            "type": "object",
+            "properties": {"tier": {"const": "undetermined"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["safety_assessment"]
+      },
+      "then": {
+        "properties": {
+          "action_plan": {
+            "type": "object",
+            "properties": {
+              "tier": {"const": "undetermined"},
+              "items": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              },
+              "escalation_conditions": {
+                "type": "array",
+                "items": {
+                  "not": {
+                    "type": "object",
+                    "properties": {"category": {"enum": ["observation", "load_adjustment", "check_in"]}},
+                    "required": ["category"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "RawInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modality", "language", "captured_at"],
+      "properties": {
+        "modality": {
+          "type": "string",
+          "enum": ["text", "voice_transcript", "body_map", "mixed"]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$",
+          "examples": ["zh-CN"]
+        },
+        "source_ref": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "受控临时资源引用；不得是任意外部 URL。"
+        },
+        "transcript_confirmed_by_user": {
+          "type": "boolean"
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"modality": {"const": "text"}}, "required": ["modality"]},
+          "then": {
+            "required": ["text"],
+            "not": {"required": ["transcript_confirmed_by_user"]}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "voice_transcript"}}, "required": ["modality"]},
+          "then": {
+            "required": ["text", "transcript_confirmed_by_user"],
+            "properties": {"transcript_confirmed_by_user": {"const": true}}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "body_map"}}, "required": ["modality"]},
+          "then": {
+            "not": {"anyOf": [
+              {"required": ["text"]},
+              {"required": ["source_ref"]},
+              {"required": ["transcript_confirmed_by_user"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "mixed"}}, "required": ["modality"]},
+          "then": {"required": ["text"]}
+        }
+      ]
+    },
+    "Intensity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "value", "scale_min", "scale_max"],
+      "properties": {
+        "context": {
+          "type": "string",
+          "enum": ["current", "peak", "rest", "during_activity", "after_activity"]
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "scale_min": {
+          "type": "integer",
+          "const": 0
+        },
+        "scale_max": {
+          "type": "integer",
+          "const": 10
+        },
+        "window": {
+          "$ref": "#/$defs/MeasurementWindow",
+          "description": "context=peak 时必填，用于证明峰值属于哪个时间窗。"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef",
+          "description": "事实来源；可选是为了兼容历史 AgentDraft，正式事件仍必须保留来源。"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"context": {"const": "peak"}},
+            "required": ["context"]
+          },
+          "then": {"required": ["window"]}
+        }
+      ]
+    },
+    "MeasurementWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {"$ref": "#/$defs/ApproximateDateTime"},
+        "end": {"$ref": "#/$defs/ApproximateDateTime"},
+        "duration_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 525600
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "支持“过去 24 小时”“这次跑步期间”等用户可理解的模糊时间窗。"
+        }
+      },
+      "anyOf": [
+        {"required": ["start", "end"]},
+        {"required": ["duration_minutes"]},
+        {"required": ["label"]}
+      ]
+    },
+    "Sensation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sensation_id", "code", "intensities", "location_marker_ids", "source"],
+      "properties": {
+        "sensation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "aching",
+            "dull_pain",
+            "sharp_pain",
+            "stabbing",
+            "throbbing",
+            "tenderness",
+            "pressure",
+            "burning",
+            "electric",
+            "radiating",
+            "tingling",
+            "numbness",
+            "reduced_sensation",
+            "tightness",
+            "stiffness",
+            "cramping",
+            "catching",
+            "clicking",
+            "weakness",
+            "instability",
+            "giving_way",
+            "movement_fear",
+            "swelling",
+            "redness",
+            "warmth",
+            "bruising",
+            "itching",
+            "fatigue",
+            "heaviness",
+            "post_activity_soreness",
+            "other",
+            "unknown"
+          ]
+        },
+        "user_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "intensities": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {"$ref": "#/$defs/Intensity"}
+        },
+        "location_marker_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"code": {"const": "other"}}, "required": ["code"]},
+          "then": {"required": ["user_label"]}
+        }
+      ]
+    },
+    "ApproximateDateTime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["precision"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "precision": {
+          "type": "string",
+          "enum": ["exact", "hour", "day", "week", "month", "approximate", "unknown"]
+        },
+        "user_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "allOf": [
+        {
+          "not": {"required": ["value", "date"]}
+        },
+        {
+          "if": {
+            "properties": {"precision": {"enum": ["exact", "hour"]}},
+            "required": ["precision"]
+          },
+          "then": {
+            "required": ["value"],
+            "not": {"required": ["date"]}
+          }
+        },
+        {
+          "if": {
+            "properties": {"precision": {"enum": ["day", "week", "month"]}},
+            "required": ["precision"]
+          },
+          "then": {
+            "required": ["date"],
+            "not": {"required": ["value"]}
+          }
+        },
+        {
+          "if": {
+            "properties": {"precision": {"enum": ["approximate", "unknown"]}},
+            "required": ["precision"]
+          },
+          "then": {
+            "required": ["user_text"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"precision": {"const": "unknown"}},
+            "required": ["precision"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {"required": ["value"]},
+                {"required": ["date"]}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "TemporalPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["onset_mode", "course", "frequency"],
+      "properties": {
+        "onset": {
+          "$ref": "#/$defs/ApproximateDateTime"
+        },
+        "onset_mode": {
+          "type": "string",
+          "enum": ["sudden", "gradual", "after_specific_event", "unknown"]
+        },
+        "course": {
+          "type": "string",
+          "enum": ["continuous", "intermittent", "recurrent", "single_occurrence", "unknown"]
+        },
+        "frequency": {
+          "type": "string",
+          "enum": [
+            "constant",
+            "multiple_times_daily",
+            "daily",
+            "several_times_weekly",
+            "weekly_or_less",
+            "activity_specific",
+            "unknown"
+          ]
+        },
+        "typical_duration_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 525600
+        },
+        "time_of_day": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["morning", "daytime", "evening", "night", "during_sleep", "unknown"]
+          }
+        },
+        "user_text": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef",
+          "description": "时间事实来源；不代表时间已经由系统验证。"
+        }
+      }
+    },
+    "Factor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factor_id", "category", "label", "reported_effect", "source"],
+      "properties": {
+        "factor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "activity",
+            "posture",
+            "load",
+            "time",
+            "sleep",
+            "rest",
+            "environment",
+            "other"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,80}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "reported_effect": {
+          "type": "string",
+          "enum": ["worse", "better", "no_change", "uncertain"]
+        },
+        "reproducible": {
+          "type": "string",
+          "enum": ["yes", "no", "uncertain", "not_checked"]
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        }
+      }
+    },
+    "AggravatingFactor": {
+      "allOf": [
+        {"$ref": "#/$defs/Factor"},
+        {
+          "type": "object",
+          "properties": {
+            "reported_effect": {"enum": ["worse", "uncertain"]}
+          },
+          "required": ["reported_effect"]
+        }
+      ]
+    },
+    "RelievingFactor": {
+      "allOf": [
+        {"$ref": "#/$defs/Factor"},
+        {
+          "type": "object",
+          "properties": {
+            "reported_effect": {"enum": ["better", "uncertain"]}
+          },
+          "required": ["reported_effect"]
+        }
+      ]
+    },
+    "FunctionalImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "severity", "source"],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "enum": [
+            "sleep",
+            "sitting",
+            "standing",
+            "walking",
+            "running",
+            "stairs",
+            "lifting",
+            "work",
+            "training",
+            "self_care",
+            "other"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["none", "mild", "moderate", "severe", "unable", "unknown"]
+        },
+        "user_text": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        }
+      }
+    },
+    "BackgroundFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_id", "category", "value", "status", "source", "observed_at"],
+      "properties": {
+        "fact_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "activity_change",
+            "specific_incident",
+            "work_context",
+            "prior_same_region_issue",
+            "surgery_history",
+            "medication_context",
+            "health_context",
+            "other"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["user_confirmed", "candidate", "conflicting", "outdated"]
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/ApproximateDateTime"
+        }
+      }
+    },
+    "SafetyAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question_id", "answer_type", "answer_state", "answered_at", "source"],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,120}$"
+        },
+        "answer_type": {
+          "type": "string",
+          "enum": ["boolean", "single_choice", "multiple_choice"]
+        },
+        "answer_state": {
+          "type": "string",
+          "enum": ["answered", "uncertain", "not_answered"]
+        },
+        "boolean_value": {
+          "type": "boolean"
+        },
+        "choice_values": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "user_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "answered_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"answer_state": {"const": "answered"}, "answer_type": {"const": "boolean"}},
+            "required": ["answer_state", "answer_type"]
+          },
+          "then": {
+            "required": ["boolean_value"],
+            "not": {"required": ["choice_values"]}
+          }
+        },
+        {
+          "if": {
+            "properties": {"answer_state": {"const": "answered"}, "answer_type": {"const": "single_choice"}},
+            "required": ["answer_state", "answer_type"]
+          },
+          "then": {
+            "required": ["choice_values"],
+            "properties": {"choice_values": {"type": "array", "minItems": 1, "maxItems": 1}},
+            "not": {"required": ["boolean_value"]}
+          }
+        },
+        {
+          "if": {
+            "properties": {"answer_state": {"const": "answered"}, "answer_type": {"const": "multiple_choice"}},
+            "required": ["answer_state", "answer_type"]
+          },
+          "then": {
+            "required": ["choice_values"],
+            "properties": {"choice_values": {"type": "array", "minItems": 1}},
+            "not": {"required": ["boolean_value"]}
+          }
+        },
+        {
+          "if": {
+            "properties": {"answer_state": {"enum": ["uncertain", "not_answered"]}},
+            "required": ["answer_state"]
+          },
+          "then": {
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["choice_values"]}
+            ]}
+          }
+        }
+      ]
+    },
+    "RuleHit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "result", "tier", "evidence_refs"],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,120}$"
+        },
+        "result": {
+          "type": "string",
+          "enum": ["matched", "not_matched", "undetermined"]
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2", "R3", "undetermined"]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"result": {"const": "matched"}},
+            "required": ["result"]
+          },
+          "then": {
+            "properties": {
+              "tier": {"enum": ["R0", "R1", "R2", "R3"]},
+              "evidence_refs": {"type": "array", "minItems": 1}
+            }
+          }
+        }
+      ]
+    },
+    "SafetyAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tier",
+        "rule_outcome",
+        "all_current_rules_executed",
+        "triggered_rule_ids",
+        "rule_set_version",
+        "answers",
+        "rule_hits",
+        "required_action_code",
+        "processing_mode",
+        "evaluated_at"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "unavailable"]
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2", "R3", "undetermined"]
+        },
+        "rule_outcome": {
+          "type": "string",
+          "enum": ["triggered", "no_rule_triggered", "unresolved", "unavailable"]
+        },
+        "all_current_rules_executed": {"type": "boolean"},
+        "triggered_rule_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 100,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,120}$"}
+        },
+        "rule_set_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "answers": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/SafetyAnswer"}
+        },
+        "rule_hits": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/RuleHit"}
+        },
+        "required_action_code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9._-]{1,120}$"
+        },
+        "processing_mode": {
+          "type": "string",
+          "enum": ["emergency", "urgent", "normal", "manual", "unsupported", "degraded"],
+          "description": "本次事件实际采用的输出/记录路径；manual 与 unsupported 可确认事实但不使用 AI 解释，degraded 不得形成正式事件。"
+        },
+        "model_suggested_escalation": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2", "none"],
+          "description": "只保存模型提出的候选上调线索。候选必须先由用户确认并重新运行确定性规则；模型值不能直接改变最终 tier，也绝不允许降级。"
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "complete"}}, "required": ["status"]},
+          "then": {"properties": {"all_current_rules_executed": {"const": true}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["incomplete", "unavailable"]}}, "required": ["status"]},
+          "then": {"properties": {"all_current_rules_executed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "no_rule_triggered"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"const": "R3"},
+              "all_current_rules_executed": {"const": true},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0},
+              "rule_hits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {"result": {"const": "not_matched"}},
+                  "required": ["result"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "triggered"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "triggered_rule_ids": {"type": "array", "minItems": 1},
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}},
+                  "required": ["result"]
+                },
+                "minContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "unresolved"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "incomplete"},
+              "tier": {"const": "undetermined"},
+              "all_current_rules_executed": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0},
+              "rule_hits": {
+                "type": "array",
+                "not": {
+                  "contains": {
+                    "type": "object",
+                    "properties": {"result": {"const": "matched"}},
+                    "required": ["result"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "unavailable"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "unavailable"},
+              "tier": {"const": "undetermined"},
+              "all_current_rules_executed": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0},
+              "rule_hits": {"type": "array", "maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"tier": {"const": "R0"}}, "required": ["tier"]},
+          "then": {"properties": {"processing_mode": {"const": "emergency"}}}
+        },
+        {
+          "if": {"properties": {"tier": {"const": "R1"}}, "required": ["tier"]},
+          "then": {"properties": {"processing_mode": {"const": "urgent"}}}
+        },
+        {
+          "if": {"properties": {"tier": {"const": "undetermined"}}, "required": ["tier"]},
+          "then": {"properties": {"processing_mode": {"const": "degraded"}}}
+        },
+        {
+          "if": {"properties": {"processing_mode": {"enum": ["normal", "manual", "unsupported"]}}, "required": ["processing_mode"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"enum": ["R2", "R3"]},
+              "all_current_rules_executed": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "undetermined"}},
+                  "required": ["result"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {
+            "properties": {
+              "status": {"const": "incomplete"},
+              "all_current_rules_executed": {"const": false},
+              "rule_outcome": {"enum": ["triggered", "unresolved"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}},
+                  "required": ["result"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {"properties": {"rule_outcome": {"const": "triggered"}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}, "tier": {"const": "R0"}},
+                  "required": ["result", "tier"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {"properties": {"tier": {"const": "R0"}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}, "tier": {"const": "R1"}},
+                  "required": ["result", "tier"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {"properties": {"tier": {"enum": ["R0", "R1"]}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}, "tier": {"const": "R2"}},
+                  "required": ["result", "tier"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {"properties": {"tier": {"enum": ["R0", "R1", "R2"]}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "rule_hits": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"result": {"const": "matched"}, "tier": {"const": "R3"}},
+                  "required": ["result", "tier"]
+                }
+              }
+            },
+            "required": ["rule_hits"]
+          },
+          "then": {"properties": {"tier": {"enum": ["R0", "R1", "R2", "R3"]}}}
+        }
+      ]
+    },
+    "EvidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref_id", "source_type", "source_id"],
+      "properties": {
+        "ref_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "user_report",
+            "confirmed_profile",
+            "confirmed_event",
+            "device_summary",
+            "uploaded_document",
+            "verified_content"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "locator": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "AIInterpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pattern_summary",
+        "rationale_summary",
+        "uncertainties",
+        "evidence_refs"
+      ],
+      "properties": {
+        "pattern_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "rationale_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "面向用户的简要依据，不是隐藏推理过程。"
+        },
+        "uncertainties": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {"$ref": "#/$defs/EvidenceReference"}
+        }
+      }
+    },
+    "ActionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_id", "category", "display_text"],
+      "properties": {
+        "content_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "enum": ["urgent_help", "professional_review", "observation", "load_adjustment", "check_in"]
+        },
+        "display_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "ActionPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier", "content_release_id", "items", "escalation_conditions"],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2", "R3", "undetermined"]
+        },
+        "content_release_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/ActionItem"}
+        },
+        "escalation_conditions": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/ActionItem"}
+        },
+        "check_in_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "SourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "source_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "user_report",
+            "confirmed_profile",
+            "confirmed_event",
+            "device_summary",
+            "uploaded_document",
+            "professional_record",
+            "agent_inference"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "ontology_version",
+        "rule_set_version",
+        "ai_runtime",
+        "output_schema_version",
+        "safetyBaselineId"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/SourceRef"}
+        },
+        "ontology_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "rule_set_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "content_release_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ai_runtime": {
+          "$ref": "#/$defs/EventAIRuntime"
+        },
+        "output_schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "safetyBaselineId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,120}$",
+          "maxLength": 120
+        }
+      }
+    },
+    "EventAIRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["used", "purpose"],
+      "properties": {
+        "used": {"type": "boolean"},
+        "purpose": {"type": "string", "const": "event_structuring_and_explanation"},
+        "not_used_reason": {
+          "type": "string",
+          "enum": ["user_declined_cloud_ai", "provider_unavailable", "scenario_unsupported", "safety_suppressed", "not_needed"]
+        },
+        "agent_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "prompt_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "provider": {"type": "string", "minLength": 1, "maxLength": 80},
+        "model_name": {"type": "string", "minLength": 1, "maxLength": 160},
+        "model_version": {"type": "string", "minLength": 1, "maxLength": 160}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"used": {"const": true}}, "required": ["used"]},
+          "then": {
+            "required": ["agent_version", "prompt_version", "provider", "model_name", "model_version"],
+            "not": {"required": ["not_used_reason"]}
+          }
+        },
+        {
+          "if": {"properties": {"used": {"const": false}}, "required": ["used"]},
+          "then": {
+            "required": ["not_used_reason"],
+            "not": {"anyOf": [
+              {"required": ["agent_version"]},
+              {"required": ["prompt_version"]},
+              {"required": ["provider"]},
+              {"required": ["model_name"]},
+              {"required": ["model_version"]}
+            ]}
+          }
+        }
+      ]
+    },
+    "Confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approval_id",
+        "confirmed_by",
+        "confirmed_at",
+        "intent_digest",
+        "reviewed_fields"
+      ],
+      "properties": {
+        "approval_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "confirmed_by": {
+          "type": "string",
+          "enum": ["authenticated_user"]
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "intent_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "reviewed_fields": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "locations",
+              "sensations",
+              "temporal",
+              "trend",
+              "aggravating_factors",
+              "relieving_factors",
+              "functional_impacts",
+              "background_facts"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

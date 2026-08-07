@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/session-turn-projection-result.schema.json",
+  "title": "SessionTurnProjectionResult",
+  "description": "P2A internal typed Session/Turn projection. It is not a public API response or a durable health record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session", "turn", "transition", "created_at"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "session": {"$ref": "#/$defs/SessionProjection"},
+    "turn": {"$ref": "#/$defs/TurnProjection"},
+    "transition": {"type": "string", "enum": ["initial_turn", "continuation"]},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "SessionProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "session_id", "purpose", "workflow", "state", "revision", "latest_sequence", "latest_draft_revision", "created_at", "updated_at", "expires_at"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0"},
+        "session_id": {"type": "string", "format": "uuid"},
+        "purpose": {"type": "string", "const": "body_signal_assessment"},
+        "workflow": {"type": "string", "const": "assessment"},
+        "state": {"type": "string", "enum": ["created", "awaiting_user", "awaiting_confirmation", "safety_action_required", "offline_only", "failed"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "latest_turn_id": {"type": "string", "format": "uuid"},
+        "latest_sequence": {"type": "integer", "minimum": 0},
+        "latest_draft_revision": {"type": "integer", "minimum": 0},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {"if": {"properties": {"state": {"const": "created"}}, "required": ["state"]}, "then": {"properties": {"latest_sequence": {"const": 0}, "latest_draft_revision": {"const": 0}}, "not": {"required": ["latest_turn_id"]}}},
+        {"if": {"properties": {"state": {"enum": ["awaiting_user", "awaiting_confirmation", "safety_action_required", "offline_only", "failed"]}}, "required": ["state"]}, "then": {"required": ["latest_turn_id"]}}
+      ]
+    },
+    "TurnProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "turn_id", "session_id", "sequence", "revision", "state", "output_kind", "handoff_status", "agent_result_status", "draft_revision", "agent_source_ids", "created_at"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0"},
+        "turn_id": {"type": "string", "format": "uuid"},
+        "session_id": {"type": "string", "format": "uuid"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "revision": {"type": "integer", "minimum": 2},
+        "in_reply_to_turn_id": {"type": "string", "format": "uuid"},
+        "state": {"type": "string", "enum": ["awaiting_user", "awaiting_confirmation", "safety_action_required", "offline_only", "failed"]},
+        "output_kind": {"type": "string", "enum": ["ask_question", "draft_ready", "safety_action_required", "offline_only", "failed"]},
+        "handoff_status": {"type": "string", "enum": ["ready_for_agent", "safety_action_required", "offline_only"]},
+        "agent_result_status": {"type": "string", "enum": ["agent_completed", "agent_output_rejected", "agent_unavailable", "safety_action_required", "offline_only"]},
+        "candidate": {"oneOf": [{"$ref": "agent-turn.schema.json#/$defs/AskQuestionOutput"}, {"$ref": "agent-turn.schema.json#/$defs/DraftReadyOutput"}]},
+        "agent_source_ids": {"type": "array", "maxItems": 100, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 240}},
+        "agent_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "prompt_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "draft_revision": {"type": "integer", "minimum": 1},
+        "created_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {"if": {"properties": {"output_kind": {"enum": ["ask_question", "draft_ready"]}}, "required": ["output_kind"]}, "then": {"required": ["candidate", "agent_version", "prompt_version"], "properties": {"agent_result_status": {"const": "agent_completed"}, "handoff_status": {"const": "ready_for_agent"}}}},
+        {"if": {"properties": {"output_kind": {"enum": ["safety_action_required", "offline_only", "failed"]}}, "required": ["output_kind"]}, "then": {"not": {"required": ["candidate"]}}}
+      ]
+    }
+  }
+}

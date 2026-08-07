@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/body-asset-manifest.schema.json",
+  "title": "BodyAssetManifest",
+  "description": "版本化的人体显示/碰撞资产发行清单。它只描述资产权利、完整性、坐标、拓扑、映射、审核和性能门禁，不包含人体健康事实。只有 approved 且通过所有交叉约束的清单才可能进入运行时候选；实际文件哈希/签名仍必须由发布流水线验证。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "asset_id",
+    "asset_version",
+    "variant",
+    "topology_id",
+    "release_status",
+    "source",
+    "rights",
+    "integrity",
+    "coordinate_system",
+    "artifacts",
+    "lods",
+    "mappings",
+    "review",
+    "performance",
+    "attribution",
+    "fallback",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "asset_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,119}$"},
+    "asset_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "variant": {"type": "string", "enum": ["default_neutral", "professional_muscle_joint", "body_map_2d"]},
+    "topology_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+    "release_status": {"type": "string", "enum": ["candidate", "approved", "blocked", "retired"]},
+    "source": {"$ref": "#/$defs/Source"},
+    "rights": {"$ref": "#/$defs/Rights"},
+    "integrity": {"$ref": "#/$defs/Integrity"},
+    "coordinate_system": {"$ref": "#/$defs/CoordinateSystem"},
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/Artifact"}
+    },
+    "lods": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/LOD"}
+    },
+    "mappings": {"$ref": "#/$defs/Mappings"},
+    "review": {"$ref": "#/$defs/Review"},
+    "performance": {"$ref": "#/$defs/Performance"},
+    "attribution": {"$ref": "#/$defs/Attribution"},
+    "fallback": {"$ref": "#/$defs/Fallback"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "Sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["author", "publisher", "source_url", "obtained_at"],
+      "properties": {
+        "author": {"type": "string", "minLength": 1, "maxLength": 200},
+        "publisher": {"type": "string", "minLength": 1, "maxLength": 200},
+        "source_url": {"type": "string", "format": "uri", "pattern": "^https?://[^\\s]+$"},
+        "obtained_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "Rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "license_name",
+        "license_url",
+        "commercial_use",
+        "app_store_distribution",
+        "modification_allowed",
+        "derivative_distribution_allowed",
+        "attribution_required"
+      ],
+      "properties": {
+        "license_name": {"type": "string", "minLength": 1, "maxLength": 160},
+        "license_url": {"type": "string", "format": "uri", "pattern": "^https?://[^\\s]+$"},
+        "commercial_use": {"type": "boolean"},
+        "app_store_distribution": {"type": "boolean"},
+        "modification_allowed": {"type": "boolean"},
+        "derivative_distribution_allowed": {"type": "boolean"},
+        "attribution_required": {"type": "boolean"}
+      }
+    },
+    "Integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_sha256", "manifest_sha256", "signature_status", "signing_key_id"],
+      "properties": {
+        "source_sha256": {"$ref": "#/$defs/Sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/Sha256"},
+        "signature_status": {"type": "string", "enum": ["unverified", "verified", "revoked"]},
+        "signing_key_id": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9._-]{1,120}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"signature_status": {"const": "verified"}}, "required": ["signature_status"]},
+          "then": {"required": ["signing_key_id"], "properties": {"signing_key_id": {"type": "string"}}}
+        }
+      ]
+    },
+    "CoordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["convention", "unit", "root_origin", "canonical_transform"],
+      "properties": {
+        "convention": {"type": "string", "const": "realitykit_y_up_right_handed"},
+        "unit": {"type": "string", "const": "meter"},
+        "root_origin": {"type": "string", "enum": ["feet_midpoint_ground_projection", "manifest_defined"]},
+        "canonical_transform": {
+          "type": "array",
+          "minItems": 16,
+          "maxItems": 16,
+          "items": {"type": "number"}
+        }
+      }
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "role", "format", "uri", "sha256", "required"],
+      "properties": {
+        "artifact_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+        "role": {"type": "string", "enum": ["render", "collision", "texture", "region_map", "surface_correspondence", "camera_preset"]},
+        "format": {"type": "string", "enum": ["usdz", "usdc", "json", "png", "jpg", "bin"]},
+        "uri": {"type": "string", "pattern": "^(bundle|https)://[^\\s]+$"},
+        "sha256": {"$ref": "#/$defs/Sha256"},
+        "required": {"type": "boolean"}
+      }
+    },
+    "LOD": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lod_id", "render_artifact_id", "triangle_count", "surface_correspondence_version"],
+      "properties": {
+        "lod_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+        "render_artifact_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+        "triangle_count": {"type": "integer", "minimum": 1},
+        "surface_correspondence_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"}
+      }
+    },
+    "Mappings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ontology_version", "region_map_version", "surface_correspondence_version", "resolver_version"],
+      "properties": {
+        "ontology_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"},
+        "region_map_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+        "surface_correspondence_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+        "resolver_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"}
+      }
+    },
+    "Review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anatomy_status", "reviewer_alias", "reviewed_at", "scope"],
+      "properties": {
+        "anatomy_status": {"type": "string", "enum": ["pending", "approved", "rejected"]},
+        "reviewer_alias": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$"},
+        "reviewed_at": {"type": ["string", "null"], "format": "date-time"},
+        "scope": {"type": "string", "minLength": 1, "maxLength": 240}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"anatomy_status": {"const": "approved"}}, "required": ["anatomy_status"]},
+          "then": {"required": ["reviewed_at"], "properties": {"reviewed_at": {"type": "string"}}}
+        }
+      ]
+    },
+    "Performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "target_device_family", "cold_start_ms", "p95_hit_ms", "minimum_fps", "memory_mb"],
+      "properties": {
+        "status": {"type": "string", "enum": ["pending", "passed", "failed"]},
+        "target_device_family": {"type": "string", "minLength": 1, "maxLength": 120},
+        "cold_start_ms": {"type": "number", "minimum": 0},
+        "p95_hit_ms": {"type": "number", "minimum": 0},
+        "minimum_fps": {"type": "number", "minimum": 0},
+        "memory_mb": {"type": "number", "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "passed"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "cold_start_ms": {"exclusiveMinimum": 0},
+              "p95_hit_ms": {"exclusiveMinimum": 0},
+              "minimum_fps": {"exclusiveMinimum": 0},
+              "memory_mb": {"exclusiveMinimum": 0}
+            }
+          }
+        }
+      ]
+    },
+    "Attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "placement"],
+      "properties": {
+        "text": {"type": "string", "maxLength": 1000},
+        "placement": {"type": "string", "enum": ["app_about", "settings_licenses", "both", "not_required"]}
+      }
+    },
+    "Fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fallback_kind", "fallback_asset_id"],
+      "properties": {
+        "fallback_kind": {"type": "string", "enum": ["body_map_2d", "default_neutral", "accessible_list"]},
+        "fallback_asset_id": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9._-]{1,119}$"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"release_status": {"const": "approved"}}, "required": ["release_status"]},
+      "then": {
+        "properties": {
+          "rights": {
+            "type": "object",
+            "properties": {"commercial_use": {"const": true}, "app_store_distribution": {"const": true}}
+          },
+          "integrity": {"type": "object", "properties": {"signature_status": {"const": "verified"}}},
+          "review": {"type": "object", "properties": {"anatomy_status": {"const": "approved"}}},
+          "performance": {"type": "object", "properties": {"status": {"const": "passed"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"rights": {"properties": {"attribution_required": {"const": true}}}}, "required": ["rights"]},
+      "then": {"properties": {"attribution": {"properties": {"placement": {"enum": ["app_about", "settings_licenses", "both"]}, "text": {"minLength": 1}}}}}
+    },
+    {
+      "if": {"properties": {"variant": {"const": "professional_muscle_joint"}}, "required": ["variant"]},
+      "then": {"properties": {"fallback": {"type": "object", "required": ["fallback_kind"]}}}
+    }
+  ]
+}

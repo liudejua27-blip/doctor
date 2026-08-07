@@ -1,0 +1,3051 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/agent-turn.schema.json",
+  "title": "AgentTurn",
+  "description": "一次受控身体信号 Agent 运行。它是候选输出和会话审计，不是正式身体档案，也不包含隐藏推理过程。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "session_id",
+    "turn_id",
+    "sequence",
+    "revision",
+    "workflow",
+    "status",
+    "state",
+    "input",
+    "allowed_actions",
+    "versions",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "turn_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "处理本轮后 Agent Session 的 revision。"
+    },
+    "workflow": {
+      "type": "string",
+      "enum": ["assessment", "post_escalation_record"],
+      "description": "assessment 是普通采集/安全分流；post_escalation_record 只用于先展示 R0/R1 行动后，由 Application Service 发起的事实留档复核，禁止再次调用普通 Agent。"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "executing",
+        "awaiting_user",
+        "draft_ready",
+        "escalated",
+        "approval_required",
+        "completed",
+        "failed"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "collecting",
+        "awaiting_user",
+        "safety_review",
+        "awaiting_confirmation",
+        "awaiting_approval",
+        "persisting",
+        "escalated",
+        "completed",
+        "failed"
+      ]
+    },
+    "input": {
+      "oneOf": [
+        {"$ref": "#/$defs/UserTurnInput"},
+        {"$ref": "#/$defs/LifecycleTurnInput"}
+      ]
+    },
+    "deterministic_safety_gate": {
+      "$ref": "#/$defs/DeterministicSafetyGate"
+    },
+    "output": {
+      "oneOf": [
+        {"$ref": "#/$defs/AskQuestionOutput"},
+        {"$ref": "#/$defs/DraftReadyOutput"},
+        {"$ref": "#/$defs/EscalationOutput"},
+        {"$ref": "#/$defs/ApprovalRequiredOutput"},
+        {"$ref": "#/$defs/CompletedOutput"},
+        {"$ref": "#/$defs/SafeFailureOutput"}
+      ]
+    },
+    "output_origin": {
+      "type": "string",
+      "enum": ["agent", "application"],
+      "description": "agent 仅表示普通 LLM 的问题或草稿候选；application 表示确定性安全/降级输出，以及服务端创建审批或完成真实副作用后的可信生命周期结果。"
+    },
+    "safety_envelope": {
+      "$ref": "#/$defs/FinalSafetyEnvelope",
+      "description": "由 Application Service 在确定性规则、内容解析和策略验证后组装；不是模型输出的一部分。"
+    },
+    "tool_calls": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/ToolCallMetadata"
+      }
+    },
+    "allowed_actions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "poll",
+          "answer_question",
+          "review_draft",
+          "edit_draft",
+          "confirm_facts",
+          "retry",
+          "save_unconfirmed_draft",
+          "get_professional_help",
+          "get_emergency_help",
+          "review_approval",
+          "approve_action",
+          "deny_action",
+          "view_record",
+          "start_new_session",
+          "review_escalation_record"
+        ]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/TurnError"
+      }
+    },
+    "versions": {
+      "$ref": "#/$defs/Versions"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "queued"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "state": {"const": "collecting"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {"const": "poll"}
+          },
+          "versions": {
+            "not": {
+              "anyOf": [
+                {"required": ["prompt_version"]},
+                {"required": ["provider"]},
+                {"required": ["model_name"]}
+              ]
+            }
+          }
+        },
+        "not": {"anyOf": [
+          {"required": ["output"]},
+          {"required": ["deterministic_safety_gate"]},
+          {"required": ["output_origin"]},
+          {"required": ["safety_envelope"]},
+          {"required": ["tool_calls"]},
+          {"required": ["errors"]},
+          {"required": ["completed_at"]}
+        ]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "running"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "state": {"const": "safety_review"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {"const": "poll"}
+          }
+        },
+        "not": {"anyOf": [
+          {"required": ["output"]},
+          {"required": ["deterministic_safety_gate"]},
+          {"required": ["output_origin"]},
+          {"required": ["safety_envelope"]},
+          {"required": ["errors"]},
+          {"required": ["completed_at"]}
+        ]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "executing"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "state": {"const": "persisting"},
+          "input": {
+            "allOf": [
+              {"$ref": "#/$defs/LifecycleTurnInput"},
+              {"type": "object", "properties": {"event": {"const": "approval_execution_started"}}, "required": ["event"]}
+            ]
+          },
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {"const": "poll"}
+          }
+        },
+        "not": {"anyOf": [
+          {"required": ["output"]},
+          {"required": ["deterministic_safety_gate"]},
+          {"required": ["output_origin"]},
+          {"required": ["safety_envelope"]},
+          {"required": ["errors"]},
+          {"required": ["completed_at"]}
+        ]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "awaiting_user"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output"],
+        "properties": {
+          "state": {"const": "awaiting_user"},
+          "output": {"$ref": "#/$defs/AskQuestionOutput"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": ["answer_question", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help"]
+            },
+            "contains": {"const": "answer_question"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "confirmation_created"}, "approval_status": {"const": "pending"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "approval_required"},
+          "state": {"const": "awaiting_approval"},
+          "output_origin": {"const": "application"},
+          "output": {
+            "type": "object",
+            "properties": {"approval_revision": {"const": 1}},
+            "required": ["approval_revision"]
+          }
+        },
+        "required": ["output_origin", "output"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "draft_revision_escalated"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "status": {"const": "escalated"},
+          "state": {"const": "escalated"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"tier": {"enum": ["R0", "R1"]}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "draft_revision_safety_recheck_required"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "status": {"const": "awaiting_user"},
+          "state": {"const": "awaiting_user"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"status": {"const": "incomplete"}, "tier": {"const": "undetermined"}},
+            "required": ["status", "tier"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "draft_revision_safety_recheck_failed"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "status": {"const": "failed"},
+          "state": {"const": "failed"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"status": {"const": "unavailable"}, "tier": {"const": "undetermined"}},
+            "required": ["status", "tier"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "draft_revised"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "status": {"const": "draft_ready"},
+          "state": {"const": "awaiting_confirmation"},
+          "output_origin": {"const": "application"}
+        },
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "escalation_record_draft_escalated"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "status": {"const": "escalated"},
+          "state": {"const": "escalated"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"tier": {"const": "R0"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "escalation_record_safety_recheck_required"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "post_escalation_record"},
+          "status": {"const": "awaiting_user"},
+          "state": {"const": "awaiting_user"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"status": {"const": "incomplete"}, "tier": {"const": "undetermined"}},
+            "required": ["status", "tier"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "escalation_record_safety_recheck_failed"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "post_escalation_record"},
+          "status": {"const": "failed"},
+          "state": {"const": "failed"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"status": {"const": "unavailable"}, "tier": {"const": "undetermined"}},
+            "required": ["status", "tier"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {
+              "kind": {"const": "application_lifecycle"},
+              "event": {
+                "enum": [
+                  "draft_revised",
+                  "draft_revision_escalated",
+                  "draft_revision_safety_recheck_required",
+                  "draft_revision_safety_recheck_failed",
+                  "escalation_record_review_started",
+                  "escalation_record_draft_revised",
+                  "escalation_record_draft_escalated",
+                  "escalation_record_safety_recheck_required",
+                  "escalation_record_safety_recheck_failed",
+                  "confirmation_created",
+                  "approval_execution_started",
+                  "approval_decided"
+                ]
+              }
+            },
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "versions": {
+            "not": {
+              "anyOf": [
+                {"required": ["prompt_version"]},
+                {"required": ["provider"]},
+                {"required": ["model_name"]}
+              ]
+            }
+          }
+        },
+        "not": {"required": ["tool_calls"]}
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "escalated"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "versions": {
+            "not": {
+              "anyOf": [
+                {"required": ["prompt_version"]},
+                {"required": ["provider"]},
+                {"required": ["model_name"]}
+              ]
+            }
+          }
+        },
+        "not": {"required": ["tool_calls"]}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "escalation_record_draft_revised"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "post_escalation_record"},
+          "status": {"const": "draft_ready"},
+          "state": {"const": "awaiting_confirmation"},
+          "output_origin": {"const": "application"}
+        },
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "approval_execution_started"}, "approval_status": {"const": "executing"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {"properties": {"status": {"const": "executing"}, "state": {"const": "persisting"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "approval_decided"}, "approval_status": {"const": "executed"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {"status": {"const": "completed"}, "state": {"const": "completed"}, "output_origin": {"const": "application"}},
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "approval_decided"}, "approval_status": {"const": "denied"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {"status": {"const": "draft_ready"}, "state": {"const": "awaiting_confirmation"}, "output_origin": {"const": "application"}},
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "approval_decided"}, "approval_status": {"const": "invalidated"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "status": {"const": "draft_ready"},
+              "state": {"const": "awaiting_confirmation"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          },
+          {
+            "properties": {"status": {"const": "running"}, "state": {"const": "safety_review"}},
+            "not": {"anyOf": [
+              {"required": ["output"]},
+              {"required": ["output_origin"]},
+              {"required": ["deterministic_safety_gate"]},
+              {"required": ["safety_envelope"]}
+            ]}
+          },
+          {
+            "properties": {
+              "status": {"const": "failed"},
+              "state": {"const": "failed"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          },
+          {
+            "properties": {
+              "workflow": {"const": "assessment"},
+              "status": {"const": "escalated"},
+              "state": {"const": "escalated"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "approval_decided"}, "approval_status": {"const": "failed"}},
+            "required": ["kind", "event", "approval_status"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "status": {"const": "draft_ready"},
+              "state": {"const": "awaiting_confirmation"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          },
+          {
+            "properties": {"status": {"const": "running"}, "state": {"const": "safety_review"}},
+            "not": {"anyOf": [
+              {"required": ["output"]},
+              {"required": ["output_origin"]},
+              {"required": ["deterministic_safety_gate"]},
+              {"required": ["safety_envelope"]}
+            ]}
+          },
+          {
+            "properties": {
+              "status": {"const": "failed"},
+              "state": {"const": "failed"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          },
+          {
+            "properties": {
+              "workflow": {"const": "assessment"},
+              "status": {"const": "escalated"},
+              "state": {"const": "escalated"},
+              "output_origin": {"const": "application"}
+            },
+            "required": ["output_origin"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "draft_ready"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output"],
+        "properties": {
+          "state": {"const": "awaiting_confirmation"},
+          "output": {"$ref": "#/$defs/DraftReadyOutput"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "enum": ["review_draft", "edit_draft", "confirm_facts", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help"]
+            },
+            "allOf": [
+              {"contains": {"const": "review_draft"}, "minContains": 1},
+              {"contains": {"const": "confirm_facts"}, "minContains": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "escalated"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output", "output_origin"],
+        "properties": {
+          "workflow": {"const": "assessment"},
+          "state": {"const": "escalated"},
+          "output_origin": {"const": "application"},
+          "output": {"$ref": "#/$defs/EscalationOutput"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "approval_required"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output", "output_origin"],
+        "properties": {
+          "state": {"const": "awaiting_approval"},
+          "input": {
+            "allOf": [
+              {"$ref": "#/$defs/LifecycleTurnInput"},
+              {"type": "object", "properties": {"event": {"const": "confirmation_created"}}, "required": ["event"]}
+            ]
+          },
+          "output_origin": {"const": "application"},
+          "output": {"$ref": "#/$defs/ApprovalRequiredOutput"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 3,
+            "items": {"enum": ["review_approval", "approve_action", "deny_action", "get_professional_help", "get_emergency_help"]},
+            "allOf": [
+              {"contains": {"const": "review_approval"}, "minContains": 1},
+              {"contains": {"const": "approve_action"}, "minContains": 1},
+              {"contains": {"const": "deny_action"}, "minContains": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "completed"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output", "output_origin", "completed_at"],
+        "properties": {
+          "state": {"const": "completed"},
+          "input": {
+            "allOf": [
+              {"$ref": "#/$defs/LifecycleTurnInput"},
+              {"type": "object", "properties": {"event": {"const": "approval_decided"}, "approval_status": {"const": "executed"}}, "required": ["event", "approval_status"]}
+            ]
+          },
+          "output_origin": {"const": "application"},
+          "output": {"$ref": "#/$defs/CompletedOutput"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["view_record", "start_new_session", "get_professional_help", "get_emergency_help"]},
+            "contains": {"const": "view_record"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "failed"}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["output", "errors"],
+        "properties": {
+          "state": {"const": "failed"},
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"enum": ["emergency", "urgent", "degraded"]}},
+            "required": ["mode"]
+          },
+          "output": {"$ref": "#/$defs/SafeFailureOutput"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["answer_question", "retry", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help"]}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["awaiting_user", "draft_ready", "escalated", "approval_required", "completed", "failed"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["deterministic_safety_gate", "safety_envelope", "output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {"output_origin": {"const": "agent"}},
+        "required": ["output_origin"]
+      },
+      "then": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"ordinary_agent_allowed": {"const": true}},
+            "required": ["ordinary_agent_allowed"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "normal"}},
+            "required": ["mode"]
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "enum": ["location", "sensation", "intensity", "time", "trigger", "impact", "background", "episode"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": ["deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"workflow": {"const": "assessment"}}, "required": ["workflow"]},
+          {
+            "properties": {
+              "input": {
+                "type": "object",
+                "required": ["modality"]
+              }
+            },
+            "required": ["input"]
+          },
+          {"properties": {"status": {"enum": ["awaiting_user", "draft_ready"]}}, "required": ["status"]},
+          {
+            "properties": {
+              "safety_envelope": {
+                "type": "object",
+                "properties": {"mode": {"const": "normal"}},
+                "required": ["mode"]
+              }
+            },
+            "required": ["safety_envelope"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {"output_origin": {"const": "agent"}},
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "output": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {"category": {"const": "safety"}},
+                  "required": ["category"]
+                },
+                "minContains": 1
+              }
+            },
+            "required": ["questions"]
+          }
+        },
+        "required": ["output"]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "awaiting_user"},
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {
+              "status": {"const": "incomplete"},
+              "rule_outcome": {"enum": ["triggered", "unresolved"]},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false}
+            },
+            "required": ["status", "rule_outcome", "unresolved_safety", "ordinary_agent_allowed"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"status": {"const": "awaiting_user"}}, "required": ["status"]},
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"status": {"const": "incomplete"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "output": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "category": {"const": "safety"},
+                    "required": {"const": true},
+                    "answer_type": {"enum": ["boolean", "single_choice", "multiple_choice"]}
+                  },
+                  "required": ["category", "required", "answer_type"]
+                }
+              }
+            },
+            "required": ["questions"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["safety_envelope"]
+      },
+      "then": {
+        "properties": {
+          "output_origin": {"const": "application"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": ["answer_question", "retry", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help", "view_record"]
+            }
+          }
+        },
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"enum": ["manual", "unsupported"]}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["safety_envelope"]
+      },
+      "then": {
+        "properties": {
+          "output_origin": {"const": "application"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": ["answer_question", "review_draft", "edit_draft", "confirm_facts", "review_approval", "approve_action", "deny_action", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help", "view_record", "start_new_session"]
+            }
+          },
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"enum": ["R2", "R3"]},
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "ordinary_agent_allowed": {"const": false}
+            },
+            "required": ["status", "tier", "all_current_rules_executed", "unresolved_safety", "ordinary_agent_allowed"]
+          },
+          "versions": {
+            "not": {
+              "anyOf": [
+                {"required": ["prompt_version"]},
+                {"required": ["provider"]},
+                {"required": ["model_name"]}
+              ]
+            }
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate"],
+        "not": {"required": ["tool_calls"]}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "manual"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["safety_envelope"]
+      },
+      "then": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"scenario_support": {"const": "supported"}},
+            "required": ["scenario_support"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "unsupported"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["safety_envelope"]
+      },
+      "then": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"scenario_support": {"const": "unsupported"}},
+            "required": ["scenario_support"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "failed"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {"output_origin": {"const": "application"}},
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "output": {
+            "type": "object",
+            "properties": {"safety_fallback": {"const": "continue_deterministic_questions"}},
+            "required": ["safety_fallback"]
+          }
+        },
+        "required": ["status", "output"]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {"enum": ["answer_question", "save_unconfirmed_draft"]},
+            "contains": {"const": "answer_question"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "output": {
+            "type": "object",
+            "properties": {"safety_fallback": {"const": "show_professional_help"}},
+            "required": ["safety_fallback"]
+          }
+        },
+        "required": ["status", "output"]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {"enum": ["get_professional_help", "save_unconfirmed_draft"]},
+            "contains": {"const": "get_professional_help"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "output": {
+            "type": "object",
+            "properties": {"safety_fallback": {"const": "show_emergency_help"}},
+            "required": ["safety_fallback"]
+          }
+        },
+        "required": ["status", "output"]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "items": {"enum": ["get_emergency_help", "save_unconfirmed_draft"]},
+            "contains": {"const": "get_emergency_help"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "output": {
+            "type": "object",
+            "properties": {"safety_fallback": {"const": "retry_later"}},
+            "required": ["safety_fallback"]
+          }
+        },
+        "required": ["status", "output"]
+      },
+      "then": {
+        "properties": {
+          "errors": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "properties": {"retryable": {"const": true}},
+              "required": ["retryable"]
+            },
+            "minContains": 1
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {"enum": ["retry", "save_unconfirmed_draft"]},
+            "contains": {"const": "retry"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "output": {
+            "type": "object",
+            "properties": {"input_preserved": {"const": false}},
+            "required": ["input_preserved"]
+          }
+        },
+        "required": ["status", "output"]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "not": {"contains": {"const": "save_unconfirmed_draft"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "failed"},
+          "errors": {
+            "type": "array",
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {"retryable": {"const": true}},
+                "required": ["retryable"]
+              }
+            }
+          }
+        },
+        "required": ["status", "errors"]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "not": {"contains": {"const": "retry"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "normal"}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["safety_envelope"]
+      },
+      "then": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"ordinary_agent_allowed": {"const": true}},
+            "required": ["ordinary_agent_allowed"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {"kind": {"const": "application_lifecycle"}, "event": {"const": "escalation_record_review_started"}},
+            "required": ["kind", "event"]
+          }
+        },
+        "required": ["input"]
+      },
+      "then": {
+        "properties": {
+          "workflow": {"const": "post_escalation_record"},
+          "status": {"const": "draft_ready"},
+          "state": {"const": "awaiting_confirmation"},
+          "output_origin": {"const": "application"}
+        },
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "properties": {"workflow": {"const": "post_escalation_record"}},
+        "required": ["workflow"]
+      },
+      "then": {
+        "properties": {
+          "status": {"enum": ["queued", "running", "awaiting_user", "draft_ready", "approval_required", "executing", "completed", "failed"]},
+          "input": {
+            "oneOf": [
+              {"$ref": "#/$defs/LifecycleTurnInput"},
+              {
+                "allOf": [
+                  {"$ref": "#/$defs/UserTurnInput"},
+                  {
+                    "type": "object",
+                    "properties": {"modality": {"const": "structured_answer"}},
+                    "required": ["modality"]
+                  }
+                ]
+              }
+            ]
+          },
+          "versions": {
+            "not": {
+              "anyOf": [
+                {"required": ["prompt_version"]},
+                {"required": ["provider"]},
+                {"required": ["model_name"]}
+              ]
+            }
+          }
+        },
+        "not": {"required": ["tool_calls"]}
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"workflow": {"const": "post_escalation_record"}}, "required": ["workflow"]},
+          {"properties": {"status": {"enum": ["draft_ready", "approval_required", "completed"]}}, "required": ["status"]}
+        ]
+      },
+      "then": {
+        "properties": {
+          "output_origin": {"const": "application"},
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"enum": ["R0", "R1"]},
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "ordinary_agent_allowed": {"const": false}
+            },
+            "required": ["status", "tier", "all_current_rules_executed", "unresolved_safety", "ordinary_agent_allowed"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"enum": ["emergency", "urgent"]}},
+            "required": ["mode"]
+          }
+        },
+        "required": ["output_origin", "deterministic_safety_gate", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"workflow": {"const": "assessment"}}, "required": ["workflow"]},
+          {"properties": {"status": {"const": "failed"}}, "required": ["status"]}
+        ]
+      },
+      "then": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {"mode": {"const": "degraded"}},
+            "required": ["mode"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"workflow": {"const": "post_escalation_record"}}, "required": ["workflow"]},
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"tier": {"const": "R0"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "contains": {"const": "get_emergency_help"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"workflow": {"const": "post_escalation_record"}}, "required": ["workflow"]},
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"tier": {"const": "R1"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "contains": {"const": "get_professional_help"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {
+            "properties": {"status": {"const": "escalated"}},
+            "required": ["status"]
+          },
+          {
+            "properties": {"workflow": {"const": "assessment"}},
+            "required": ["workflow"]
+          },
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"tier": {"const": "R2"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["get_professional_help", "view_record"]},
+            "contains": {"const": "get_professional_help"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"status": {"enum": ["incomplete", "unavailable"]}},
+            "required": ["status"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "status": {"enum": ["awaiting_user", "escalated", "failed"]},
+          "output_origin": {"const": "application"},
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": ["answer_question", "retry", "save_unconfirmed_draft", "get_professional_help", "get_emergency_help", "view_record"]
+            }
+          }
+        },
+        "required": ["output_origin"]
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {
+            "properties": {"workflow": {"const": "assessment"}},
+            "required": ["workflow"]
+          },
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"tier": {"const": "R0"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "escalated"},
+          "output_origin": {"const": "application"},
+          "output": {
+            "allOf": [
+              {"$ref": "#/$defs/EscalationOutput"},
+              {"type": "object", "properties": {"tier": {"const": "R0"}}, "required": ["tier"]}
+            ]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "mode": {"const": "emergency"},
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R0"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["mode", "safety"]
+          },
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "items": {"enum": ["get_emergency_help", "review_escalation_record"]},
+            "contains": {"const": "get_emergency_help"},
+            "minContains": 1
+          }
+        },
+        "required": ["output", "output_origin", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"status": {"const": "escalated"}}, "required": ["status"]},
+          {
+            "properties": {
+              "output": {
+                "type": "object",
+                "properties": {"record_review_available": {"const": true}},
+                "required": ["record_review_available"]
+              }
+            },
+            "required": ["output"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {
+            "contains": {"const": "review_escalation_record"},
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"status": {"const": "escalated"}}, "required": ["status"]},
+          {
+            "properties": {
+              "output": {
+                "type": "object",
+                "properties": {"record_review_available": {"const": false}},
+                "required": ["record_review_available"]
+              }
+            },
+            "required": ["output"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "allowed_actions": {"not": {"contains": {"const": "review_escalation_record"}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {
+            "properties": {"workflow": {"const": "assessment"}},
+            "required": ["workflow"]
+          },
+          {
+            "properties": {
+              "deterministic_safety_gate": {
+                "type": "object",
+                "properties": {"tier": {"const": "R1"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["deterministic_safety_gate"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "escalated"},
+          "output_origin": {"const": "application"},
+          "output": {
+            "allOf": [
+              {"$ref": "#/$defs/EscalationOutput"},
+              {"type": "object", "properties": {"tier": {"const": "R1"}}, "required": ["tier"]}
+            ]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "mode": {"const": "urgent"},
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R1"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["mode", "safety"]
+          },
+          "allowed_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"enum": ["get_professional_help", "review_escalation_record"]},
+            "contains": {"const": "get_professional_help"},
+            "minContains": 1
+          }
+        },
+        "required": ["output", "output_origin", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"tier": {"const": "R2"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "output": {
+            "type": "object",
+            "properties": {"tier": {"const": "R2"}}
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R2"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"tier": {"const": "R3"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": ["queued", "running", "awaiting_user", "draft_ready", "approval_required", "completed", "failed"]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R3"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"tier": {"const": "undetermined"}},
+            "required": ["tier"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "status": {"enum": ["awaiting_user", "failed"]},
+          "output_origin": {"const": "application"},
+          "output": {
+            "oneOf": [
+              {"$ref": "#/$defs/AskQuestionOutput"},
+              {"$ref": "#/$defs/SafeFailureOutput"}
+            ]
+          },
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "mode": {"const": "degraded"},
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "undetermined"}},
+                "required": ["tier"]
+              }
+            },
+            "required": ["mode", "safety"]
+          }
+        },
+        "required": ["output", "output_origin", "safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"rule_outcome": {"const": "no_rule_triggered"}},
+            "required": ["rule_outcome"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {
+                  "rule_outcome": {"const": "no_rule_triggered"},
+                  "triggered_rule_ids": {"type": "array", "maxItems": 0}
+                },
+                "required": ["rule_outcome", "triggered_rule_ids"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"rule_outcome": {"const": "triggered"}},
+            "required": ["rule_outcome"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"rule_outcome": {"const": "triggered"}},
+                "required": ["rule_outcome"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"rule_outcome": {"const": "unresolved"}},
+            "required": ["rule_outcome"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"rule_outcome": {"const": "unresolved"}},
+                "required": ["rule_outcome"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deterministic_safety_gate": {
+            "type": "object",
+            "properties": {"rule_outcome": {"const": "unavailable"}},
+            "required": ["rule_outcome"]
+          }
+        },
+        "required": ["deterministic_safety_gate"]
+      },
+      "then": {
+        "properties": {
+          "safety_envelope": {
+            "type": "object",
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"rule_outcome": {"const": "unavailable"}},
+                "required": ["rule_outcome"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["safety_envelope"]
+      }
+    }
+  ],
+  "$defs": {
+    "UserTurnInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modality", "submitted_at"],
+      "properties": {
+        "modality": {
+          "type": "string",
+          "enum": ["text", "voice_transcript", "body_map", "mixed", "structured_answer"]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$"
+        },
+        "locations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "body-location.schema.json"
+          }
+        },
+        "question_answers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/QuestionAnswer"
+          }
+        },
+        "temporary_source_refs": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          }
+        },
+        "in_reply_to_turn_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "question_answers 所回答的当前待答 Turn；必须属于同一 Session 且仍是服务端 latest awaiting_user Turn。"
+        },
+        "submitted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "dependentRequired": {
+        "question_answers": ["in_reply_to_turn_id"],
+        "in_reply_to_turn_id": ["question_answers"]
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"modality": {"enum": ["text", "voice_transcript"]}}, "required": ["modality"]},
+          "then": {
+            "required": ["text"],
+            "not": {"anyOf": [{"required": ["locations"]}, {"required": ["question_answers"]}, {"required": ["in_reply_to_turn_id"]}]}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "body_map"}}, "required": ["modality"]},
+          "then": {
+            "required": ["locations"],
+            "not": {"anyOf": [{"required": ["text"]}, {"required": ["question_answers"]}, {"required": ["in_reply_to_turn_id"]}]}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "structured_answer"}}, "required": ["modality"]},
+          "then": {
+            "required": ["question_answers", "in_reply_to_turn_id"],
+            "not": {"anyOf": [{"required": ["text"]}, {"required": ["locations"]}]}
+          }
+        },
+        {
+          "if": {"properties": {"modality": {"const": "mixed"}}, "required": ["modality"]},
+          "then": {
+            "anyOf": [
+              {"required": ["text", "locations"]},
+              {"required": ["text", "question_answers", "in_reply_to_turn_id"]},
+              {"required": ["locations", "question_answers", "in_reply_to_turn_id"]}
+            ]
+          }
+        }
+      ]
+    },
+    "LifecycleTurnInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "event", "source_turn_id", "occurred_at"],
+      "properties": {
+        "kind": {"type": "string", "const": "application_lifecycle"},
+        "event": {
+          "type": "string",
+          "enum": [
+            "draft_revised",
+            "draft_revision_escalated",
+            "draft_revision_safety_recheck_required",
+            "draft_revision_safety_recheck_failed",
+            "escalation_record_review_started",
+            "escalation_record_draft_revised",
+            "escalation_record_draft_escalated",
+            "escalation_record_safety_recheck_required",
+            "escalation_record_safety_recheck_failed",
+            "turn_retry_started",
+            "confirmation_created",
+            "approval_execution_started",
+            "approval_decided"
+          ]
+        },
+        "source_turn_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "同一 Session 中被此生命周期 Turn 推进的直接前驱 Turn。"
+        },
+        "approval_id": {"type": "string", "format": "uuid"},
+        "approval_status": {
+          "type": "string",
+          "enum": ["pending", "executing", "executed", "denied", "invalidated", "failed"]
+        },
+        "occurred_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"event": {"enum": ["draft_revised", "draft_revision_escalated", "draft_revision_safety_recheck_required", "draft_revision_safety_recheck_failed", "escalation_record_review_started", "escalation_record_draft_revised", "escalation_record_draft_escalated", "escalation_record_safety_recheck_required", "escalation_record_safety_recheck_failed", "turn_retry_started"]}}, "required": ["event"]},
+          "then": {
+            "not": {"anyOf": [{"required": ["approval_id"]}, {"required": ["approval_status"]}]}
+          },
+          "else": {"required": ["approval_id", "approval_status"]}
+        },
+        {
+          "if": {"properties": {"event": {"const": "confirmation_created"}}, "required": ["event"]},
+          "then": {"properties": {"approval_status": {"const": "pending"}}, "required": ["approval_status"]}
+        },
+        {
+          "if": {"properties": {"event": {"const": "approval_execution_started"}}, "required": ["event"]},
+          "then": {"properties": {"approval_status": {"const": "executing"}}, "required": ["approval_status"]}
+        },
+        {
+          "if": {"properties": {"event": {"const": "approval_decided"}}, "required": ["event"]},
+          "then": {
+            "properties": {"approval_status": {"enum": ["executed", "denied", "invalidated", "failed"]}},
+            "required": ["approval_status"]
+          }
+        }
+      ]
+    },
+    "QuestionAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question_id", "answer_type"],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,120}$"
+        },
+        "answer_type": {
+          "type": "string",
+          "enum": ["boolean", "single_choice", "multiple_choice", "integer_scale", "free_text", "unknown"]
+        },
+        "boolean_value": {"type": "boolean"},
+        "choice_values": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {"type": "string", "minLength": 1, "maxLength": 120}
+        },
+        "integer_value": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "text_value": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"answer_type": {"const": "boolean"}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["boolean_value"],
+            "not": {"anyOf": [
+              {"required": ["choice_values"]},
+              {"required": ["integer_value"]},
+              {"required": ["text_value"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"answer_type": {"const": "single_choice"}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["choice_values"],
+            "properties": {"choice_values": {"type": "array", "minItems": 1, "maxItems": 1}},
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["integer_value"]},
+              {"required": ["text_value"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"answer_type": {"const": "multiple_choice"}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["choice_values"],
+            "properties": {"choice_values": {"type": "array", "minItems": 1}},
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["integer_value"]},
+              {"required": ["text_value"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"answer_type": {"const": "integer_scale"}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["integer_value"],
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["choice_values"]},
+              {"required": ["text_value"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"answer_type": {"const": "free_text"}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["text_value"],
+            "properties": {"text_value": {"type": "string", "minLength": 1}},
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["choice_values"]},
+              {"required": ["integer_value"]}
+            ]}
+          }
+        },
+        {
+          "if": {"properties": {"answer_type": {"const": "unknown"}}, "required": ["answer_type"]},
+          "then": {
+            "not": {"anyOf": [
+              {"required": ["boolean_value"]},
+              {"required": ["choice_values"]},
+              {"required": ["integer_value"]},
+              {"required": ["text_value"]}
+            ]}
+          }
+        }
+      ]
+    },
+    "DeterministicSafetyGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "tier",
+        "rule_outcome",
+        "rule_set_version",
+        "all_current_rules_executed",
+        "scenario_support",
+        "unresolved_safety",
+        "ordinary_agent_allowed",
+        "evaluated_at"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "unavailable"]
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2", "R3", "undetermined"]
+        },
+        "rule_outcome": {
+          "type": "string",
+          "enum": ["triggered", "no_rule_triggered", "unresolved", "unavailable"]
+        },
+        "triggered_rule_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 50,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,120}$"}
+        },
+        "required_question_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 50,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,120}$"}
+        },
+        "rule_set_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "all_current_rules_executed": {
+          "type": "boolean",
+          "description": "complete 时必须为 true；incomplete/unavailable 时必须为 false。"
+        },
+        "scenario_support": {
+          "type": "string",
+          "enum": ["supported", "unsupported"]
+        },
+        "unresolved_safety": {
+          "type": "boolean"
+        },
+        "ordinary_agent_allowed": {
+          "type": "boolean",
+          "description": "只有 complete + 所有规则已执行 + R2/R3 + supported + 无 unresolved safety 时才能为 true。"
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "complete"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "required_question_ids": {"type": "array", "maxItems": 0}
+            },
+            "required": ["required_question_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "incomplete"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "required_question_ids": {"type": "array", "minItems": 1}
+            },
+            "required": ["required_question_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "unavailable"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "required_question_ids": {"type": "array", "maxItems": 0}
+            },
+            "required": ["required_question_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"ordinary_agent_allowed": {"const": true}}, "required": ["ordinary_agent_allowed"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"enum": ["R2", "R3"]},
+              "all_current_rules_executed": {"const": true},
+              "scenario_support": {"const": "supported"},
+              "unresolved_safety": {"const": false}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"tier": {"enum": ["R0", "R1", "undetermined"]}}, "required": ["tier"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"scenario_support": {"const": "unsupported"}}, "required": ["scenario_support"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"unresolved_safety": {"const": true}}, "required": ["unresolved_safety"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "no_rule_triggered"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"const": "R3"},
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0}
+            },
+            "required": ["triggered_rule_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "triggered"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "tier": {"enum": ["R0", "R1", "R2", "R3"]},
+              "triggered_rule_ids": {"type": "array", "minItems": 1}
+            },
+            "required": ["triggered_rule_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "unresolved"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "incomplete"},
+              "tier": {"const": "undetermined"},
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0},
+              "required_question_ids": {"type": "array", "minItems": 1}
+            },
+            "required": ["triggered_rule_ids", "required_question_ids"]
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "unavailable"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "unavailable"},
+              "tier": {"const": "undetermined"},
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0},
+              "required_question_ids": {"type": "array", "maxItems": 0}
+            },
+            "required": ["triggered_rule_ids", "required_question_ids"]
+          }
+        }
+      ]
+    },
+    "FinalSafetyEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "confirmed_facts",
+        "unconfirmed_items",
+        "safety",
+        "possible_contributors",
+        "next_steps",
+        "data_sources_used",
+        "uncertainty_statement_id",
+        "ai_identity_label_id",
+        "safetyBaselineId"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["emergency", "urgent", "normal", "manual", "unsupported", "degraded"]
+        },
+        "confirmed_facts": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/ConfirmedFactRef"}
+        },
+        "unconfirmed_items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/UnconfirmedItem"}
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tier", "rule_outcome", "triggered_rule_ids"],
+          "properties": {
+            "tier": {
+              "type": "string",
+              "enum": ["R0", "R1", "R2", "R3", "undetermined"]
+            },
+            "rule_outcome": {
+              "type": "string",
+              "enum": ["triggered", "no_rule_triggered", "unresolved", "unavailable"]
+            },
+            "triggered_rule_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "maxItems": 100,
+              "items": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,120}$"}
+            }
+          }
+        },
+        "possible_contributors": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/ContentBoundItem"}
+        },
+        "next_steps": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/ContentBoundItem"}
+        },
+        "data_sources_used": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 100,
+          "items": {"type": "string", "minLength": 1, "maxLength": 240}
+        },
+        "uncertainty_statement_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "ai_identity_label_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "safetyBaselineId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,120}$",
+          "maxLength": 120
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R0"}},
+                "required": ["tier"]
+              }
+            }
+          },
+          "then": {"properties": {"mode": {"const": "emergency"}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R1"}},
+                "required": ["tier"]
+              }
+            }
+          },
+          "then": {"properties": {"mode": {"const": "urgent"}}}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "emergency"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R0"}},
+                "required": ["tier"]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "urgent"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "R1"}},
+                "required": ["tier"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"const": "undetermined"}},
+                "required": ["tier"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {"const": "degraded"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "normal"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"enum": ["R2", "R3"]}},
+                "required": ["tier"]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"enum": ["manual", "unsupported"]}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"tier": {"enum": ["R2", "R3"]}},
+                "required": ["tier"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"safety": {"type": "object", "properties": {"rule_outcome": {"const": "no_rule_triggered"}}}}
+          },
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {
+                  "tier": {"const": "R3"},
+                  "triggered_rule_ids": {"type": "array", "maxItems": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"safety": {"type": "object", "properties": {"rule_outcome": {"const": "triggered"}}}}
+          },
+          "then": {
+            "properties": {"safety": {"type": "object", "properties": {"triggered_rule_ids": {"type": "array", "minItems": 1}}}}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {"rule_outcome": {"enum": ["unresolved", "unavailable"]}}
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "safety": {
+                "type": "object",
+                "properties": {
+                  "tier": {"const": "undetermined"},
+                  "triggered_rule_ids": {"type": "array", "maxItems": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"mode": {"enum": ["emergency", "urgent", "manual", "unsupported", "degraded"]}},
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": {"possible_contributors": {"type": "array", "maxItems": 0}}
+          }
+        }
+      ]
+    },
+    "ConfirmedFactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fact_id", "source_id", "observed_at", "confirmed_at"],
+      "properties": {
+        "fact_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "source_id": {"type": "string", "minLength": 1, "maxLength": 240},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "confirmed_at": {"type": "string", "format": "date-time"},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 500}
+      }
+    },
+    "UnconfirmedItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_id", "category", "display_text"],
+      "properties": {
+        "item_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "category": {"type": "string", "minLength": 1, "maxLength": 120},
+        "display_text": {"type": "string", "minLength": 1, "maxLength": 500}
+      }
+    },
+    "ContentBoundItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_id", "display_text", "fact_refs"],
+      "properties": {
+        "content_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "display_text": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "fact_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 160}
+        }
+      }
+    },
+    "SafetyBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeVersion",
+        "terminologyVersion",
+        "healthSchemaVersion",
+        "anatomyMapVersion",
+        "redFlagRuleSetVersion",
+        "outputContractVersion",
+        "contentBundleVersion",
+        "modelProvider",
+        "modelVersion",
+        "promptVersion",
+        "policyValidatorVersion",
+        "consentNoticeVersion",
+        "goldenTestSetVersion",
+        "clinicalValidationVersion",
+        "iosBuildVersion",
+        "apiBuildVersion"
+      ],
+      "properties": {
+        "scopeVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "terminologyVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "healthSchemaVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "anatomyMapVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "redFlagRuleSetVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "outputContractVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "contentBundleVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "modelProvider": {"type": "string", "minLength": 1, "maxLength": 80},
+        "modelVersion": {"type": "string", "minLength": 1, "maxLength": 160},
+        "promptVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "policyValidatorVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "consentNoticeVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "goldenTestSetVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "clinicalValidationVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "iosBuildVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "apiBuildVersion": {"type": "string", "minLength": 1, "maxLength": 64}
+      }
+    },
+    "Question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question_id", "category", "prompt", "answer_type", "required"],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,120}$"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["safety", "location", "sensation", "intensity", "time", "trigger", "impact", "background", "episode"]
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "answer_type": {
+          "type": "string",
+          "enum": ["boolean", "single_choice", "multiple_choice", "integer_scale", "free_text"]
+        },
+        "choices": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "label"],
+            "properties": {
+              "value": {"type": "string", "minLength": 1, "maxLength": 120},
+              "label": {"type": "string", "minLength": 1, "maxLength": 200}
+            }
+          }
+        },
+        "required": {"type": "boolean"},
+        "why_asked": {
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"answer_type": {"enum": ["single_choice", "multiple_choice"]}}, "required": ["answer_type"]},
+          "then": {
+            "required": ["choices"],
+            "properties": {"choices": {"type": "array", "minItems": 1}}
+          },
+          "else": {"not": {"required": ["choices"]}}
+        },
+        {
+          "if": {"properties": {"category": {"const": "safety"}}, "required": ["category"]},
+          "then": {
+            "properties": {
+              "required": {"const": true},
+              "answer_type": {"enum": ["boolean", "single_choice", "multiple_choice"]}
+            }
+          }
+        }
+      ]
+    },
+    "AskQuestionOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "questions", "context_summary"],
+      "properties": {
+        "kind": {"const": "ask_question"},
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/Question"}
+        },
+        "context_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "AssessmentDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Agent 只能产生的未确认身体事件候选。它故意不包含 user_id、event_id、lifecycle、revision、raw_input、safety_assessment、action_plan、provenance、confirmation 或 SafetyBaseline；这些权威字段只能由 Application Service 组装。",
+      "required": [
+        "schema_version",
+        "locations",
+        "sensations",
+        "temporal",
+        "trend",
+        "aggravating_factors",
+        "relieving_factors",
+        "functional_impacts",
+        "background_facts"
+      ],
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0"},
+        "locations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {"$ref": "body-location.schema.json"}
+        },
+        "sensations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {"$ref": "body-signal-event.schema.json#/$defs/Sensation"}
+        },
+        "temporal": {"$ref": "body-signal-event.schema.json#/$defs/TemporalPattern"},
+        "trend": {
+          "type": "string",
+          "enum": ["improving", "stable", "worsening", "fluctuating", "unknown"]
+        },
+        "aggravating_factors": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {"$ref": "body-signal-event.schema.json#/$defs/AggravatingFactor"}
+        },
+        "relieving_factors": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {"$ref": "body-signal-event.schema.json#/$defs/RelievingFactor"}
+        },
+        "functional_impacts": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {"$ref": "body-signal-event.schema.json#/$defs/FunctionalImpact"}
+        },
+        "background_facts": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {"$ref": "body-signal-event.schema.json#/$defs/BackgroundFact"}
+        }
+      }
+    },
+    "DraftReadyOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "event_draft", "user_fact_summary", "uncertainties", "draft_digest"],
+      "properties": {
+        "kind": {"const": "draft_ready"},
+        "event_draft": {
+          "$ref": "#/$defs/AssessmentDraft"
+        },
+        "user_fact_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "uncertainties": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"type": "string", "minLength": 1, "maxLength": 500}
+        },
+        "draft_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "EscalationOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tier", "trigger_categories", "required_action_code", "content_id", "content_release_id", "display_message", "ordinary_advice_suppressed", "rule_set_version", "record_review_available"],
+      "properties": {
+        "kind": {"const": "escalation"},
+        "tier": {
+          "type": "string",
+          "enum": ["R0", "R1", "R2"]
+        },
+        "trigger_categories": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 120}
+        },
+        "required_action_code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9._-]{1,120}$"
+        },
+        "content_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "content_release_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "display_message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "ordinary_advice_suppressed": {
+          "type": "boolean",
+          "const": true
+        },
+        "rule_set_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "record_review_available": {
+          "type": "boolean",
+          "description": "仅表示服务端保存了可在安全行动之后复核的未确认事实草稿；不表示 Event 已写入。"
+        },
+        "unconfirmed_record_expires_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"record_review_available": {"const": true}}, "required": ["record_review_available"]},
+          "then": {"required": ["unconfirmed_record_expires_at"]},
+          "else": {"not": {"required": ["unconfirmed_record_expires_at"]}}
+        }
+      ]
+    },
+    "ApprovalRequiredOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "approval_id", "approval_revision", "target_ref", "resource_revision", "action_type", "display_summary", "intent_digest", "expires_at"],
+      "properties": {
+        "kind": {"const": "approval_required"},
+        "approval_id": {"type": "string", "format": "uuid"},
+        "approval_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "decideApproval.expected_revision 的服务端权威值，用于跨设备和中断恢复。"
+        },
+        "target_ref": {
+          "$ref": "#/$defs/ApprovalTargetRef"
+        },
+        "resource_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Intent 绑定的目标资源 revision，不等同 Approval 自身 revision。"
+        },
+        "action_type": {
+          "type": "string",
+          "const": "confirm_body_signal_event"
+        },
+        "display_summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "intent_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "expires_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ApprovalTargetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "const": "session"},
+        "id": {"type": "string", "format": "uuid"}
+      }
+    },
+    "CompletedOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "summary", "result_refs"],
+      "properties": {
+        "kind": {"const": "completed"},
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "result_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "id"],
+            "properties": {
+              "type": {"type": "string", "const": "event"},
+              "id": {"type": "string", "format": "uuid"}
+            }
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "type": {"const": "event"}
+            },
+            "required": ["type"]
+          },
+          "minContains": 1
+        }
+      }
+    },
+    "SafeFailureOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "display_message", "input_preserved", "safety_fallback"],
+      "properties": {
+        "kind": {"const": "safe_failure"},
+        "display_message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "input_preserved": {"type": "boolean"},
+        "safety_fallback": {
+          "type": "string",
+          "enum": ["continue_deterministic_questions", "show_professional_help", "show_emergency_help", "retry_later"]
+        }
+      }
+    },
+    "ToolCallMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["call_id", "tool_name", "permission", "status", "started_at"],
+      "properties": {
+        "call_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "tool_name": {
+          "type": "string",
+          "enum": [
+            "read_profile_snapshot",
+            "read_confirmed_events",
+            "read_historical_events",
+            "retrieve_verified_guidance",
+            "extract_signal_draft",
+            "validate_location_refs",
+            "calculate_personal_trends",
+            "propose_report",
+            "propose_followup"
+          ]
+        },
+        "permission": {
+          "type": "string",
+          "enum": ["read_current_user", "read_verified_content", "write_ephemeral_draft", "propose_action"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["started", "succeeded", "denied", "failed", "timed_out"]
+        },
+        "result_category": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "started_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "started"}}, "required": ["status"]},
+          "then": {"not": {"required": ["completed_at"]}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["succeeded", "denied", "failed", "timed_out"]}}, "required": ["status"]},
+          "then": {"required": ["completed_at"]}
+        },
+        {
+          "if": {"properties": {"tool_name": {"enum": ["read_profile_snapshot", "read_confirmed_events", "read_historical_events", "calculate_personal_trends"]}}, "required": ["tool_name"]},
+          "then": {"properties": {"permission": {"const": "read_current_user"}}}
+        },
+        {
+          "if": {"properties": {"tool_name": {"const": "retrieve_verified_guidance"}}, "required": ["tool_name"]},
+          "then": {"properties": {"permission": {"const": "read_verified_content"}}}
+        },
+        {
+          "if": {"properties": {"tool_name": {"enum": ["extract_signal_draft", "validate_location_refs"]}}, "required": ["tool_name"]},
+          "then": {"properties": {"permission": {"const": "write_ephemeral_draft"}}}
+        },
+        {
+          "if": {"properties": {"tool_name": {"enum": ["propose_report", "propose_followup"]}}, "required": ["tool_name"]},
+          "then": {"properties": {"permission": {"const": "propose_action"}}}
+        }
+      ]
+    },
+    "TurnError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "retryable"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "AGENT_OUTPUT_INVALID",
+            "MODEL_UNAVAILABLE",
+            "MODEL_TIMEOUT",
+            "SAFETY_SERVICE_UNAVAILABLE",
+            "CONTENT_NOT_APPROVED",
+            "TOOL_ACCESS_DENIED",
+            "INTERNAL_FAILURE"
+          ]
+        },
+        "retryable": {"type": "boolean"},
+        "display_message": {"type": "string", "maxLength": 500}
+      }
+    },
+    "Versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pydantic_ai_version",
+        "agent_version",
+        "output_schema_version",
+        "ontology_version",
+        "rule_set_version"
+      ],
+      "properties": {
+        "pydantic_ai_version": {"type": "string", "const": "2.23.0"},
+        "agent_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "prompt_version": {"type": "string", "maxLength": 64},
+        "output_schema_version": {"type": "string", "const": "1.0"},
+        "ontology_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "rule_set_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "content_release_id": {"type": "string", "maxLength": 64},
+        "provider": {"type": "string", "maxLength": 80},
+        "model_name": {"type": "string", "maxLength": 160}
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/confirmation-transaction-receipt.schema.json",
+  "title": "ConfirmationTransactionReceipt",
+  "description": "P2D internal metadata-only transaction plan/commit/read-back receipt. It is not a public API response and does not prove a production database write. The prototype keeps this canonical receipt byte-stable on replay; the application response carries the replayed transport marker.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "outcome",
+    "transaction_id",
+    "session_id",
+    "approval_id",
+    "request_digest",
+    "expected_session_revision",
+    "committed_session_revision",
+    "approval_revision",
+    "lifecycle_status",
+    "lifecycle_state",
+    "write_set",
+    "result_refs",
+    "atomicity",
+    "replayed",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "outcome": {"type": "string", "enum": ["committed", "replayed", "rejected", "in_progress"]},
+    "transaction_id": {"$ref": "#/$defs/Uuid"},
+    "session_id": {"$ref": "#/$defs/Uuid"},
+    "approval_id": {"$ref": "#/$defs/Uuid"},
+    "request_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "expected_session_revision": {"type": "integer", "minimum": 1},
+    "committed_session_revision": {"type": "integer", "minimum": 1},
+    "approval_revision": {"type": "integer", "minimum": 1},
+    "lifecycle_status": {"type": "string", "enum": ["completed", "approval_decided", "failed"]},
+    "lifecycle_state": {"type": "string", "enum": ["completed", "awaiting_confirmation", "failed"]},
+    "write_set": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["session", "approval", "lifecycle_turn", "event", "episode", "audit_metadata"]}
+    },
+    "result_refs": {"type": "array", "maxItems": 2, "items": {"$ref": "#/$defs/ResourceRef"}},
+    "atomicity": {"const": "all_or_nothing"},
+    "replayed": {"type": "boolean"},
+    "failure_code": {"type": "string", "pattern": "^[A-Z0-9._-]{1,120}$"},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "Uuid": {"type": "string", "format": "uuid"},
+    "ResourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "enum": ["event", "episode"]},
+        "id": {"$ref": "#/$defs/Uuid"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"outcome": {"enum": ["committed", "replayed"]}}, "required": ["outcome"]},
+      "then": {"properties": {"write_set": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"lifecycle_status": {"const": "completed"}}, "required": ["lifecycle_status"]},
+      "then": {
+        "properties": {
+          "lifecycle_state": {"const": "completed"},
+          "result_refs": {"minItems": 1, "maxItems": 1, "items": {"properties": {"type": {"const": "event"}}}},
+          "write_set": {"contains": {"const": "event"}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"lifecycle_status": {"enum": ["approval_decided", "failed"]}}, "required": ["lifecycle_status"]},
+      "then": {
+        "properties": {
+          "result_refs": {"maxItems": 0},
+          "write_set": {"not": {"contains": {"const": "event"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "rejected"}}, "required": ["outcome"]},
+      "then": {
+        "properties": {
+          "result_refs": {"maxItems": 0},
+          "failure_code": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

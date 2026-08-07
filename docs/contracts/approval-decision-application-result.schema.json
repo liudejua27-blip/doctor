@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/approval-decision-application-result.schema.json",
+  "title": "ApprovalDecisionApplicationResult",
+  "description": "P2C internal terminal approval-decision projection. It is not a public API response or a durable Session/Turn/Event record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "approval",
+    "decision",
+    "source_session_id",
+    "source_turn_id",
+    "previous_session_revision",
+    "proposed_session_revision",
+    "lifecycle",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "approval": {"$ref": "#/$defs/ApprovalIntent"},
+    "decision": {"$ref": "#/$defs/ApprovalDecisionMetadata"},
+    "source_session_id": {"$ref": "#/$defs/Uuid"},
+    "source_turn_id": {"$ref": "#/$defs/Uuid"},
+    "previous_session_revision": {"type": "integer", "minimum": 1},
+    "proposed_session_revision": {"type": "integer", "minimum": 3},
+    "lifecycle": {"$ref": "#/$defs/ApprovalDecisionLifecycleProjection"},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "Uuid": {"type": "string", "format": "uuid"},
+    "ResourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "enum": ["event", "episode", "report", "report_share", "reminder", "approval", "session"]},
+        "id": {"$ref": "#/$defs/Uuid"}
+      }
+    },
+    "ApprovalIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approval_id",
+        "source_session_id",
+        "target_ref",
+        "action_type",
+        "redacted",
+        "intent_digest",
+        "resource_revision",
+        "revision",
+        "status",
+        "created_at",
+        "expires_at"
+      ],
+      "properties": {
+        "approval_id": {"$ref": "#/$defs/Uuid"},
+        "source_session_id": {"$ref": "#/$defs/Uuid"},
+        "target_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {"type": {"const": "session"}, "id": {"$ref": "#/$defs/Uuid"}}
+        },
+        "action_type": {"const": "confirm_body_signal_event"},
+        "redacted": {"type": "boolean"},
+        "display_summary": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "tombstone_reason": {"type": "string", "enum": ["user_discarded", "session_expired", "consent_revoked", "retention_expired", "execution_failed"]},
+        "intent_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "resource_revision": {"type": "integer", "minimum": 1},
+        "revision": {"type": "integer", "minimum": 1},
+        "status": {"type": "string", "enum": ["executed", "denied", "invalidated", "failed"]},
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"redacted": {"const": true}}, "required": ["redacted"]},
+          "then": {
+            "required": ["tombstone_reason"],
+            "not": {"required": ["display_summary"]}
+          },
+          "else": {
+            "required": ["display_summary"],
+            "not": {"required": ["tombstone_reason"]}
+          }
+        }
+      ]
+    },
+    "ApprovalDecisionMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_id", "action_type", "target_ref", "source_session_id", "status", "resolution_reason", "revision", "result_refs", "decided_at"],
+      "properties": {
+        "approval_id": {"$ref": "#/$defs/Uuid"},
+        "action_type": {"const": "confirm_body_signal_event"},
+        "target_ref": {"$ref": "#/$defs/ResourceRef"},
+        "source_session_id": {"$ref": "#/$defs/Uuid"},
+        "status": {"type": "string", "enum": ["executed", "denied", "invalidated", "failed"]},
+        "resolution_reason": {"type": "string", "enum": ["action_executed", "user_denied", "context_changed", "user_discarded", "session_expired", "consent_revoked", "execution_failed"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "result_refs": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/ResourceRef"}},
+        "decided_at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "executed"}}, "required": ["status"]},
+          "then": {
+            "properties": {"result_refs": {"minItems": 1, "maxItems": 1, "items": {"properties": {"type": {"const": "event"}}}}}
+          }
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["denied", "invalidated", "failed"]}}, "required": ["status"]},
+          "then": {"properties": {"result_refs": {"maxItems": 0}}}
+        }
+      ]
+    },
+    "ApprovalDecisionLifecycleProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turn_id", "session_id", "source_turn_id", "sequence", "revision", "status", "state", "output_origin", "approval_id", "approval_revision", "resource_revision", "action_type", "target_ref", "intent_digest", "approval_status", "result_refs"],
+      "properties": {
+        "turn_id": {"$ref": "#/$defs/Uuid"},
+        "session_id": {"$ref": "#/$defs/Uuid"},
+        "source_turn_id": {"$ref": "#/$defs/Uuid"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "revision": {"type": "integer", "minimum": 3},
+        "status": {"type": "string", "enum": ["completed", "approval_decided", "failed"]},
+        "state": {"type": "string", "enum": ["completed", "awaiting_confirmation", "failed"]},
+        "output_origin": {"const": "application"},
+        "approval_id": {"$ref": "#/$defs/Uuid"},
+        "approval_revision": {"type": "integer", "minimum": 1},
+        "resource_revision": {"type": "integer", "minimum": 1},
+        "action_type": {"const": "confirm_body_signal_event"},
+        "target_ref": {"$ref": "#/$defs/ResourceRef"},
+        "intent_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "approval_status": {"type": "string", "enum": ["executed", "denied", "invalidated", "failed"]},
+        "result_refs": {"type": "array", "maxItems": 20, "items": {"$ref": "#/$defs/ResourceRef"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"approval_status": {"const": "executed"}}, "required": ["approval_status"]},
+          "then": {
+            "properties": {"status": {"const": "completed"}, "state": {"const": "completed"}, "result_refs": {"minItems": 1, "maxItems": 1, "items": {"properties": {"type": {"const": "event"}}}}}
+          }
+        },
+        {
+          "if": {"properties": {"approval_status": {"enum": ["denied", "invalidated"]}}, "required": ["approval_status"]},
+          "then": {
+            "properties": {"status": {"const": "approval_decided"}, "state": {"const": "awaiting_confirmation"}, "result_refs": {"maxItems": 0}}
+          }
+        },
+        {
+          "if": {"properties": {"approval_status": {"const": "failed"}}, "required": ["approval_status"]},
+          "then": {
+            "properties": {"status": {"const": "failed"}, "state": {"const": "failed"}, "result_refs": {"maxItems": 0}}
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "approval": {"properties": {"approval_id": {"$ref": "#/$defs/Uuid"}, "source_session_id": {"$ref": "#/$defs/Uuid"}}},
+        "decision": {"properties": {"approval_id": {"$ref": "#/$defs/Uuid"}, "source_session_id": {"$ref": "#/$defs/Uuid"}}},
+        "lifecycle": {"properties": {"session_id": {"$ref": "#/$defs/Uuid"}, "approval_id": {"$ref": "#/$defs/Uuid"}}}
+      }
+    }
+  ]
+}

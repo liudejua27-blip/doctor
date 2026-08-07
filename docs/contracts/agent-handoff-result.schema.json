@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/agent-handoff-result.schema.json",
+  "title": "P1GAgentHandoffResult",
+  "description": "P1F 通过安全门后的内部 PydanticAI Agent 结果；只携带未确认候选或固定回退，不是正式资源。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "draft_revision", "status", "handoff_status"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "draft_revision": {"type": "integer", "minimum": 1},
+    "status": {
+      "type": "string",
+      "enum": ["agent_completed", "agent_output_rejected", "agent_unavailable", "safety_action_required", "offline_only", "rejected"]
+    },
+    "handoff_status": {
+      "type": "string",
+      "enum": ["ready_for_agent", "safety_action_required", "offline_only", "rejected"]
+    },
+    "candidate": {
+      "oneOf": [
+        {"$ref": "agent-turn.schema.json#/$defs/AskQuestionOutput"},
+        {"$ref": "agent-turn.schema.json#/$defs/DraftReadyOutput"}
+      ]
+    },
+    "agent_source_ids": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    },
+    "agent_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "prompt_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "error_code": {"type": "string", "pattern": "^[A-Z0-9._-]{1,120}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "agent_completed"}}, "required": ["status"]},
+      "then": {
+        "required": ["candidate", "agent_version", "prompt_version"],
+        "properties": {"handoff_status": {"const": "ready_for_agent"}},
+        "not": {"required": ["error_code"]}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["agent_output_rejected", "agent_unavailable"]}}, "required": ["status"]},
+      "then": {
+        "required": ["error_code"],
+        "properties": {"handoff_status": {"const": "ready_for_agent"}},
+        "not": {"required": ["candidate"]}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "safety_action_required"}}, "required": ["status"]},
+      "then": {
+        "properties": {"handoff_status": {"const": "safety_action_required"}},
+        "not": {"required": ["candidate"]}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "offline_only"}}, "required": ["status"]},
+      "then": {
+        "properties": {"handoff_status": {"const": "offline_only"}},
+        "not": {"required": ["candidate"]}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "rejected"}}, "required": ["status"]},
+      "then": {
+        "properties": {"handoff_status": {"const": "rejected"}},
+        "required": ["error_code"],
+        "not": {"required": ["candidate"]}
+      }
+    }
+  ]
+}

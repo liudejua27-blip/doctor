@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.bodycompanion.example/schemas/v1/body-location.schema.json",
+  "title": "BodyLocation",
+  "description": "用户报告的身体信号位置。表示感觉区域附近，不代表具体组织损伤或疾病诊断。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "marker_id",
+    "region_id",
+    "ontology_version",
+    "laterality",
+    "surface",
+    "depth",
+    "shape",
+    "mapping",
+    "source",
+    "created_at"
+  ],
+  "properties": {
+    "marker_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "跨 2D、默认 3D 和专业 3D 视图保持不变的标记 ID。"
+    },
+    "region_id": {
+      "type": "string",
+      "pattern": "^body\\.[a-z0-9_]+(?:\\.[a-z0-9_]+)+$",
+      "maxLength": 120,
+      "description": "稳定身体本体区域 ID；不能使用本地化显示名称作为 ID。"
+    },
+    "ontology_version": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$",
+      "description": "解释 region_id 的身体本体版本。"
+    },
+    "laterality": {
+      "type": "string",
+      "enum": ["left", "right", "midline", "bilateral", "unspecified"]
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "anterior",
+        "posterior",
+        "medial",
+        "lateral",
+        "superior",
+        "inferior",
+        "circumferential",
+        "unspecified"
+      ]
+    },
+    "depth": {
+      "type": "string",
+      "enum": ["superficial", "deep", "joint_nearby", "unspecified"]
+    },
+    "shape": {
+      "type": "string",
+      "enum": ["point", "area", "path"]
+    },
+    "user_label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "用户自己的位置描述；不得覆盖标准 region_id。"
+    },
+    "anchor_2d": {
+      "$ref": "#/$defs/Anchor2D"
+    },
+    "anchor_3d": {
+      "$ref": "#/$defs/Anchor3D"
+    },
+    "model_asset": {
+      "$ref": "#/$defs/ModelAsset"
+    },
+    "mapping": {
+      "$ref": "#/$defs/Mapping"
+    },
+    "source": {
+      "$ref": "#/$defs/LocationSource"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["anchor_3d"]
+      },
+      "then": {
+        "required": ["model_asset"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "shape": {"const": "path"}
+        },
+        "required": ["shape"]
+      },
+      "then": {
+        "required": ["anchor_2d"],
+        "properties": {
+          "anchor_2d": {
+            "type": "object",
+            "required": ["path"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"shape": {"const": "point"}},
+        "required": ["shape"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": ["anchor_2d"],
+            "properties": {
+              "anchor_2d": {"type": "object", "required": ["point"]}
+            }
+          },
+          {"required": ["anchor_3d"]}
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "type": "object",
+            "properties": {"interaction": {"const": "body_map_2d"}},
+            "required": ["interaction"]
+          }
+        },
+        "required": ["source"]
+      },
+      "then": {"required": ["anchor_2d"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "type": "object",
+            "properties": {"interaction": {"const": "body_map_3d"}},
+            "required": ["interaction"]
+          }
+        },
+        "required": ["source"]
+      },
+      "then": {"required": ["anchor_3d", "model_asset"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "type": "object",
+            "properties": {"interaction": {"const": "document_import"}},
+            "required": ["interaction"]
+          }
+        },
+        "required": ["source"]
+      },
+      "then": {
+        "properties": {
+          "source": {"type": "object", "required": ["source_document_id"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "type": "object",
+            "properties": {"interaction": {"const": "agent_normalization"}},
+            "required": ["interaction"]
+          }
+        },
+        "required": ["source"]
+      },
+      "then": {
+        "properties": {
+          "source": {"type": "object", "required": ["source_turn_id"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mapping": {
+            "type": "object",
+            "properties": {"method": {"const": "cross_asset_migration"}},
+            "required": ["method"]
+          }
+        },
+        "required": ["mapping"]
+      },
+      "then": {
+        "properties": {
+          "mapping": {"type": "object", "required": ["migration_id"]}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "NormalizedPoint2D": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "Vector3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": {"type": "number"},
+        "y": {"type": "number"},
+        "z": {"type": "number"}
+      }
+    },
+    "Barycentric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["u", "v", "w"],
+      "properties": {
+        "u": {"type": "number", "minimum": 0, "maximum": 1},
+        "v": {"type": "number", "minimum": 0, "maximum": 1},
+        "w": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "UV": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["u", "v"],
+      "properties": {
+        "u": {"type": "number", "minimum": 0, "maximum": 1},
+        "v": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "Anchor2D": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["view", "asset_id", "asset_version"],
+      "properties": {
+        "view": {
+          "type": "string",
+          "enum": ["front", "back"]
+        },
+        "asset_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "asset_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "point": {
+          "$ref": "#/$defs/NormalizedPoint2D"
+        },
+        "path": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 256,
+          "items": {"$ref": "#/$defs/NormalizedPoint2D"}
+        },
+        "region_mask_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "anyOf": [
+        {"required": ["point"]},
+        {"required": ["path"]},
+        {"required": ["region_mask_id"]}
+      ]
+    },
+    "Anchor3D": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "local_position", "local_normal"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "mesh_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "local_position": {
+          "$ref": "#/$defs/Vector3"
+        },
+        "local_normal": {
+          "$ref": "#/$defs/Vector3"
+        },
+        "triangle_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "barycentric": {
+          "$ref": "#/$defs/Barycentric"
+        },
+        "uv": {
+          "$ref": "#/$defs/UV"
+        }
+      },
+      "dependentRequired": {
+        "triangle_index": ["barycentric"],
+        "barycentric": ["triangle_index"]
+      }
+    },
+    "ModelAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id", "asset_version", "variant", "coordinate_convention"],
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "asset_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["default_neutral", "professional_muscle_joint"]
+        },
+        "coordinate_convention": {
+          "type": "string",
+          "enum": ["realitykit_y_up_right_handed"]
+        }
+      }
+    },
+    "Mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "confidence", "reviewed_by_user"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "direct_user_selection",
+            "asset_region_map",
+            "cross_asset_migration",
+            "agent_normalization",
+            "manual_review"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reviewed_by_user": {
+          "type": "boolean"
+        },
+        "migration_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      }
+    },
+    "LocationSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interaction"],
+      "properties": {
+        "interaction": {
+          "type": "string",
+          "enum": [
+            "body_map_2d",
+            "body_map_3d",
+            "body_part_search",
+            "document_import",
+            "agent_normalization"
+          ]
+        },
+        "source_turn_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_document_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  }
+}
