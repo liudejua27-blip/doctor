@@ -10,7 +10,7 @@
 | 变更等级 | A |
 | 安全/隐私评审 | Required：位置表达、资产供应链、无障碍和健康数据来源均受影响 |
 | 依赖 | BODY-01、IOS-01、ADR-0003、ADR-0004、ADR-0009、ADR-0018、OSS-01 |
-| 当前实现 | SwiftUI Canvas/列表 + RealityKit 原生适配器；不复制 RehabMate Web/Three.js/GSAP/算法/`body.glb` |
+| 当前实现 | SwiftUI Canvas/列表 + RealityKit 原生适配器；交互等价扩展见 [FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)；不复制 RehabMate Web/Three.js/GSAP/算法/`body.glb` |
 
 ## 1. 用户问题与成功定义
 

@@ -2,7 +2,7 @@
 
 | 属性 | 值 |
 |---|---|
-| 关联需求/功能 | FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-09、NFR-A11Y-001 |
+| 关联需求/功能 | FEAT-BODY-MAP-V1、FEAT-BODY-MAP-V2、PRD-F03A、SAFE-INV-09、NFR-A11Y-001 |
 | SafetyBaseline | 不调用 SafetyEngine；位置非诊断边界必须保持 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -28,6 +28,8 @@
 | TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type | 无 3D 完成选择，动画可关闭 | 待真机 |
 | TEST-BODY-011 | PRD-F01 | Integration | 选位置后进入结构化描述 | 未确认位置保留，未自动填感觉 | 待联调 |
 | TEST-BODY-012 | PRD-F03A | Recovery | 3D loader/命中/内存失败 | 提示原因，保留草稿，2D/列表可继续 | Unit + Device |
+
+V2 的行为等价、Zone/Pin 共存、20 个 Pin 上限、摘要编辑、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。
 
 ## 3. 测试数据治理
 

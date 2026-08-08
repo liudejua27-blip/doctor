@@ -8,7 +8,7 @@
 | 负责人 | 工程架构负责人 |
 | 审核角色 | iOS、AI、3D 资产、隐私法务、安全、QA |
 | 变更级别 | A（生产依赖/资产采用）；研究说明更新为 B |
-| 审计日期 | 2026-08-05 |
+| 审计日期 | 2026-08-08 |
 | 审计对象 | [HUANGCHIHHUNGLeo/RehabMate](https://github.com/HUANGCHIHHUNGLeo/RehabMate) |
 | 锁定提交 | [`1378a752dfb0d656a27a73c234269f9f5be2c3ca`](https://github.com/HUANGCHIHHUNGLeo/RehabMate/tree/1378a752dfb0d656a27a73c234269f9f5be2c3ca) |
 | 依赖 | DOC-00、ARCH-01、IOS-01、AGENT-01、BODY-01、FRAME-01、ADR-0018 |
@@ -55,7 +55,8 @@ P1D 的 iOS 录入框架只复用交互需求的抽象：`BodyMapScreen` 产生�
 | 代码许可证 | MIT，LICENSE 明确排除 `assets/body.glb` |
 | 3D 模型声明 | CC BY 4.0，单独 Attribution |
 | 3D 文件 | 4,152,216 字节 |
-| 3D SHA-256 | `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` |
+| 3D Git blob SHA-1 | `adbf4de165f5698b770e36d33fa953a2210f968c`（GitHub API 对锁定提交 `assets/body.glb` 的对象摘要） |
+| 3D SHA-256 | `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2`（对锁定提交 raw 文件流计算） |
 
 所有技术判断以锁定提交的文件和 GLB 内嵌元数据为依据，不以 README 宣传语代替代码事实。
 
@@ -181,6 +182,8 @@ NONE → PAIN → RELIEF → NONE
 - 位置、感觉、趋势和 Episode 混在一起。
 
 目标拆分 Marker 草稿、视觉选中态、SignalEvent 和 Episode；“缓解”新增 Check-in。
+
+2026-08-08 新增 [FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)：原生 iOS 将上游的 Zone/Pin、焦点、摘要编辑和移动端面板行为做等价重写，但把第二层区域状态命名为 `reviewing` 视觉状态，明确禁止把点击解释为“已缓解”；实现与测试见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。
 
 ### 5.6 疼痛类型与 NRS
 

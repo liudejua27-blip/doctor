@@ -45,13 +45,20 @@ def material(name: str, color: tuple[float, float, float, float]) -> bpy.types.M
     return value
 
 
+def smooth(obj: bpy.types.Object) -> None:
+    if obj.type == "MESH":
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = True
+
+
 def add_sphere(name: str, location: tuple[float, float, float], scale: tuple[float, float, float], mat: bpy.types.Material) -> None:
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12, location=location)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=20, location=location)
     obj = bpy.context.object
     obj.name = name
     obj.scale = scale
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.data.materials.append(mat)
+    smooth(obj)
 
 
 def add_box(name: str, location: tuple[float, float, float], scale: tuple[float, float, float], mat: bpy.types.Material) -> None:
@@ -66,6 +73,7 @@ def add_box(name: str, location: tuple[float, float, float], scale: tuple[float,
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.modifier_apply(modifier=bevel.name)
     obj.data.materials.append(mat)
+    smooth(obj)
 
 
 def add_limb(name: str, start: tuple[float, float, float], end: tuple[float, float, float], radius: float, mat: bpy.types.Material) -> None:
@@ -78,6 +86,7 @@ def add_limb(name: str, start: tuple[float, float, float], end: tuple[float, flo
     obj.rotation_mode = "QUATERNION"
     obj.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(direction.normalized())
     obj.data.materials.append(mat)
+    smooth(obj)
 
 
 def main() -> None:
@@ -89,23 +98,36 @@ def main() -> None:
                 datablocks.remove(block)
 
     skin = material("neutral_body_surface", (0.68, 0.78, 0.84, 1.0))
+    skin_shadow = material("neutral_body_shadow", (0.48, 0.63, 0.72, 1.0))
     accent = material("neutral_body_accent", (0.35, 0.55, 0.68, 1.0))
+    joint = material("neutral_body_joint", (0.30, 0.46, 0.58, 1.0))
 
     # Blender uses Z-up; the USD export converts to the documented RealityKit
     # Y-up convention. Dimensions are metres, with the feet on z=0.
-    add_sphere("body_head", (0, 0, 1.72), (0.105, 0.105, 0.13), skin)
+    add_sphere("body_head", (0, 0, 1.72), (0.115, 0.105, 0.14), skin)
     add_limb("body_neck", (0, 0, 1.56), (0, 0, 1.64), 0.065, skin)
-    add_box("body_torso", (0, 0, 1.28), (0.20, 0.12, 0.28), skin)
-    add_box("body_pelvis", (0, 0, 0.92), (0.17, 0.11, 0.12), accent)
+    add_sphere("body_torso", (0, 0, 1.28), (0.22, 0.13, 0.30), skin)
+    add_sphere("body_abdomen", (0, -0.005, 1.08), (0.17, 0.125, 0.18), skin_shadow)
+    add_sphere("body_pelvis", (0, 0, 0.92), (0.18, 0.13, 0.14), accent)
+
+    # Segmented display volumes make the map readable without claiming
+    # clinically precise muscle boundaries. The names are stable UI entities.
+    for side, x in (("left", -1), ("right", 1)):
+        sign = float(x)
+        add_sphere(f"body_{side}_shoulder", (sign * 0.225, 0, 1.47), (0.09, 0.095, 0.10), skin)
+        add_sphere(f"body_{side}_chest", (sign * 0.09, -0.09, 1.34), (0.115, 0.055, 0.13), skin)
+        add_sphere(f"body_{side}_upper_back", (sign * 0.09, 0.09, 1.34), (0.115, 0.055, 0.13), skin_shadow)
+        add_sphere(f"body_{side}_hip", (sign * 0.105, 0, 0.96), (0.095, 0.115, 0.11), accent)
 
     for side, x in (("left", -1), ("right", 1)):
         x = x * 0.24
-        add_limb(f"body_{side}_upper_arm", (x * 0.84, 0, 1.48), (x * 1.03, 0, 1.18), 0.055, skin)
-        add_limb(f"body_{side}_forearm", (x * 1.03, 0, 1.18), (x * 1.08, 0, 0.90), 0.045, skin)
+        add_limb(f"body_{side}_upper_arm", (x * 0.84, 0, 1.48), (x * 1.03, 0, 1.18), 0.06, skin)
+        add_sphere(f"body_{side}_elbow", (x * 1.03, 0, 1.17), (0.065, 0.06, 0.065), joint)
+        add_limb(f"body_{side}_forearm", (x * 1.03, 0, 1.18), (x * 1.08, 0, 0.90), 0.048, skin)
         add_sphere(f"body_{side}_hand", (x * 1.08, 0, 0.84), (0.055, 0.045, 0.08), skin)
-        add_limb(f"body_{side}_thigh", (x * 0.62, 0, 0.88), (x * 0.62, 0, 0.48), 0.085, skin)
-        add_sphere(f"body_{side}_knee", (x * 0.62, 0, 0.42), (0.09, 0.08, 0.07), accent)
-        add_limb(f"body_{side}_calf", (x * 0.62, 0, 0.36), (x * 0.62, 0, 0.08), 0.06, skin)
+        add_limb(f"body_{side}_thigh", (x * 0.62, 0, 0.88), (x * 0.62, 0, 0.48), 0.09, skin)
+        add_sphere(f"body_{side}_knee", (x * 0.62, 0, 0.42), (0.09, 0.08, 0.075), joint)
+        add_limb(f"body_{side}_calf", (x * 0.62, 0, 0.36), (x * 0.62, 0, 0.08), 0.065, skin)
         add_box(f"body_{side}_foot", (x * 0.62, -0.05, 0.035), (0.075, 0.14, 0.035), skin)
 
     # A root makes the coordinate contract explicit and keeps child IDs stable.
@@ -115,11 +137,19 @@ def main() -> None:
         if obj != root:
             obj.parent = root
     root["asset_id"] = "body-neutral-procedural-v1"
-    root["asset_version"] = "1.0.0"
+    root["asset_version"] = "1.1.0"
     root["ontology_version"] = "body-ontology-prototype-v1"
     root["coordinate_convention"] = "realitykit_y_up_right_handed"
-    root["source"] = "original project-generated low-detail prototype"
+    root["source"] = "original project-generated segmented neutral prototype"
     root["medical_meaning"] = "none; visual location expression only"
+
+    triangle_count = sum(
+        max(len(polygon.vertices) - 2, 0)
+        for obj in bpy.context.scene.objects
+        if obj.type == "MESH"
+        for polygon in obj.data.polygons
+    )
+    print(f"candidate triangle_count={triangle_count}")
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.usd_export(

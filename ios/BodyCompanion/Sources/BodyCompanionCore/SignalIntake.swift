@@ -730,6 +730,45 @@ public final class SignalIntakeModel {
         touch()
     }
 
+    /// Projects explicit map-editor choices into the typed intake draft. This
+    /// remains unreviewed until the user completes the normal fact review; it
+    /// does not create an Event or approval.
+    public func applyBodyMarks(_ marks: [BodyMark]) {
+        setLocations(marks.map(\.location))
+
+        var sensationLocations: [SignalSensationCode: [UUID]] = [:]
+        for mark in marks {
+            guard let sensation = mark.sensation else { continue }
+            sensationLocations[sensation.signalCode, default: []].append(mark.location.id)
+        }
+        draft.facts.sensations = sensationLocations
+            .sorted { $0.key.rawValue < $1.key.rawValue }
+            .map { code, markerIDs in
+                SignalSensation(code: code, locationMarkerIDs: markerIDs)
+            }
+        draft.reviewedGroups.remove(.sensation)
+        draft.unknownGroups.remove(.sensation)
+
+        if let intensity = marks.compactMap(\.intensity).first,
+           let typedIntensity = try? SignalIntensity(context: .current, value: intensity) {
+            draft.facts.intensity = typedIntensity
+        } else {
+            draft.facts.intensity = nil
+        }
+        draft.reviewedGroups.remove(.intensity)
+        draft.unknownGroups.remove(.intensity)
+
+        draft.facts.aggravatingFactors = marks
+            .flatMap { mark in
+                mark.triggers.map { trigger in
+                    SignalFactor(label: trigger.displayName, effect: .worse)
+                }
+            }
+        draft.reviewedGroups.remove(.aggravatingFactors)
+        draft.unknownGroups.remove(.aggravatingFactors)
+        touch()
+    }
+
     public func removeLocation(id: UUID) {
         draft.locations.removeAll { $0.id == id }
         let markerIDs = Set(draft.locations.map(\.id))

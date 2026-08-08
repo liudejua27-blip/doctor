@@ -21,7 +21,7 @@
 |---|---|---|---|---|---|
 | PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 与状态机 | Prototype verified | GATE-06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002 | `agent-turn`、内部 handoff schemas | PydanticAI typed Agent、Safety-first、PolicyValidator | Prototype verified | GATE-03/04/07/08 |
-| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表实现、原生 RealityKit prototype loader、metadata gate、TEST-BODY-MAP-V1 | Implementation in progress | GATE-06/07/08 |
+| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/摘要状态、metadata gate、TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
 | PRD-F05 复查与趋势 | UX-01、DATA-01、API-01 | Event/CheckIn operations | 未形成正式数据闭环 | Planned | GATE-05/07 |
@@ -66,7 +66,7 @@
 | 来源 | 允许采用 | 禁止采用 | 当前状态 |
 |---|---|---|---|
 | PydanticAI `pydantic-ai-slim==2.23.0` | 公共 typed Agent/deps/output/tool/eval API | 私有 API、未锁版本、Agent 拥有安全/授权/写入 | 样机依赖锁定；真实 Provider 门禁未关闭 |
-| RehabMate 锁定提交 | 旋转、视角、区域/点选择的交互思想 | Web/Three.js/GSAP/WKWebView、最近中心/`face.a`/三态算法、世界坐标针点、`body.glb` | 原生重写边界保留；未复制上游生产代码/资产 |
+| RehabMate 锁定提交 | 旋转、视角、Zone/Pin、焦点、摘要编辑和移动端布局行为 | Web/Three.js/GSAP/WKWebView、最近中心/`face.a`/三态健康语义、世界坐标针点、`body.glb` | FEAT-BODY-MAP-V2 原生重写；未复制上游生产代码/资产 |
 
 ## 6. API 与契约追踪
 
@@ -78,7 +78,7 @@
 
 | assetId/version | 模式 | 作者链/许可 | anatomyMap | golden hit set | 性能/无障碍 | 状态 |
 |---|---|---|---|---|---|---|
-| [`body-neutral-procedural-v1`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata | 未测真机 | Candidate / internal only |
+| [`body-neutral-procedural-v1@1.1.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata | 未测真机 | Candidate / internal only |
 | `TBD-professional` | 专业 3D | 未取得 | TBD | TBD | TBD | Blocked P1 |
 
 RehabMate `body.glb` 不得进入生产候选。任何 `TBD`、candidate、未知/撤回权利或缺少真实文件签名的资产都必须回退 2D/列表。

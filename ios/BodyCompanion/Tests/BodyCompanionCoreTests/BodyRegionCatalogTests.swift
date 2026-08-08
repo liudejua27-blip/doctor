@@ -52,4 +52,11 @@ final class BodyRegionCatalogTests: XCTestCase {
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_pelvis")?.regionID, "body.pelvis.general")
         XCTAssertNil(BodyRegionCatalog.option(forEntityID: "arbitrary_mesh_17"))
     }
+
+    func testSegmentedCandidateEntitiesMapToStableRegions() {
+        XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_left_chest")?.regionID, "body.chest.general")
+        XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_right_upper_back")?.surface, .posterior)
+        XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_left_shoulder")?.laterality, .left)
+        XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_right_hip")?.regionID, "body.hip.general")
+    }
 }

@@ -52,7 +52,7 @@ public struct AppShell: View {
                         BodyMapScreen(
                             model: intakeModel.bodyMapModel,
                             prototype3DEnabled: prototype3DEnabled,
-                            onLocationsChanged: { intakeModel.setLocations($0) }
+                            onLocationsChanged: { _ in intakeModel.applyBodyMarks(intakeModel.bodyMapModel.marks) }
                         )
                     case .intake:
                         SignalIntakeScreen(model: intakeModel)
