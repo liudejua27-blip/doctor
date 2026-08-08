@@ -11,6 +11,14 @@ public struct AppShell: View {
 
     public init() {}
 
+    private var prototype3DEnabled: Bool {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }
+
     public var body: some View {
         TabView(selection: $selectedTab) {
             tab("今天", systemImage: "sun.max", tab: .today, router: todayRouter) {
@@ -43,6 +51,7 @@ public struct AppShell: View {
                     case .assessment:
                         BodyMapScreen(
                             model: intakeModel.bodyMapModel,
+                            prototype3DEnabled: prototype3DEnabled,
                             onLocationsChanged: { intakeModel.setLocations($0) }
                         )
                     case .intake:

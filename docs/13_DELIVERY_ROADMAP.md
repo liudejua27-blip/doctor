@@ -20,11 +20,13 @@
 + 样机边界已验证
 + P2A 受控时钟回归和后端/iOS 本地门禁绿色
 + codex/initial-git-ci-baseline 首个可追溯提交与 CI workflow 已建立
-+ 当前无远端，云端 CI 首跑、默认分支和保护规则尚未建立
++ GitHub `origin` 已配置；当前工作树切片尚待提交/推送，云端 CI 首跑、默认分支和保护规则尚未建立
 ≠ App 完成
 ≠ production ready
 ≠ clinically safe
 ```
+
+当前正在实施的 `FEAT-BODY-MAP-V1` 只把全身 2D、列表和内部 prototype 3D 定位推进到可验证纵向切片；它不会关闭 GATE-06 的真实资产、解剖、性能、无障碍或生产发布门禁。
 
 ## 2. 首发闭环
 
@@ -50,7 +52,7 @@
 
 - 已完成：P2A 测试默认时钟由 fixture 冻结，显式过期边界继续注入 `now`；聚焦 19 个和后端全量 189 个测试绿色。
 - 已完成：仓库内契约检查器、Python 3.11 约束、GitHub Actions 后端/契约与 iOS 双作业、首个 `codex/` 分支和提交基线。
-- 待远端：配置 GitHub remote，取得首次云端绿色运行，将相同检查设为默认分支必需状态并验证保护规则。
+- 进行中：`origin` 已指向 `https://github.com/liudejua27-blip/doctor.git`；提交并推送受保护分支后，取得首次云端绿色运行，将相同检查设为默认分支必需状态并验证保护规则。
 - 证据必须绑定 commit SHA；本地结果和 workflow 文件不能替代远端必需状态检查。
 
 当前状态：本地退出条件已满足；远端 CI/保护分支子门禁保持未关闭。
@@ -93,6 +95,8 @@
 - 完成真实文件哈希/签名、anatomyMap、golden hit set、RealityKit loader、LOD 和 2D 回退。
 - 实现 Keychain、Data Protection、文件 durability、后台同步和删除清理。
 - 完成最低设备性能、VoiceOver、Dynamic Type、Reduce Motion、杀进程/重启恢复。
+
+`FEAT-BODY-MAP-V1` 可以在门禁关闭前使用本项目原创的内部候选模型验证 RealityKit 交互，但必须显示 prototype 状态并保持生产能力开关关闭；候选模型不等于 `approved` 资产。
 
 退出条件：真实默认资产和目标设备通过法务、解剖、性能、无障碍与恢复门禁。
 

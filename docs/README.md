@@ -42,12 +42,18 @@ flowchart TD
     S --> M
     M --> N["REL-01 交付路线图"]
     N --> O["TRACE-01 追踪矩阵"]
+    J --> P["FEAT-BODY-MAP-V1 2D/3D 纵向切片"]
+    P --> Q["TEST-BODY-MAP-V1 身体定位测试"]
+    P --> T["BODY-ASSET-01 资产来源与哈希"]
 ```
 
 ## 当前实现入口
 
 - [BASELINE-01 已实现样机基线](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)：合并原 16 份 Feature Spec、16 份 Test Plan 的当前实现、测试和未证明范围。
 - [FRAME-01 参考项目到产品框架的实施蓝图](17_FRAMEWORK_IMPLEMENTATION_BLUEPRINT.md)：长期运行时和参考采用边界。
+- [FEAT-BODY-MAP-V1 全身 2D 与原生 3D 定位纵向切片](19_BODY_MAP_PRODUCTION_SLICE.md)：当前身体定位实施范围、状态、契约和发布边界。
+- [TEST-BODY-MAP-V1 2D/3D 身体定位测试计划](20_BODY_MAP_TEST_PLAN.md)：身体区域、跨视图、回退、资产和无障碍测试门禁。
+- [BODY-ASSET-01 候选人体显示资产来源与哈希](21_BODY_ASSET_PROVENANCE.md)：项目自生成候选模型的来源、哈希、清单和进入生产所需证据。
 
 实现入口：
 
@@ -77,6 +83,9 @@ flowchart TD
 | TERM-01 | [统一术语](15_GLOSSARY.md) | 唯一名词和字段语义真源 | Baseline Draft |
 | EVIDENCE-01 | [当前工程样机验证记录](16_EXECUTION_EVIDENCE.md) | 可复现命令、已证明边界与未证明能力 | Evidence snapshot / Prototype-only |
 | BASELINE-01 | [已实现样机基线](18_IMPLEMENTED_PROTOTYPE_BASELINE.md) | 已完成临时切片归并、当前代码边界和测试状态 | Current prototype snapshot |
+| FEAT-BODY-MAP-V1 | [全身 2D 与原生 3D 定位纵向切片](19_BODY_MAP_PRODUCTION_SLICE.md) | 当前 2D/3D 身体定位实施范围、状态、契约和发布边界 | Active implementation spec |
+| TEST-BODY-MAP-V1 | [2D/3D 身体定位测试计划](20_BODY_MAP_TEST_PLAN.md) | 身体区域、跨视图、回退、资产和无障碍测试门禁 | Draft / implementation in progress |
+| BODY-ASSET-01 | [候选人体显示资产来源与哈希](21_BODY_ASSET_PROVENANCE.md) | 候选 USDZ 的来源、哈希、权利与批准前门禁 | Candidate / production blocked |
 
 ## 机器可读契约
 
@@ -152,7 +161,7 @@ FRAME-01 是参考采用和模块落地真源；它不替代产品、数据、�
 | P0 | 真实 Agent Provider | 确认 Provider、地区/留存/传输、模型 profile、结构化输出、失败回退、成本与真实语义评测 | 仅 TestModel/FunctionModel，不发送真实健康请求 |
 | P0 | 首发人体与客户端 | 获得默认模型作者链与商用/App Store 权利，完成真实文件哈希/签名、区域图、解剖审核、RealityKit loader、最低设备性能和无障碍测试 | 2D/列表为完整路径，3D 资产 gate 只验证合成 metadata |
 | P0 | 真实端到端验证 | OpenAPI 同源客户端、iOS Keychain/Data Protection、离线恢复、真实设备 E2E、两类用户 30 秒研究和失败路径通过 | 不将本地单元测试视为可发布证据 |
-| P0 | 远端版本门禁 | 将已建立的 `codex/initial-git-ci-baseline` 与 CI workflow 配置到远端；首次云端运行绿色，并把检查设为默认分支必需状态 | 本地 189 个后端测试、51 个 Swift 测试和静态基线检查已绿色；没有 remote，不能宣称保护分支或云端 CI 已通过 |
+| P0 | 远端版本门禁 | 将已建立的 `codex/initial-git-ci-baseline` 与 CI workflow 配置到远端；首次云端运行绿色，并把检查设为默认分支必需状态 | `origin` 已配置但本轮切片尚未推送；本地 189 个后端测试、55 个 Swift 测试和静态基线检查绿色，不能宣称保护分支或云端 CI 已通过 |
 | P1 | MVP 产品闭环 | 今天页、复查/趋势、个人身体数字档案、报告/PDF/系统分享、提醒、访问记录形成正式数据闭环 | 保持在路线图 Phase 2/3，不提前开放 |
 | P1 | 发布运营能力 | 监控告警、隐私遥测、SBOM、事故响应、回滚、影子测试和小流量门禁完成 | 不生成虚假 release-evidence，不进入外部发布 |
 | P1 | 专业模型与外部资料 | 专业肌肉/关节模型、HealthKit/资料上传各自完成许可、同意、最小化和评测 | 首发后独立开关，默认关闭 |

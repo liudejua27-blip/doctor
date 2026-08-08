@@ -428,13 +428,13 @@ public struct BodyRegionSelection: Hashable, Sendable {
 }
 
 public enum BodyLocationMapper {
-    public static let ontologyVersion = "body-ontology-pending-review"
+    public static let ontologyVersion = BodyRegionCatalog.ontologyVersion
 
     public static func from2D(_ selection: BodyRegionSelection, markerID: UUID = UUID()) -> BodyLocation {
         let anchor = BodyLocationAnchor2D(
             view: selection.view ?? .front,
-            assetID: "body-2d-placeholder",
-            assetVersion: "pending-review",
+            assetID: BodyRegionCatalog.assetID,
+            assetVersion: BodyRegionCatalog.assetVersion,
             point: selection.point,
             regionMaskID: selection.point == nil ? selection.regionID : nil
         )

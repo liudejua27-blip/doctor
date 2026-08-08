@@ -6,28 +6,30 @@
 | 版本 | 2.1.0 |
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
-| 快照日期 | 2026-08-07 |
+| 快照日期 | 2026-08-08 |
 | 对应 Git | `codex/initial-git-ci-baseline` 的首个基线提交；精确 SHA 以本文件所在 `HEAD` 为准 |
+| 本轮变更状态 | `origin` 已配置；身体地图/候选资产切片目前在工作树，尚未创建新提交/推送，远端 CI 尚未运行 |
 
 ## 1. 证据解释
 
 本文件只保留当前可复现结果，不再累计每个临时切片的重复流水账。已实现边界见 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)，需求到证据关系见 [TRACE-01](14_TRACEABILITY_MATRIX.md)，发布门禁见 [REL-01](13_DELIVERY_ROADMAP.md)。
 
-本快照将随首个 Git 提交固定，最终 SHA 由 `git rev-parse HEAD` 读取。它只证明本地可重建基线；进入外测前仍必须由远端 CI 在受保护提交上重建，并绑定 SafetyBaseline。
+首个基线提交由 `git rev-parse HEAD` 读取；本轮切片证据在提交前只代表当前工作树。它只证明本地可重建边界；进入外测前仍必须由远端 CI 在受保护提交上重建，并绑定 SafetyBaseline。
 
 ## 2. 当前验证结果
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=46 checked_links=250 json_schemas=16 openapi_paths=36 openapi_schemas=111 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、退役路径和禁止源码引用的本地静态门禁 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=49 checked_links=265 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `51 tests, 0 failures` | Swift Core 样机；不证明真机/签名/生产资产 |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `55 tests, 0 failures` | Swift Core 样机；不证明真机/签名/生产资产 |
 | EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `189 passed` | 后端合成/内存样机全量绿色；不证明生产依赖 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
-| EV-CURRENT-008 | iOS SDK target build | `arm64-apple-ios17.0 BodyCompanionIOS` 构建通过 | 只证明 Swift Package target 编译，不证明签名安装/真机运行 |
-| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA | workflow 已版本化且本地语法/关键门禁检查通过；尚无远端运行记录 |
+| EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
+| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA | workflow 已版本化且本地语法/关键门禁检查通过；`origin` 已配置，尚无远端运行记录 |
+| EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `81171745e8813838376959e0910b2242c9bab422a42342c882ac8747ef5afe17`；清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
 
 ## 3. 当前已证明
 
@@ -46,7 +48,7 @@
 
 ### PARTIAL-EV-001 远端 CI 与保护分支
 
-本地 `codex/` 分支、首个提交、Python 3.11 约束和 CI workflow 已建立，但仓库没有 remote。首次 GitHub Actions 运行、默认分支、必需状态检查和保护规则无法在本地证明，必须在远端创建后关闭。
+本地 `codex/` 分支、首个提交、Python 3.11 约束和 CI workflow 已建立，`origin` 已配置且当前公开 refs 为空；本轮切片尚未提交/推送。首次 GitHub Actions 运行、默认分支、必需状态检查和保护规则仍无法在本地证明，必须在推送后关闭。
 
 ## 5. 不得外推
 

@@ -21,7 +21,7 @@
 |---|---|---|---|---|---|
 | PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 与状态机 | Prototype verified | GATE-06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002 | `agent-turn`、内部 handoff schemas | PydanticAI typed Agent、Safety-first、PolicyValidator | Prototype verified | GATE-03/04/07/08 |
-| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 2D/3D 外壳和 metadata gate | Prototype verified | GATE-06/08 |
+| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表实现、原生 RealityKit prototype loader、metadata gate、TEST-BODY-MAP-V1 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
 | PRD-F05 复查与趋势 | UX-01、DATA-01、API-01 | Event/CheckIn operations | 未形成正式数据闭环 | Planned | GATE-05/07 |
@@ -46,7 +46,7 @@
 | SAFE-INV-07 | 失败仍保留固定安全和手动路径 | UX-01、SAFE-01 | fail-closed 样机 | 故障注入 100% |
 | SAFE-INV-08 | 未同意资料不进入 Agent | AGENT-01、PRIV-01 | typed context 授权测试 | 越权 0；真实 Consent 待实现 |
 | SAFE-INV-09 | 身体标记不代表病因/损伤 | BODY-01、SAFE-01 | 数据模型/文案约束 | 违规 0 |
-| SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | 首个本地 Git/CI 基线已建立；无远端必需检查和 SafetyBaseline | 完全一致 |
+| SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | 首个本地 Git/CI 基线已建立，`origin` 已配置；远端必需检查和 SafetyBaseline 尚未验证 | 完全一致 |
 
 ## 4. 非功能追踪
 
@@ -78,7 +78,7 @@
 
 | assetId/version | 模式 | 作者链/许可 | anatomyMap | golden hit set | 性能/无障碍 | 状态 |
 |---|---|---|---|---|---|---|
-| `TBD-default-neutral` | 默认 3D | 未取得 | TBD | TBD | TBD | Blocked |
+| [`body-neutral-procedural-v1`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata | 未测真机 | Candidate / internal only |
 | `TBD-professional` | 专业 3D | 未取得 | TBD | TBD | TBD | Blocked P1 |
 
 RehabMate `body.glb` 不得进入生产候选。任何 `TBD`、candidate、未知/撤回权利或缺少真实文件签名的资产都必须回退 2D/列表。

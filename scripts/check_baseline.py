@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -109,6 +110,48 @@ def _check_contracts(errors: list[str]) -> tuple[int, int, int]:
         return len(actual_schemas), 0, 0
 
 
+def _check_asset_manifests(errors: list[str]) -> int:
+    """Validate checked-in asset records and bind bundle hashes to real files."""
+    asset_dir = ROOT / "docs" / "assets"
+    schema_path = CONTRACTS / "body-asset-manifest.schema.json"
+    if not asset_dir.exists():
+        return 0
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 - report as a baseline failure
+        errors.append(f"{schema_path.relative_to(ROOT)}: cannot read asset schema: {exc}")
+        return 0
+
+    manifests = sorted(asset_dir.glob("*.manifest.json"))
+    resources = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "Resources"
+    for path in manifests:
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001 - report every manifest together
+            errors.append(f"{path.relative_to(ROOT)}: invalid JSON: {exc}")
+            continue
+        for error in Draft202012Validator(schema).iter_errors(manifest):
+            location = ".".join(str(item) for item in error.absolute_path)
+            errors.append(f"{path.relative_to(ROOT)}: asset manifest {location}: {error.message}")
+        for artifact in manifest.get("artifacts", []):
+            uri = str(artifact.get("uri", ""))
+            if not uri.startswith("bundle://"):
+                continue
+            resource = resources / uri.removeprefix("bundle://")
+            if not resource.exists():
+                errors.append(f"{path.relative_to(ROOT)}: missing bundle artifact {uri}")
+                continue
+            digest = hashlib.sha256(resource.read_bytes()).hexdigest()
+            expected = artifact.get("sha256")
+            if expected != f"sha256:{digest}":
+                errors.append(f"{path.relative_to(ROOT)}: artifact hash mismatch for {uri}")
+            if manifest.get("integrity", {}).get("source_sha256") != f"sha256:{digest}":
+                errors.append(f"{path.relative_to(ROOT)}: source hash mismatch for {uri}")
+        if manifest.get("release_status") == "approved" and manifest.get("integrity", {}).get("manifest_sha256", "").endswith("0" * 64):
+            errors.append(f"{path.relative_to(ROOT)}: approved manifest cannot use a zero manifest hash")
+    return len(manifests)
+
+
 def _check_retired_material(errors: list[str]) -> None:
     for retired in (ROOT / "docs" / "features", ROOT / "docs" / "plans"):
         if retired.exists():
@@ -197,6 +240,7 @@ def main() -> int:
     errors: list[str] = []
     markdown_count, checked_links = _check_markdown(errors)
     schema_count, path_count, openapi_schema_count = _check_contracts(errors)
+    asset_manifest_count = _check_asset_manifests(errors)
     _check_retired_material(errors)
     _check_prohibited_sources(errors)
     _check_pydantic_ai_pin(errors)
@@ -212,7 +256,7 @@ def main() -> int:
         "baseline_checks=passed "
         f"markdown_files={markdown_count} checked_links={checked_links} "
         f"json_schemas={schema_count} openapi_paths={path_count} "
-        f"openapi_schemas={openapi_schema_count} prohibited_source_matches=0"
+        f"openapi_schemas={openapi_schema_count} asset_manifests={asset_manifest_count} prohibited_source_matches=0"
     )
     return 0
 

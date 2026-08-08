@@ -2,7 +2,7 @@ import BodyCompanionIOS
 import SwiftUI
 
 @main
-struct BodyCompanionPrototype: App {
+struct BodyCompanionPrototypeApp: App {
     var body: some Scene {
         WindowGroup {
             AppShell()
