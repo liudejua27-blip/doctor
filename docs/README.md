@@ -45,6 +45,7 @@ flowchart TD
     J --> P["FEAT-BODY-MAP-V1 2D/3D 纵向切片"]
     P --> V["FEAT-BODY-MAP-V2 RehabMate 原生行为等价"]
     V --> Q["TEST-BODY-MAP-V2 行为等价测试"]
+    Q --> X["EVIDENCE-DEVICE-01 真机与资产审核证据"]
     P --> W["TEST-BODY-MAP-V1 身体定位测试"]
     P --> T["BODY-ASSET-01 资产来源与哈希"]
 ```
@@ -58,6 +59,7 @@ flowchart TD
 - [BODY-ASSET-01 候选人体显示资产来源与哈希](21_BODY_ASSET_PROVENANCE.md)：项目自生成候选模型的来源、哈希、清单和进入生产所需证据。
 - [FEAT-BODY-MAP-V2 RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md)：Zone/Pin、焦点、摘要编辑、20 个 Pin 上限和安全语义适配。
 - [TEST-BODY-MAP-V2 原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)：状态、回退、无障碍、性能和供应链门禁。
+- [EVIDENCE-DEVICE-01 真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md)：本轮设备可用性、Sheet/VoiceOver/Dynamic Type/Reduce Motion、3D 性能、碰撞命中和候选资产审核结果；Blocked 不得外推为通过。
 
 实现入口：
 
@@ -90,8 +92,9 @@ flowchart TD
 | FEAT-BODY-MAP-V1 | [全身 2D 与原生 3D 定位纵向切片](19_BODY_MAP_PRODUCTION_SLICE.md) | 当前 2D/3D 身体定位实施范围、状态、契约和发布边界 | Active implementation spec |
 | TEST-BODY-MAP-V1 | [2D/3D 身体定位测试计划](20_BODY_MAP_TEST_PLAN.md) | 身体区域、跨视图、回退、资产和无障碍测试门禁 | Draft / implementation in progress |
 | BODY-ASSET-01 | [候选人体显示资产来源与哈希](21_BODY_ASSET_PROVENANCE.md) | 候选 USDZ 的来源、哈希、权利与批准前门禁 | Candidate / production blocked |
-| FEAT-BODY-MAP-V2 | [RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md) | Zone/Pin、焦点、摘要编辑、窄屏 Sheet 和反馈的原生重写边界 | V2.1 automated slice implemented / device pending |
-| TEST-BODY-MAP-V2 | [原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) | 行为状态、回退、无障碍和供应链测试 | Automated slice implemented / device pending |
+| FEAT-BODY-MAP-V2 | [RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md) | Zone/Pin、焦点、摘要编辑、窄屏 Sheet 和反馈的原生重写边界 | V2.1 automated slice implemented / device run blocked |
+| TEST-BODY-MAP-V2 | [原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) | 行为状态、回退、无障碍和供应链测试 | Automated slice implemented / device run blocked |
+| EVIDENCE-DEVICE-01 | [真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md) | 真机可用性、无障碍、3D 性能、碰撞命中和候选资产生产审核 | Attempted / blocked pending device and signed app target |
 
 ## 机器可读契约
 

@@ -3,12 +3,12 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-01 |
-| 版本 | 2.1.0 |
+| 版本 | 2.2.0 |
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
 | 快照日期 | 2026-08-08 |
 | 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；PR #4 合并提交 `2bb8e8a`；复刻切片提交 `6f232b4`、证据绑定提交 `f6a6d5b`；此前基线 `0fa2a17` 由 PR #1/#2 复验 |
-| 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证 |
+| 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证；本轮设备审计见 `EVIDENCE-DEVICE-01` |
 
 ## 1. 证据解释
 
@@ -33,6 +33,7 @@
 | EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 与 PR #4 已合并 | 证明远端设置和两次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 | EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
+| EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核尝试 | Xcode 26.6；`discover_projs` 找到 0 个 Xcode project/workspace；两部登记 iPhone 为 Offline/unavailable；iOS device/simulator SDK 编译通过；USDZ `usdchecker`/ZIP 通过且 SHA 一致；静态审计发现 CollisionGroup、triangle/barycentric、下背实体和导出根变换仍需处理 | 证明设备与可运行 App target 的阻塞原因、候选文件结构完整性和代码风险；不证明 Sheet、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
 
 ## 3. 当前已证明
 
