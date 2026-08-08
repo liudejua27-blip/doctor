@@ -52,12 +52,12 @@
 
 | NFR | 当前状态 | 仍缺证据 |
 |---|---|---|
-| NFR-PERF-001 首次可交互 | 只有 Core/metadata 样机 | 最低设备冷启动和资源加载 |
-| NFR-PERF-002 高亮延迟 | 未真机验证 | p95 触控/命中 signpost |
-| NFR-PERF-003 3D 帧率 | 未真机验证 | 默认资产最低设备持续交互 |
+| NFR-PERF-001 首次可交互 | 只有 Core/metadata 样机；EVIDENCE-DEVICE-01 真机执行被设备/App target 阻塞 | 最低设备冷启动和资源加载 |
+| NFR-PERF-002 高亮延迟 | 未真机验证；EVIDENCE-DEVICE-01 记录无 signpost/设备阻塞 | p95 触控/命中 signpost |
+| NFR-PERF-003 3D 帧率 | 未真机验证；候选 manifest performance=pending | 默认资产最低设备持续交互 |
 | NFR-REL-001 草稿恢复 | CryptoKit/内存样机 | Keychain、文件、杀进程、后台同步 |
 | NFR-REL-002 幂等/事务 | 进程内/fake repository 样机 | PostgreSQL、跨实例、崩溃恢复、read-back |
-| NFR-A11Y-001 等价路径 | 2D/列表设计存在 | VoiceOver、Dynamic Type、Reduce Motion 真机 |
+| NFR-A11Y-001 等价路径 | 2D/列表设计存在；EVIDENCE-DEVICE-01 记录真机执行阻塞 | VoiceOver、Dynamic Type、Reduce Motion 真机 |
 | NFR-PRIV-001 最小数据 | typed scope 与禁日志规范 | 真实 Consent、Provider、遥测审计 |
 | NFR-COMP-001 契约兼容 | OpenAPI/16 schemas、Markdown 和禁止引用已有版本化检查器及 CI job | 生成客户端、相邻版本兼容和首次远端 CI 证据 |
 
@@ -78,7 +78,7 @@
 
 | assetId/version | 模式 | 作者链/许可 | anatomyMap | golden hit set | 性能/无障碍 | 状态 |
 |---|---|---|---|---|---|---|
-| [`body-neutral-procedural-v1@1.1.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata | 未测真机 | Candidate / internal only |
+| [`body-neutral-procedural-v1@1.1.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata；下背/根变换/碰撞待复核 | 未测真机 | Candidate / internal only |
 | `TBD-professional` | 专业 3D | 未取得 | TBD | TBD | TBD | Blocked P1 |
 
 RehabMate `body.glb` 不得进入生产候选。任何 `TBD`、candidate、未知/撤回权利或缺少真实文件签名的资产都必须回退 2D/列表。

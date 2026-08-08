@@ -43,3 +43,9 @@
 6. 签名清单、文件哈希读回、撤回/回滚和 2D/列表 fail-closed 验收。
 
 未完成上述证据时，`GATE-06`、`GATE-07` 和全球发布门禁仍保持未关闭。
+
+## 5. 2026-08-08 设备与候选资产审核读回
+
+本轮记录见 [EVIDENCE-DEVICE-01](24_DEVICE_VALIDATION_EVIDENCE.md)。USDZ 容器可由 `usdcat`/`usdchecker` 读取，ZIP 内容和 Bundle SHA-256 与清单一致；这只证明文件结构和完整性，不证明 RealityKit 视觉、碰撞、解剖或设备性能。两部登记 iPhone 均 Offline/unavailable，仓库也没有可签名 iOS App target，因此真机性能、VoiceOver、Dynamic Type、Reduce Motion 和黄金点命中均保持未测。
+
+审核还发现候选 USD 根层有 `xformOp:rotateXYZ = (-90, 0, 0)`，清单却声明 identity canonical transform；模型缺少 `body_lower_back` 分段实体，且当前 loader 尚未实现独立 CollisionGroup 与 triangle/barycentric 命中证据。这些事项必须由资产/iOS/QA/解剖审核共同关闭，不能通过改写 `release_status` 绕过。

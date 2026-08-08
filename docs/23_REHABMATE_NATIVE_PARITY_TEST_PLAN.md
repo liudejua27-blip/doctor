@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / V2.1 automated slice implemented / device evidence pending |
+| 状态 | Active implementation spec / V2.1 automated slice implemented / device run blocked |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -72,4 +72,4 @@
 
 每次运行记录：commit SHA、设备/系统、资产 ID/版本、测试 ID、耗时/帧率/内存、失败类别、是否回退、是否生成健康数据（必须为否）和复核人。不要记录原始对话、用户身体内容或完整截图中的个人信息。
 
-当前结果在 [EVIDENCE-01](16_EXECUTION_EVIDENCE.md) 和 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md) 更新；本地 Core 绿色不等于真机、临床、隐私或生产通过。
+当前结果在 [EVIDENCE-01](16_EXECUTION_EVIDENCE.md)、[EVIDENCE-DEVICE-01](24_DEVICE_VALIDATION_EVIDENCE.md) 和 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md) 更新；本地 Core 绿色不等于真机、临床、隐私或生产通过。设备不可用时，必须把维度标为 `Blocked/Pending`，不得用 Simulator 或 SDK 编译替代真机证据。
