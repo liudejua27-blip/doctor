@@ -90,7 +90,7 @@ flowchart TD
 | FEAT-BODY-MAP-V1 | [全身 2D 与原生 3D 定位纵向切片](19_BODY_MAP_PRODUCTION_SLICE.md) | 当前 2D/3D 身体定位实施范围、状态、契约和发布边界 | Active implementation spec |
 | TEST-BODY-MAP-V1 | [2D/3D 身体定位测试计划](20_BODY_MAP_TEST_PLAN.md) | 身体区域、跨视图、回退、资产和无障碍测试门禁 | Draft / implementation in progress |
 | BODY-ASSET-01 | [候选人体显示资产来源与哈希](21_BODY_ASSET_PROVENANCE.md) | 候选 USDZ 的来源、哈希、权利与批准前门禁 | Candidate / production blocked |
-| FEAT-BODY-MAP-V2 | [RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md) | Zone/Pin、焦点、摘要编辑和移动端交互的原生重写边界 | Active implementation spec |
+| FEAT-BODY-MAP-V2 | [RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md) | Zone/Pin、焦点、摘要编辑、窄屏 Sheet 和反馈的原生重写边界 | V2.1 automated slice implemented / device pending |
 | TEST-BODY-MAP-V2 | [原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) | 行为状态、回退、无障碍和供应链测试 | Automated slice implemented / device pending |
 
 ## 机器可读契约

@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | FEAT-BODY-MAP-V2 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.1.0-draft |
 | 状态 | Active implementation spec / Prototype release gate open |
 | 负责人 | iOS + 产品交互 + 3D 资产 |
 | 关联需求 | PRD-F01、PRD-F03A、PRD-F04、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001、NFR-PERF-002 |
@@ -51,6 +51,7 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 5. 在摘要面板中选择一个标记，补充可选感觉、动作线索和 0–10 当前程度，修改或删除；
 6. 在手机窄屏以底部可收起的摘要/编辑区域使用，在大屏以侧栏/内联区域使用；
 7. 3D 不可用时继续使用 2D/部位列表完成相同的未确认位置录入。
+8. 达到 Pin 上限或 3D 回退时看到可读、可被 VoiceOver 读出的即时反馈，不需要猜测“为什么没有新增”。
 
 ### 3.2 验收标准
 
@@ -66,6 +67,9 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | BODY-V2-AC-008 | Given 用户填写 0–10 程度，When 修改并离开编辑器，Then 仅更新未确认 `BodyMark`；没有确认动作不能创建正式 Event。 |
 | BODY-V2-AC-009 | Given VoiceOver、Dynamic Type 或 Reduce Motion，When 完成位置选择，Then 不依赖 3D 动画或颜色，列表、文字状态和固定控件提供等价路径。 |
 | BODY-V2-AC-010 | Given 资产 gate 未通过，When 请求 3D，Then 不读取生产模型，显示候选/回退状态并保持安全入口。 |
+| BODY-V2-AC-011 | Given 窄屏选中一个 mark，When 打开编辑，Then 使用系统 Sheet/Detent 展示编辑器；大屏保持内联编辑；删除或清空后 Sheet 安全关闭。 |
+| BODY-V2-AC-012 | Given Pin 已达到 20 个或 3D 发生回退，When 用户再次操作，Then 显示明确原因，VoiceOver 能读出，且不丢失已有未确认 marks。 |
+| BODY-V2-AC-013 | Given 用户切换 2D/3D 或编辑 mark，When 状态投影到 Signal Intake，Then 每个用户动作只产生一次草稿修订，不重复写入同一位置/感觉。 |
 
 ## 4. 客户端状态契约
 
@@ -112,6 +116,8 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 - 不提供默认感觉；`0` 表示用户明确选择“当前无明显程度”，空值表示尚未回答。
 - 删除只删除当前未确认 marker；清空需要显式按钮，不能由误触手势触发。
 - 摘要面板窄屏使用系统 Sheet/Detent 语义，不能以不可聚焦的自绘区域替代按钮。
+- 窄屏选中 mark 后自动打开系统编辑 Sheet；Sheet 只镜像 `BodyMapModel`，关闭后不产生确认或正式 Event。
+- Pin 上限、3D 回退和无稳定命中必须以固定文本反馈；反馈不能使用“安全”“缓解”等医疗语义。
 
 ## 6. 失败、离线与无障碍
 
@@ -150,3 +156,4 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | 日期 | 变更 |
 |---|---|
 | 2026-08-08 | 根据锁定的 RehabMate commit 建立原生行为等价切片；明确视觉状态不等于缓解，不复制 Web/算法/资产 |
+| 2026-08-08 | V2.1 补齐窄屏系统 Sheet、上限/回退反馈和单次草稿投影验收；不改变 BodyMark 未确认语义 |
