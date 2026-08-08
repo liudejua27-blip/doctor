@@ -7,7 +7,7 @@
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
 | 快照日期 | 2026-08-08 |
-| 对应 Git | `codex/initial-git-ci-baseline`；本轮复刻切片提交 `6f232b4`（本地）；此前受保护默认分支基线 `0fa2a17` 由 PR #1/#2 复验 |
+| 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；PR #4 合并提交 `2bb8e8a`；复刻切片提交 `6f232b4`、证据绑定提交 `f6a6d5b`；此前基线 `0fa2a17` 由 PR #1/#2 复验 |
 | 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证 |
 
 ## 1. 证据解释
@@ -28,9 +28,9 @@
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
 | EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
-| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA | PR #1 合并后的 GitHub Actions 运行 `31234382019` 成功，job `93044139777`（Backend and contracts）和 `93044139749`（iOS Swift package）均成功；PR #2 的 required checks 与合并后 CI 也成功 |
+| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA | PR #4 分支检查和合并后默认分支 run `31235844592` 均成功；合并后 job `93048054758`（Backend and contracts）和 `93048054776`（iOS Swift package）均成功 |
 | EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `299d896513a8c7ef7e5d584495c9bc5ba78505da5f20c9dc2b50e0ef9d7e5668`；1.1.0 清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
-| EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 已合并 | 证明远端设置和一次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
+| EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 与 PR #4 已合并 | 证明远端设置和两次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 
 ## 3. 当前已证明
@@ -50,7 +50,7 @@
 
 ### PARTIAL-EV-001 远端 CI 与保护分支
 
-本地 `codex/` 分支、首个提交、Python 3.11 约束和 CI workflow 已建立；`origin` 已配置，PR #1 已合并到受保护默认分支提交 `9e0314d`，合并后两个 CI job 成功；后续变更仍必须复用该 PR/required-check 路径。
+本地 `codex/` 分支、首个提交、Python 3.11 约束和 CI workflow 已建立；`origin` 已配置，PR #4 已合并到受保护默认分支提交 `2bb8e8a`，合并后两个 CI job 成功；后续变更仍必须复用该 PR/required-check 路径。
 
 ## 5. 不得外推
 
