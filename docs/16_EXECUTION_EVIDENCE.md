@@ -20,17 +20,18 @@
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=49 checked_links=265 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=51 checked_links=280 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `55 tests, 0 failures` | Swift Core 样机；不证明真机/签名/生产资产 |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `64 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 状态和 typed draft 投影测试；不证明真机/签名/生产资产 |
 | EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `189 passed` | 后端合成/内存样机全量绿色；不证明生产依赖 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
 | EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
 | EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA | PR #1 合并后的 GitHub Actions 运行 `31234382019` 成功，job `93044139777`（Backend and contracts）和 `93044139749`（iOS Swift package）均成功；PR #2 的 required checks 与合并后 CI 也成功 |
-| EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `81171745e8813838376959e0910b2242c9bab422a42342c882ac8747ef5afe17`；清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
+| EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `299d896513a8c7ef7e5d584495c9bc5ba78505da5f20c9dc2b50e0ef9d7e5668`；1.1.0 清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
 | EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 已合并 | 证明远端设置和一次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
+| EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 
 ## 3. 当前已证明
 

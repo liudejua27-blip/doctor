@@ -19,7 +19,7 @@
 
 | 能力组 | 当前实现 | 已证明 | 未证明/保持关闭 |
 |---|---|---|---|
-| iOS 身体位置 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单 | 位置身份不随视图改变；禁止保存世界坐标；全身区域目录、命中、列表路径、原生 iOS 编译有证据 | 生产资产权利、真机命中、视觉/解剖准确性、生产性能 |
+| iOS 身体位置 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、RehabMate 行为等价的 Zone/Pin/摘要状态 | 位置身份不随视图改变；禁止保存世界坐标；全身区域目录、命中、列表路径、原生 iOS 编译有证据；V2 Core 状态规则有单元测试 | 生产资产权利、真机命中、视觉/解剖准确性、生产性能、完整移动端 Sheet |
 | 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；内部 prototype 可显式展示候选状态 | 真实生产文件哈希/签名、商用权、App Store 分发、解剖与性能 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系 | 未确认事实不会静默升级；显式未知和安全回退存在 | 真实用户 30 秒完成率、公开 API 联调、生产持久化 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机 | 所有者隔离、篡改失败、幂等/冲突状态 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |
@@ -50,10 +50,10 @@
 
 | 检查 | 当前结果 | 解释 |
 |---|---|---|
-| Markdown | 49 files、0 断链、0 尾随空白 | 只证明清理后的文档结构完整 |
+| Markdown | 51 files、0 断链、0 尾随空白 | 只证明清理后的文档结构完整 |
 | JSON Schema | 16 个可解析 | 只证明 Schema 结构有效 |
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
-| iOS Swift | 55 tests、0 failures；iOS `BodyCompanionIOS` 与 prototype generic build 绿色 | 只证明 Core/原生适配器可编译和合成样机 |
+| iOS Swift | 64 tests、0 failures；iOS `BodyCompanionIOS` 与 prototype generic build 绿色 | 只证明 Core/原生适配器可编译和合成样机 |
 | 后端 Python | 189 tests、0 failures；P2A 聚焦 19 tests | 受控时钟回归已修复；只证明合成/内存样机 |
 | Git/CI | `codex/initial-git-ci-baseline` 受保护默认分支；产品代码基线 `0fa2a17`；双作业 workflow；Python 3.11 constraints | 本地可追溯基线、GitHub Actions、分支保护和 PR #1/#2 合并路径已验证 |
 
@@ -72,4 +72,4 @@ ADR、核心规范、机器契约、许可证/资产边界和实际测试代码�
 
 按 REL-01 顺序执行：先把现有 workflow 推到远端并建立必需状态检查/保护分支，再关闭责任/地区、临床安全、Provider、身份同意数据库、真实资产与客户端、公开纵向联调、真实用户/设备验证门禁。
 
-当前实施入口为 [FEAT-BODY-MAP-V1](19_BODY_MAP_PRODUCTION_SLICE.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md) 和 [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)。
+当前实施入口为 [FEAT-BODY-MAP-V1](19_BODY_MAP_PRODUCTION_SLICE.md)、[FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md)、[TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) 和 [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)。

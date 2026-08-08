@@ -36,6 +36,29 @@ public struct BodyMapScreen: View {
                 .pickerStyle(.segmented)
                 .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
 
+                Picker("标记方式", selection: Binding(
+                    get: { model.markingMode },
+                    set: { model.markingMode = $0 }
+                )) {
+                    ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
+
+                if model.markingMode == .pin {
+                    HStack(spacing: 4) {
+                        Label("针点", systemImage: "mappin.and.ellipse")
+                        Text(String(model.pinCount))
+                        Text("/")
+                        Text(String(BodyMapModel.maximumPinCount))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(model.pinCount >= BodyMapModel.maximumPinCount ? .orange : .secondary)
+                    .accessibilityLabel("针点数量 " + String(model.pinCount) + "，最多 " + String(BodyMapModel.maximumPinCount) + " 个")
+                }
+
                 modeContent
 
                 Text("标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
@@ -43,8 +66,8 @@ public struct BodyMapScreen: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("位置说明：标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
 
-                if !model.markerDrafts.isEmpty {
-                    DraftMarkerList(model: model, onLocationsChanged: onLocationsChanged)
+                if !model.marks.isEmpty {
+                    MarkSummaryPanel(model: model)
 
                     NavigationLink(value: AppRoute.intake) {
                         Label("继续填写结构化描述", systemImage: "list.clipboard")
@@ -55,13 +78,18 @@ public struct BodyMapScreen: View {
             .padding()
         }
         .navigationTitle("记录身体信号")
+        .onChange(of: model.marks) { _, _ in
+            // The parent adapter can project the latest user-edited mark
+            // descriptors into typed intake without treating them as saved.
+            onLocationsChanged(model.markerDrafts)
+        }
     }
 
     @ViewBuilder
     private var modeContent: some View {
         switch model.mode {
         case .twoD:
-            BodyMap2DView(model: model, onLocationsChanged: onLocationsChanged)
+            BodyMap2DView(model: model)
         case .threeD:
             if case .loading = model.loadState {
                 ProgressView("加载原生 3D…")
@@ -92,10 +120,28 @@ public struct BodyMapScreen: View {
                     }
                     .pickerStyle(.segmented)
 
+                    if let focusedRegionID = model.focusedRegionID {
+                        HStack(spacing: 8) {
+                            Label("正在查看：\(focusedRegionID)", systemImage: "scope")
+                                .font(.caption)
+                                .lineLimit(1)
+                            Spacer()
+                            Button("返回全身") {
+                                model.focus(regionID: nil)
+                            }
+                            .buttonStyle(.bordered)
+                            .frame(minHeight: 44)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("正在聚焦\(focusedRegionID)，可返回全身")
+                    }
+
                     BodySceneView(
                         allowsPrototypeCandidate: prototype3DEnabled,
                         cameraPreset: cameraPreset,
-                        markers: model.markerDrafts,
+                        marks: model.marks,
+                        focusedRegionID: model.focusedRegionID,
+                        selectedMarkID: model.selectedMarkID,
                         onReady: { model.mark3DReady() },
                         onFailure: { model.mark3DFailed($0) },
                         onHitEvidence: { evidence in
@@ -107,12 +153,17 @@ public struct BodyMapScreen: View {
                                       surface: option.surface,
                                       depth: option.depth
                                   ) else { return }
-                            model.select(location)
-                            onLocationsChanged(model.markerDrafts)
+                            let mutation = model.applySelection(location)
+                            if mutation == .rejectedPinLimit {
+                                return
+                            }
+                        },
+                        onMarkerTapped: { id in
+                            model.selectMark(id: id)
                         }
                     )
                     .frame(minHeight: 320)
-                    .accessibilityLabel("原生 3D 身体地图；可拖动旋转、双指缩放并轻点部位。若不可用，可切换到 2D 或部位列表。")
+                    .accessibilityLabel("原生 3D 身体地图；可拖动旋转、双指缩放并轻点部位。当前为\(model.markingMode.displayName)模式。若不可用，可切换到 2D 或部位列表。")
                 }
             }
         }
@@ -121,7 +172,6 @@ public struct BodyMapScreen: View {
 
 private struct BodyMap2DView: View {
     let model: BodyMapModel
-    let onLocationsChanged: ([BodyLocation]) -> Void
 
     var body: some View {
         VStack(spacing: 12) {
@@ -131,17 +181,22 @@ private struct BodyMap2DView: View {
             }
             .pickerStyle(.segmented)
 
-            BodyMapCanvas(view: model.view, markers: model.markerDrafts) { point in
+            BodyMapCanvas(view: model.view, marks: model.marks) { point in
                 guard let option = BodyRegionCatalog.hitTest(point: point, view: model.view) else { return }
                 select(option: option, point: point, source: .bodyMap2D)
             }
             .frame(maxWidth: .infinity)
 
-            AccessibleRegionPicker(model: model, onLocationsChanged: onLocationsChanged)
+            AccessibleRegionPicker(model: model)
         }
     }
 
     private func select(option: BodyRegionOption, point: Point2D?, source: BodyMapSource) {
+        if model.markingMode == .pin,
+           let point,
+           model.selectExistingPin(at: point, view: model.view) {
+            return
+        }
         let selection = BodyRegionSelection(
             regionID: option.regionID,
             laterality: option.laterality,
@@ -152,14 +207,13 @@ private struct BodyMap2DView: View {
             point: point,
             userLabel: option.label
         )
-        model.select(BodyLocationMapper.from2D(selection))
-        onLocationsChanged(model.markerDrafts)
+        _ = model.applySelection(BodyLocationMapper.from2D(selection))
     }
 }
 
 private struct BodyMapCanvas: View {
     let view: BodyMapView
-    let markers: [BodyLocation]
+    let marks: [BodyMark]
     let onSelect: (Point2D) -> Void
 
     var body: some View {
@@ -186,12 +240,24 @@ private struct BodyMapCanvas: View {
                     }
                 }
 
-                ForEach(markers) { marker in
-                    if let anchor = marker.anchor2D, anchor.view == view, let point = anchor.point {
+                ForEach(marks.filter { $0.kind == .zone && $0.isVisible }) { mark in
+                    if let option = BodyRegionCatalog.option(regionID: mark.location.regionID, laterality: mark.location.laterality),
+                       let geometry = option.geometry(for: view) {
+                        BodyRegionHitShape(geometry: geometry)
+                            .fill(mark.zoneVisualState == .reviewing ? Color.orange.opacity(0.30) : Color.teal.opacity(0.30))
+                            .overlay(BodyRegionHitShape(geometry: geometry).stroke(Color.white.opacity(0.9), lineWidth: 2))
+                            .frame(width: canvasSize.width, height: canvasSize.height)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
+
+                ForEach(marks.filter(\.isVisible)) { mark in
+                    if let anchor = mark.location.anchor2D, anchor.view == view, let point = anchor.point {
                         Circle()
-                            .fill(Color.red)
+                            .fill(mark.kind == .zone ? (mark.zoneVisualState == .reviewing ? Color.orange : Color.teal) : pinColor(mark.colorToken))
                             .overlay(Circle().stroke(.white, lineWidth: 2))
-                            .frame(width: 16, height: 16)
+                            .frame(width: mark.kind == .zone ? 20 : 16, height: mark.kind == .zone ? 20 : 16)
                             .position(x: point.x * canvasSize.width, y: point.y * canvasSize.height)
                             .accessibilityHidden(true)
                     }
@@ -226,6 +292,11 @@ private struct BodyMapCanvas: View {
             .accessibilityHint("轻点你感到不适的大致区域，或向下使用部位列表以精确选择。")
         }
         .frame(height: 520)
+    }
+
+    private func pinColor(_ token: Int) -> Color {
+        let colors: [Color] = [.red, .blue, .orange, .purple, .green, .pink, .teal, .indigo, .yellow, .cyan, .mint, .brown]
+        return colors[abs(token) % colors.count]
     }
 }
 
@@ -296,7 +367,6 @@ private struct BodyRegionHitShape: Shape {
 
 private struct AccessibleRegionPicker: View {
     let model: BodyMapModel
-    let onLocationsChanged: ([BodyLocation]) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -315,10 +385,12 @@ private struct AccessibleRegionPicker: View {
                         depth: option.depth,
                         source: .bodyPartSearch,
                         view: model.view,
+                        point: model.markingMode == .pin
+                            ? option.geometry(for: model.view)?.representativePoint
+                            : nil,
                         userLabel: option.label
                     )
-                    model.select(BodyLocationMapper.from2D(selection))
-                    onLocationsChanged(model.markerDrafts)
+                    _ = model.applySelection(BodyLocationMapper.from2D(selection))
                 } label: {
                     HStack {
                         Text(option.label)
@@ -338,27 +410,164 @@ private struct AccessibleRegionPicker: View {
     }
 }
 
-private struct DraftMarkerList: View {
+private struct MarkSummaryPanel: View {
     let model: BodyMapModel
-    let onLocationsChanged: ([BodyLocation]) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("待确认位置")
-                .font(.headline)
-            ForEach(model.markerDrafts) { marker in
-                HStack {
-                    Text(marker.userLabel ?? marker.regionID)
-                    Spacer()
-                    Button("删除") {
-                        model.removeDraft(id: marker.id)
-                        onLocationsChanged(model.markerDrafts)
-                    }
-                    .frame(minHeight: 44)
+            HStack {
+                Text("待确认标记（\(model.marks.count)）")
+                    .font(.headline)
+                Spacer()
+                Button("清空") {
+                    model.clearMarkers()
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("待确认位置：\(marker.userLabel ?? marker.regionID)")
+                .buttonStyle(.bordered)
+                .frame(minHeight: 44)
+                .disabled(model.marks.isEmpty)
+            }
+
+            ForEach(model.marks) { mark in
+                HStack(spacing: 10) {
+                    Button {
+                        model.selectMark(id: mark.id)
+                    } label: {
+                        HStack(spacing: 10) {
+                        Image(systemName: mark.kind == .zone ? "square.dashed" : "mappin.circle.fill")
+                            .foregroundStyle(mark.kind == .zone ? .teal : pinColor(mark.colorToken))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(mark.displayLabel)
+                                .font(.body.weight(.semibold))
+                            Text(summary(for: mark))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                        Spacer()
+                        if mark.id == model.selectedMarkID {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.tint)
+                        }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(mark.kind.displayName)：\(mark.displayLabel)，\(summary(for: mark))")
+
+                    Button {
+                        model.removeDraft(id: mark.id)
+                    } label: {
+                        Image(systemName: "trash")
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("删除\(mark.displayLabel)")
+                }
+                .padding(10)
+                .background(mark.id == model.selectedMarkID ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+            }
+
+            if let selected = model.selectedMark() {
+                MarkEditor(model: model, mark: selected)
             }
         }
+    }
+
+    private func summary(for mark: BodyMark) -> String {
+        var parts = [mark.kind.displayName]
+        if mark.kind == .zone { parts.append(mark.zoneVisualState.displayName) }
+        if let sensation = mark.sensation { parts.append(sensation.displayName) }
+        if let intensity = mark.intensity { parts.append("程度 \(intensity)/10") }
+        if !mark.triggers.isEmpty {
+            parts.append(mark.triggers.sorted { $0.rawValue < $1.rawValue }.map(\.displayName).joined(separator: "、"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func pinColor(_ token: Int) -> Color {
+        let colors: [Color] = [.red, .blue, .orange, .purple, .green, .pink, .teal, .indigo, .yellow, .cyan, .mint, .brown]
+        return colors[abs(token) % colors.count]
+    }
+}
+
+private struct MarkEditor: View {
+    let model: BodyMapModel
+    let mark: BodyMark
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("编辑\(mark.kind.displayName)")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if mark.kind == .zone {
+                    Button {
+                        _ = model.toggleZone(mark.location)
+                    } label: {
+                        Label(mark.zoneVisualState.displayName, systemImage: "circle.lefthalf.filled")
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(minHeight: 44)
+                }
+            }
+
+            Text("感觉（可选；不填写不会自动猜测）")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 8)], spacing: 8) {
+                ForEach(BodyMarkSensation.allCases, id: \.self) { sensation in
+                    Button {
+                        _ = model.setSensation(mark.sensation == sensation ? nil : sensation, for: mark.id)
+                    } label: {
+                        Text(sensation.displayName)
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(mark.sensation == sensation ? .accentColor : .secondary)
+                    .accessibilityLabel("感觉\(sensation.displayName)")
+                }
+            }
+
+            Text("动作/功能线索（可选）")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 8)], spacing: 8) {
+                ForEach(BodyMarkTrigger.allCases, id: \.self) { trigger in
+                    Button {
+                        _ = model.toggleTrigger(trigger, for: mark.id)
+                    } label: {
+                        Text(trigger.displayName)
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(mark.triggers.contains(trigger) ? .orange : .secondary)
+                }
+            }
+
+            HStack {
+                Text("当前程度")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Text(mark.intensity.map { "\($0)/10" } ?? "未填写")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+            Slider(
+                value: Binding(
+                    get: { Double(mark.intensity ?? 0) },
+                    set: { _ = model.setIntensity(Int($0.rounded()), for: mark.id) }
+                ),
+                in: 0...10,
+                step: 1
+            )
+            .accessibilityValue(mark.intensity.map { "\($0)/10" } ?? "未填写")
+            Button("清除程度") {
+                _ = model.setIntensity(nil, for: mark.id)
+            }
+            .buttonStyle(.borderless)
+            .frame(minHeight: 44)
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
     }
 }

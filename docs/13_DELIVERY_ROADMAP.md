@@ -26,7 +26,7 @@
 ≠ clinically safe
 ```
 
-当前正在实施的 `FEAT-BODY-MAP-V1` 只把全身 2D、列表和内部 prototype 3D 定位推进到可验证纵向切片；它不会关闭 GATE-06 的真实资产、解剖、性能、无障碍或生产发布门禁。
+当前正在实施的 `FEAT-BODY-MAP-V1` 与 `FEAT-BODY-MAP-V2` 把全身 2D、列表、内部 prototype 3D 和 RehabMate 行为等价推进到可验证纵向切片；它们不会关闭 GATE-06 的真实资产、解剖、性能、无障碍或生产发布门禁。
 
 ## 2. 首发闭环
 
@@ -99,7 +99,7 @@
 - 实现 Keychain、Data Protection、文件 durability、后台同步和删除清理。
 - 完成最低设备性能、VoiceOver、Dynamic Type、Reduce Motion、杀进程/重启恢复。
 
-`FEAT-BODY-MAP-V1` 可以在门禁关闭前使用本项目原创的内部候选模型验证 RealityKit 交互，但必须显示 prototype 状态并保持生产能力开关关闭；候选模型不等于 `approved` 资产。
+`FEAT-BODY-MAP-V1/V2` 可以在门禁关闭前使用本项目原创的内部候选模型验证 RealityKit 交互，但必须显示 prototype 状态并保持生产能力开关关闭；候选模型不等于 `approved` 资产。
 
 退出条件：真实默认资产和目标设备通过法务、解剖、性能、无障碍与恢复门禁。
 

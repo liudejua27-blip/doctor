@@ -7,6 +7,16 @@ public enum BodyRegionGeometry: Hashable, Sendable {
     case ellipse(center: Point2D, radius: Point2D)
     case rectangle(origin: Point2D, size: Point2D)
 
+    /// A deterministic, non-clinical point used only when an accessibility
+    /// list selects a broad region while the map is in Pin mode.
+    public var representativePoint: Point2D {
+        switch self {
+        case let .ellipse(center, _): return center
+        case let .rectangle(origin, size):
+            return Point2D(x: origin.x + size.x / 2, y: origin.y + size.y / 2)
+        }
+    }
+
     public func contains(_ point: Point2D) -> Bool {
         switch self {
         case let .ellipse(center, radius):

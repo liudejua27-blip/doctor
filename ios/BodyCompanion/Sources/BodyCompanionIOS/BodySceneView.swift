@@ -23,40 +23,55 @@ public enum BodyCameraPreset: String, CaseIterable, Hashable, Sendable {
     }
 }
 
-/// Native RealityKit adapter. It emits hit evidence only; it never owns a
-/// BodyLocation, Episode, Agent conclusion, or health record.
+/// Native RealityKit adapter. It emits hit evidence and mirrors BodyMark
+/// state; it never owns a BodyLocation, Episode, Agent conclusion, or record.
 public struct BodySceneView: UIViewRepresentable {
     public let allowsPrototypeCandidate: Bool
     public let cameraPreset: BodyCameraPreset
-    public let markers: [BodyLocation]
+    public let marks: [BodyMark]
+    public let focusedRegionID: String?
+    public let selectedMarkID: UUID?
     public let onReady: () -> Void
     public let onFailure: (String) -> Void
     public let onHitEvidence: (BodyHitEvidence) -> Void
+    public let onMarkerTapped: (UUID) -> Void
 
     public init(
         allowsPrototypeCandidate: Bool = false,
         cameraPreset: BodyCameraPreset = .front,
         markers: [BodyLocation] = [],
+        marks: [BodyMark] = [],
+        focusedRegionID: String? = nil,
+        selectedMarkID: UUID? = nil,
         onReady: @escaping () -> Void,
         onFailure: @escaping (String) -> Void,
-        onHitEvidence: @escaping (BodyHitEvidence) -> Void
+        onHitEvidence: @escaping (BodyHitEvidence) -> Void,
+        onMarkerTapped: @escaping (UUID) -> Void = { _ in }
     ) {
         self.allowsPrototypeCandidate = allowsPrototypeCandidate
         self.cameraPreset = cameraPreset
-        self.markers = markers
+        self.marks = marks.isEmpty
+            ? markers.enumerated().map { index, marker in BodyMark(kind: .pin, location: marker, colorToken: index) }
+            : marks
+        self.focusedRegionID = focusedRegionID
+        self.selectedMarkID = selectedMarkID
         self.onReady = onReady
         self.onFailure = onFailure
         self.onHitEvidence = onHitEvidence
+        self.onMarkerTapped = onMarkerTapped
     }
 
     public func makeCoordinator() -> Coordinator {
         Coordinator(
             allowsPrototypeCandidate: allowsPrototypeCandidate,
             cameraPreset: cameraPreset,
-            markers: markers,
+            marks: marks,
+            focusedRegionID: focusedRegionID,
+            selectedMarkID: selectedMarkID,
             onReady: onReady,
             onFailure: onFailure,
-            onHitEvidence: onHitEvidence
+            onHitEvidence: onHitEvidence,
+            onMarkerTapped: onMarkerTapped
         )
     }
 
@@ -70,8 +85,10 @@ public struct BodySceneView: UIViewRepresentable {
 
     public func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.cameraPreset = cameraPreset
-        context.coordinator.syncMarkers(markers)
-        context.coordinator.applyCameraPreset()
+        context.coordinator.focusedRegionID = focusedRegionID
+        context.coordinator.selectedMarkID = selectedMarkID
+        context.coordinator.syncMarks(marks)
+        context.coordinator.applyCameraPresetIfNeeded()
     }
 
     @MainActor
@@ -80,33 +97,53 @@ public struct BodySceneView: UIViewRepresentable {
         private let onReady: () -> Void
         private let onFailure: (String) -> Void
         private let onHitEvidence: (BodyHitEvidence) -> Void
+        private let onMarkerTapped: (UUID) -> Void
         private weak var arView: ARView?
         private var visualRoot: Entity?
         private var camera: PerspectiveCamera?
         private var markerEntities: [UUID: ModelEntity] = [:]
+        private var regionEntities: [String: ModelEntity] = [:]
         private var hasLoaded = false
         private var hasReportedFailure = false
+        private var appliedCameraPreset: BodyCameraPreset?
+        private var appliedFocusedRegionID: String?
         fileprivate var cameraPreset: BodyCameraPreset
+        fileprivate var focusedRegionID: String?
+        fileprivate var selectedMarkID: UUID?
+        private var currentMarks: [BodyMark]
+
+        private static let pinPalette: [UIColor] = [
+            .systemRed, .systemBlue, .systemOrange, .systemPurple, .systemGreen,
+            .systemPink, .systemTeal, .systemIndigo, .systemYellow, .systemCyan,
+            .systemMint, .systemBrown,
+        ]
 
         init(
             allowsPrototypeCandidate: Bool,
             cameraPreset: BodyCameraPreset,
-            markers: [BodyLocation],
+            marks: [BodyMark],
+            focusedRegionID: String?,
+            selectedMarkID: UUID?,
             onReady: @escaping () -> Void,
             onFailure: @escaping (String) -> Void,
-            onHitEvidence: @escaping (BodyHitEvidence) -> Void
+            onHitEvidence: @escaping (BodyHitEvidence) -> Void,
+            onMarkerTapped: @escaping (UUID) -> Void
         ) {
             self.allowsPrototypeCandidate = allowsPrototypeCandidate
             self.cameraPreset = cameraPreset
-            self.currentMarkers = markers
+            self.currentMarks = marks
+            self.focusedRegionID = focusedRegionID
+            self.selectedMarkID = selectedMarkID
             self.onReady = onReady
             self.onFailure = onFailure
             self.onHitEvidence = onHitEvidence
+            self.onMarkerTapped = onMarkerTapped
             super.init()
         }
 
         func attach(to view: ARView) {
             arView = view
+
             let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
             pan.maximumNumberOfTouches = 1
             view.addGestureRecognizer(pan)
@@ -155,56 +192,111 @@ public struct BodySceneView: UIViewRepresentable {
                 arView.scene.addAnchor(cameraAnchor)
                 self.camera = camera
                 self.visualRoot = root
+                indexRegionEntities(from: loaded)
                 self.hasLoaded = true
-                applyCameraPreset()
-                syncMarkers(currentMarkers)
+                applyCameraPresetIfNeeded(force: true)
+                syncMarks(currentMarks)
                 onReady()
             } catch {
                 reportFailure("内部候选 3D 资产加载失败；已回退到 2D")
             }
         }
 
-        private var currentMarkers: [BodyLocation] = []
+        private func indexRegionEntities(from entity: Entity) {
+            if let model = entity as? ModelEntity,
+               let option = BodyRegionCatalog.option(forEntityID: entity.name) {
+                regionEntities[option.id] = model
+            }
+            for child in entity.children {
+                indexRegionEntities(from: child)
+            }
+        }
 
-        func syncMarkers(_ markers: [BodyLocation]) {
-            currentMarkers = markers
+        func syncMarks(_ marks: [BodyMark]) {
+            currentMarks = marks
             guard let root = visualRoot else { return }
 
-            let staleIDs = markerEntities.keys.filter { id in !markers.contains(where: { $0.id == id }) }
+            let visibleMarks = marks.filter(\.isVisible)
+            let staleIDs = markerEntities.keys.filter { id in !visibleMarks.contains(where: { $0.id == id }) }
             for id in staleIDs {
                 markerEntities[id]?.removeFromParent()
                 markerEntities.removeValue(forKey: id)
             }
 
-            for marker in markers {
-                guard let anchor = marker.anchor3D else { continue }
-                if let existing = markerEntities[marker.id] {
-                    existing.position = SIMD3<Float>(Float(anchor.localPosition.x), Float(anchor.localPosition.y), Float(anchor.localPosition.z))
-                    continue
-                }
-                let dot = ModelEntity(
-                    mesh: .generateSphere(radius: 0.025),
-                    materials: [SimpleMaterial(color: .systemRed, isMetallic: false)]
+            for mark in visibleMarks where mark.kind == .pin {
+                guard let anchor = mark.location.anchor3D else { continue }
+                let position = SIMD3<Float>(
+                    Float(anchor.localPosition.x),
+                    Float(anchor.localPosition.y),
+                    Float(anchor.localPosition.z)
                 )
-                dot.name = "marker_\(marker.id.uuidString)"
-                dot.position = SIMD3<Float>(Float(anchor.localPosition.x), Float(anchor.localPosition.y), Float(anchor.localPosition.z))
-                root.addChild(dot)
-                markerEntities[marker.id] = dot
+                let dot: ModelEntity
+                if let existing = markerEntities[mark.id] {
+                    dot = existing
+                } else {
+                    dot = ModelEntity(mesh: .generateSphere(radius: 0.028))
+                    dot.name = "marker_" + mark.id.uuidString
+                    dot.generateCollisionShapes(recursive: true)
+                    root.addChild(dot)
+                    markerEntities[mark.id] = dot
+                }
+                dot.position = position
+                let color = Self.pinPalette[mark.colorToken % Self.pinPalette.count]
+                dot.model?.materials = [
+                    SimpleMaterial(color: mark.id == selectedMarkID ? color.withAlphaComponent(1) : color.withAlphaComponent(0.86), isMetallic: false),
+                ]
+            }
+
+            updateRegionHighlights()
+        }
+
+        private func updateRegionHighlights() {
+            for (key, entity) in regionEntities {
+                let mark = currentMarks.first {
+                    $0.kind == .zone && $0.isVisible &&
+                        "\($0.location.regionID)|\($0.location.laterality.rawValue)" == key
+                }
+                let isFocused = mark?.location.regionID == focusedRegionID
+                let color: UIColor = if mark == nil {
+                    UIColor(red: 0.68, green: 0.78, blue: 0.84, alpha: 1)
+                } else if isFocused {
+                    .systemOrange
+                } else if mark?.zoneVisualState == .reviewing {
+                    .systemYellow
+                } else {
+                    .systemTeal
+                }
+                entity.model?.materials = [SimpleMaterial(color: color, isMetallic: false)]
             }
         }
 
-        func applyCameraPreset() {
+        func applyCameraPresetIfNeeded(force: Bool = false) {
             guard hasLoaded, let camera else { return }
-            let target = SIMD3<Float>(0, 0.9, 0)
+            let focusChanged = appliedFocusedRegionID != focusedRegionID
+            guard force || appliedCameraPreset != cameraPreset || focusChanged else { return }
+            appliedCameraPreset = cameraPreset
+            appliedFocusedRegionID = focusedRegionID
+
+            let target = focusTarget() ?? SIMD3<Float>(0, 0.9, 0)
+            let distance: Float = focusedRegionID == nil ? 2.9 : 1.25
             let position: SIMD3<Float>
             switch cameraPreset {
-            case .front: position = SIMD3<Float>(0, 0.95, 2.9)
-            case .back: position = SIMD3<Float>(0, 0.95, -2.9)
-            case .left: position = SIMD3<Float>(-2.9, 0.95, 0)
-            case .right: position = SIMD3<Float>(2.9, 0.95, 0)
-            case .top: position = SIMD3<Float>(0, 3.2, 0.15)
+            case .front: position = target + SIMD3<Float>(0, 0.08, distance)
+            case .back: position = target + SIMD3<Float>(0, 0.08, -distance)
+            case .left: position = target + SIMD3<Float>(-distance, 0.08, 0)
+            case .right: position = target + SIMD3<Float>(distance, 0.08, 0)
+            case .top: position = target + SIMD3<Float>(0, distance, 0.12)
             }
             camera.look(at: target, from: position, relativeTo: nil)
+            updateRegionHighlights()
+        }
+
+        private func focusTarget() -> SIMD3<Float>? {
+            guard let focusedRegionID else { return nil }
+            guard let match = regionEntities.first(where: { key, _ in key.hasPrefix(focusedRegionID + "|") }) else {
+                return nil
+            }
+            return match.value.position(relativeTo: nil)
         }
 
         @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
@@ -227,19 +319,38 @@ public struct BodySceneView: UIViewRepresentable {
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let view = arView, let root = visualRoot else { return }
             let hits = view.hitTest(gesture.location(in: view), query: .nearest, mask: .all)
-            guard let hit = hits.first, let entityID = stableEntityID(from: hit.entity) else { return }
+            guard let hit = hits.first else { return }
+
+            if let markerID = markerID(from: hit.entity) {
+                onMarkerTapped(markerID)
+                return
+            }
+            guard let entityID = stableEntityID(from: hit.entity) else { return }
 
             let position = root.convert(position: hit.position, from: nil)
-            let normal = simd_length(hit.normal) > 0 ? simd_normalize(root.convert(normal: hit.normal, from: nil)) : SIMD3<Float>(0, 0, 1)
+            let convertedNormal = root.convert(normal: hit.normal, from: nil)
+            let normal = simd_length(convertedNormal) > 0 ? simd_normalize(convertedNormal) : SIMD3<Float>(0, 0, 1)
             onHitEvidence(
                 BodyHitEvidence(
                     entityID: entityID,
                     localPosition: Point3D(x: Double(position.x), y: Double(position.y), z: Double(position.z)),
                     localNormal: Point3D(x: Double(normal.x), y: Double(normal.y), z: Double(normal.z)),
                     assetID: "body-neutral-procedural-v1",
-                    assetVersion: "1.0.0"
+                    assetVersion: "1.1.0"
                 )
             )
+        }
+
+        private func markerID(from entity: Entity) -> UUID? {
+            var current: Entity? = entity
+            while let candidate = current {
+                guard candidate.name.hasPrefix("marker_") else {
+                    current = candidate.parent
+                    continue
+                }
+                return UUID(uuidString: String(candidate.name.dropFirst("marker_".count)))
+            }
+            return nil
         }
 
         private func stableEntityID(from entity: Entity) -> String? {
@@ -274,18 +385,18 @@ public enum BodyCameraPreset: String, CaseIterable, Hashable, Sendable {
 
 /// The prototype harness is macOS-compilable but the RealityKit view is iOS-only.
 public struct BodySceneView: View {
-    public let onFailure: (String) -> Void
-
     public init(
         allowsPrototypeCandidate: Bool = false,
         cameraPreset: BodyCameraPreset = .front,
         markers: [BodyLocation] = [],
+        marks: [BodyMark] = [],
+        focusedRegionID: String? = nil,
+        selectedMarkID: UUID? = nil,
         onReady: @escaping () -> Void = {},
         onFailure: @escaping (String) -> Void = { _ in },
-        onHitEvidence: @escaping (BodyHitEvidence) -> Void = { _ in }
-    ) {
-        self.onFailure = onFailure
-    }
+        onHitEvidence: @escaping (BodyHitEvidence) -> Void = { _ in },
+        onMarkerTapped: @escaping (UUID) -> Void = { _ in }
+    ) {}
 
     public var body: some View {
         ContentUnavailableView("iOS 3D preview", systemImage: "iphone", description: Text("请在 iOS target 中运行原生 RealityKit 适配器。"))
