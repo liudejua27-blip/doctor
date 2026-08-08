@@ -24,6 +24,9 @@ public final class BodyMapModel {
     public private(set) var marks: [BodyMark] = []
     public private(set) var selectedMarkID: UUID?
     public private(set) var focusedRegionID: String?
+    /// The most recent user-facing map mutation. This is UI feedback only;
+    /// it is never serialized as a health fact or sent to the Agent.
+    public private(set) var lastMutation: BodyMarkMutation?
 
     public var markerDrafts: [BodyLocation] {
         marks.map(\.location)
@@ -45,12 +48,15 @@ public final class BodyMapModel {
 
     @discardableResult
     public func applySelection(_ location: BodyLocation) -> BodyMarkMutation {
+        let mutation: BodyMarkMutation
         switch markingMode {
         case .zone:
-            return toggleZone(location)
+            mutation = toggleZone(location)
         case .pin:
-            return addPin(location)
+            mutation = addPin(location)
         }
+        lastMutation = mutation
+        return mutation
     }
 
     @discardableResult
@@ -106,6 +112,7 @@ public final class BodyMapModel {
         selectedMarkID = id.flatMap { candidate in
             marks.first { $0.id == candidate || $0.location.id == candidate }?.id
         }
+        lastMutation = nil
     }
 
     /// Selects an already rendered 2D Pin before the tap is interpreted as a
@@ -136,10 +143,15 @@ public final class BodyMapModel {
         focusedRegionID = regionID
     }
 
+    public func clearInteractionNotice() {
+        lastMutation = nil
+    }
+
     @discardableResult
     public func setSensation(_ sensation: BodyMarkSensation?, for id: UUID? = nil) -> Bool {
         guard let index = index(for: id) else { return false }
         marks[index].sensation = sensation
+        lastMutation = nil
         return true
     }
 
@@ -151,6 +163,7 @@ public final class BodyMapModel {
         } else {
             marks[index].triggers.insert(trigger)
         }
+        lastMutation = nil
         return true
     }
 
@@ -159,6 +172,7 @@ public final class BodyMapModel {
         guard let index = index(for: id) else { return .rejectedInvalidIntensity }
         guard intensity == nil || (0...10).contains(intensity!) else { return .rejectedInvalidIntensity }
         marks[index].intensity = intensity
+        lastMutation = nil
         return .updated(marks[index].id)
     }
 
@@ -166,6 +180,7 @@ public final class BodyMapModel {
         marks.removeAll()
         selectedMarkID = nil
         focusedRegionID = nil
+        lastMutation = nil
     }
 
     public func removeDraft(id: UUID) {
@@ -175,6 +190,7 @@ public final class BodyMapModel {
         if let focusedRegionID, !marks.contains(where: { $0.location.regionID == focusedRegionID && $0.isVisible }) {
             self.focusedRegionID = nil
         }
+        lastMutation = nil
     }
 
     public func selectedMark() -> BodyMark? {
@@ -193,11 +209,13 @@ public final class BodyMapModel {
     public func switchTo2D(reason: String? = nil) {
         mode = .twoD
         loadState = reason.map(BodyMapLoadState.fallback2D) ?? .interactive
+        lastMutation = nil
     }
 
     public func request3D() {
         mode = .threeD
         loadState = .loading
+        lastMutation = nil
     }
 
     public func mark3DReady() {

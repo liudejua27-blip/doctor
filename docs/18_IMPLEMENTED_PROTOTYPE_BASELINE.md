@@ -19,7 +19,7 @@
 
 | 能力组 | 当前实现 | 已证明 | 未证明/保持关闭 |
 |---|---|---|---|
-| iOS 身体位置 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、RehabMate 行为等价的 Zone/Pin/摘要状态 | 位置身份不随视图改变；禁止保存世界坐标；全身区域目录、命中、列表路径、原生 iOS 编译有证据；V2 Core 状态规则有单元测试 | 生产资产权利、真机命中、视觉/解剖准确性、生产性能、完整移动端 Sheet |
+| iOS 身体位置 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、RehabMate 行为等价的 Zone/Pin/摘要状态、窄屏系统 Sheet 与上限/回退反馈 | 位置身份不随视图改变；禁止保存世界坐标；全身区域目录、命中、列表路径、原生 iOS 编译有证据；V2 Core 状态规则有单元测试 | 生产资产权利、真机命中、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type |
 | 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；内部 prototype 可显式展示候选状态 | 真实生产文件哈希/签名、商用权、App Store 分发、解剖与性能 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系 | 未确认事实不会静默升级；显式未知和安全回退存在 | 真实用户 30 秒完成率、公开 API 联调、生产持久化 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机 | 所有者隔离、篡改失败、幂等/冲突状态 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |

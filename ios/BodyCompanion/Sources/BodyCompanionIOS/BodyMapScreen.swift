@@ -4,6 +4,7 @@ import SwiftUI
 public struct BodyMapScreen: View {
     @State private var model: BodyMapModel
     @State private var cameraPreset: BodyCameraPreset = .front
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private let onLocationsChanged: ([BodyLocation]) -> Void
     private let prototype3DEnabled: Bool
 
@@ -26,6 +27,7 @@ public struct BodyMapScreen: View {
                 Picker("身体地图模式", selection: Binding(
                     get: { model.mode },
                     set: { newMode in
+                        model.clearInteractionNotice()
                         if newMode == .threeD { model.request3D() } else { model.switchTo2D() }
                     }
                 )) {
@@ -38,7 +40,10 @@ public struct BodyMapScreen: View {
 
                 Picker("标记方式", selection: Binding(
                     get: { model.markingMode },
-                    set: { model.markingMode = $0 }
+                    set: {
+                        model.markingMode = $0
+                        model.clearInteractionNotice()
+                    }
                 )) {
                     ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
@@ -57,6 +62,21 @@ public struct BodyMapScreen: View {
                     .font(.caption)
                     .foregroundStyle(model.pinCount >= BodyMapModel.maximumPinCount ? .orange : .secondary)
                     .accessibilityLabel("针点数量 " + String(model.pinCount) + "，最多 " + String(BodyMapModel.maximumPinCount) + " 个")
+                }
+
+                if model.lastMutation == .rejectedPinLimit {
+                    BodyMapNotice(
+                        text: "已达到 20 个针点上限，请编辑或删除已有针点。",
+                        systemImage: "exclamationmark.circle"
+                    ) {
+                        model.clearInteractionNotice()
+                    }
+                }
+
+                if case let .fallback2D(reason) = model.loadState {
+                    BodyMapNotice(text: reason, systemImage: "arrow.uturn.backward.circle") {
+                        model.switchTo2D()
+                    }
                 }
 
                 modeContent
@@ -208,6 +228,29 @@ private struct BodyMap2DView: View {
             userLabel: option.label
         )
         _ = model.applySelection(BodyLocationMapper.from2D(selection))
+    }
+}
+
+private struct BodyMapNotice: View {
+    let text: String
+    let systemImage: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Label(text, systemImage: systemImage)
+                .font(.footnote)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("知道了", action: onDismiss)
+                .font(.footnote.weight(.semibold))
+                .frame(minHeight: 44)
+                .accessibilityLabel("关闭提示")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .foregroundStyle(.orange)
+        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -412,6 +455,8 @@ private struct AccessibleRegionPicker: View {
 
 private struct MarkSummaryPanel: View {
     let model: BodyMapModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var isEditorPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -431,6 +476,9 @@ private struct MarkSummaryPanel: View {
                 HStack(spacing: 10) {
                     Button {
                         model.selectMark(id: mark.id)
+                        if horizontalSizeClass == .compact {
+                            isEditorPresented = true
+                        }
                     } label: {
                         HStack(spacing: 10) {
                         Image(systemName: mark.kind == .zone ? "square.dashed" : "mappin.circle.fill")
@@ -468,8 +516,34 @@ private struct MarkSummaryPanel: View {
             }
 
             if let selected = model.selectedMark() {
-                MarkEditor(model: model, mark: selected)
+                if horizontalSizeClass != .compact {
+                    MarkEditor(model: model, mark: selected)
+                }
             }
+        }
+        .onAppear {
+            if horizontalSizeClass == .compact, model.selectedMarkID != nil {
+                isEditorPresented = true
+            }
+        }
+        .onChange(of: model.selectedMarkID) { _, selectedID in
+            guard horizontalSizeClass == .compact else { return }
+            isEditorPresented = selectedID != nil
+        }
+        .sheet(isPresented: $isEditorPresented) {
+            NavigationStack {
+                ScrollView {
+                    if let selected = model.selectedMark() {
+                        MarkEditor(model: model, mark: selected)
+                            .padding()
+                    } else {
+                        ContentUnavailableView("没有待编辑标记", systemImage: "mappin.slash")
+                    }
+                }
+                .navigationTitle("编辑身体标记")
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 

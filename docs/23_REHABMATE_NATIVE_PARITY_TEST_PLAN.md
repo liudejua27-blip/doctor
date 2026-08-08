@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / automated slice implemented / device evidence pending |
+| 状态 | Active implementation spec / V2.1 automated slice implemented / device evidence pending |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -40,6 +40,9 @@
 | TEST-BODY-V2-013 | Unit | 2D/3D 共享位置 | 相同区域/侧别生成可比较的 `BodyLocation`，marker ID 不因显示模式改变 |
 | TEST-BODY-V2-014 | Unit | 3D gate 失败 | `BodyMapModel` 进入 2D fallback，已有 marks 保留 |
 | TEST-BODY-V2-015 | UI | 视角与焦点 | front/back/left/right 及返回全身按钮可操作且不删除草稿 |
+| TEST-BODY-V2-016 | UI | 窄屏编辑器 | 选中 mark 自动打开系统 Sheet；中/大屏保持可访问的内联编辑；删除后安全关闭 |
+| TEST-BODY-V2-017 | UI | 上限/回退反馈 | 第 21 个 Pin、3D gate 失败和无稳定命中都有固定文本/VoiceOver 反馈；已有 marks 保留 |
+| TEST-BODY-V2-018 | Unit | 单次草稿投影 | 一次 mark 变化只触发一次 typed draft revision；感觉与位置关系不重复 |
 
 ## 3. 真机与无障碍矩阵
 

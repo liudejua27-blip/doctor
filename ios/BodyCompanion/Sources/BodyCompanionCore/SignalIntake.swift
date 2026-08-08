@@ -715,6 +715,10 @@ public final class SignalIntakeModel {
     }
 
     public func setLocations(_ locations: [BodyLocation]) {
+        setLocations(locations, incrementRevision: true)
+    }
+
+    private func setLocations(_ locations: [BodyLocation], incrementRevision: Bool) {
         var seen = Set<UUID>()
         draft.locations = Array(locations.prefix(20)).filter { seen.insert($0.id).inserted }
         let markerIDs = draft.locations.map(\.id)
@@ -727,14 +731,14 @@ public final class SignalIntakeModel {
         if !draft.locations.isEmpty && draft.phase == .choosingLocation {
             draft.phase = .collectingFacts
         }
-        touch()
+        touch(incrementRevision: incrementRevision)
     }
 
     /// Projects explicit map-editor choices into the typed intake draft. This
     /// remains unreviewed until the user completes the normal fact review; it
     /// does not create an Event or approval.
     public func applyBodyMarks(_ marks: [BodyMark]) {
-        setLocations(marks.map(\.location))
+        setLocations(marks.map(\.location), incrementRevision: false)
 
         var sensationLocations: [SignalSensationCode: [UUID]] = [:]
         for mark in marks {

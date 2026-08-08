@@ -32,6 +32,7 @@
 | EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `299d896513a8c7ef7e5d584495c9bc5ba78505da5f20c9dc2b50e0ef9d7e5668`；1.1.0 清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
 | EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 与 PR #4 已合并 | 证明远端设置和两次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
+| EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
 
 ## 3. 当前已证明
 

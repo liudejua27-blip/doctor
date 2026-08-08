@@ -64,6 +64,9 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(model.marks.filter { $0.kind == .pin }.count, BodyMapModel.maximumPinCount)
         XCTAssertEqual(model.applySelection(location("body.head.general", laterality: .midline)), .rejectedPinLimit)
         XCTAssertEqual(model.marks.count, BodyMapModel.maximumPinCount)
+        XCTAssertEqual(model.lastMutation, .rejectedPinLimit)
+        model.clearInteractionNotice()
+        XCTAssertNil(model.lastMutation)
     }
 
     func testExistingPinCanBeSelectedAndEdited() {
@@ -134,8 +137,10 @@ final class BodyMarkingTests: XCTestCase {
         _ = bodyMap.setIntensity(4, for: id)
 
         let intake = SignalIntakeModel(bodyMapModel: bodyMap)
+        let initialRevision = intake.draft.draftRevision
         intake.applyBodyMarks(bodyMap.marks)
 
+        XCTAssertEqual(intake.draft.draftRevision, initialRevision + 1)
         XCTAssertEqual(intake.draft.locations.map(\.id), [bodyMap.marks[0].location.id])
         XCTAssertEqual(intake.draft.facts.sensations.first?.code, .itching)
         XCTAssertEqual(intake.draft.facts.sensations.first?.locationMarkerIDs, [bodyMap.marks[0].location.id])
