@@ -20,7 +20,7 @@
 + 样机边界已验证
 + P2A 受控时钟回归和后端/iOS 本地门禁绿色
 + codex/initial-git-ci-baseline 首个可追溯提交与 CI workflow 已建立
-+ GitHub `origin` 已配置，`codex/initial-git-ci-baseline` 已推送并暂为远端默认分支；CI 首跑成功，保护规则尚未建立
++ GitHub `origin` 已配置，`codex/initial-git-ci-baseline` 已推送并暂为远端默认分支；CI 首跑成功，分支保护已配置
 ≠ App 完成
 ≠ production ready
 ≠ clinically safe
@@ -52,11 +52,12 @@
 
 - 已完成：P2A 测试默认时钟由 fixture 冻结，显式过期边界继续注入 `now`；聚焦 19 个和后端全量 189 个测试绿色。
 - 已完成：仓库内契约检查器、Python 3.11 约束、GitHub Actions 后端/契约与 iOS 双作业、首个 `codex/` 分支和提交基线。
-- 已完成：`origin` 已指向 `https://github.com/liudejua27-blip/doctor.git`，提交 `0fa2a17` 已推送，CI 运行 `31234120644` 的 Backend and contracts 与 iOS Swift package job 均成功。
-- 待完成：将成功检查设为默认分支必需状态并验证保护规则；GitHub 权限/仓库设置不能由本地 workflow 文件替代。
+- 已完成：`origin` 已指向 `https://github.com/liudejua27-blip/doctor.git`，提交 `0fa2a17`/`b9e45d1` 已推送；CI 运行 `31234120644`、`31234199534` 的 Backend and contracts 与 iOS Swift package job 均成功。
+- 已完成：远端默认分支 `codex/initial-git-ci-baseline` 已启用分支保护；两个 CI job 为必需检查，strict update、管理员强制、线性历史开启，禁止强推和删除。
+- 待完成：用真实 Pull Request 验证保护分支的合并路径；GitHub 权限/仓库设置不能由本地 workflow 文件替代。
 - 证据必须绑定 commit SHA；本地结果和 workflow 文件不能替代远端必需状态检查。
 
-当前状态：本地退出条件已满足；远端 CI/保护分支子门禁保持未关闭。
+当前状态：本地退出条件、远端 CI 和分支保护配置已满足；真实 Pull Request 合并验证仍待完成。
 
 ### GATE-02 责任与产品边界
 
