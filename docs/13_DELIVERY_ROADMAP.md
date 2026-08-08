@@ -54,10 +54,11 @@
 - 已完成：仓库内契约检查器、Python 3.11 约束、GitHub Actions 后端/契约与 iOS 双作业、首个 `codex/` 分支和提交基线。
 - 已完成：`origin` 已指向 `https://github.com/liudejua27-blip/doctor.git`，提交 `0fa2a17`/`b9e45d1` 已推送；CI 运行 `31234120644`、`31234199534` 的 Backend and contracts 与 iOS Swift package job 均成功。
 - 已完成：远端默认分支 `codex/initial-git-ci-baseline` 已启用分支保护；两个 CI job 为必需检查，strict update、管理员强制、线性历史开启，禁止强推和删除。
-- 待完成：用真实 Pull Request 验证保护分支的合并路径；GitHub 权限/仓库设置不能由本地 workflow 文件替代。
+- 已完成：PR #1 在两个 required CI job 成功后合并为默认分支提交 `9e0314d`；合并后的默认分支 CI 运行 `31234382019` 也成功。
+- 仍需持续：后续每个变更必须重复同一 PR/required-check 路径；GitHub 权限/仓库设置不能由本地 workflow 文件替代。
 - 证据必须绑定 commit SHA；本地结果和 workflow 文件不能替代远端必需状态检查。
 
-当前状态：本地退出条件、远端 CI 和分支保护配置已满足；真实 Pull Request 合并验证仍待完成。
+当前状态：本地退出条件、远端 CI、分支保护和一次真实 Pull Request 合并演练已满足；SafetyBaseline、临床/隐私/生产纵向门禁仍未关闭。
 
 ### GATE-02 责任与产品边界
 

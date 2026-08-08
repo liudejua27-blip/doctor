@@ -46,7 +46,7 @@
 | SAFE-INV-07 | 失败仍保留固定安全和手动路径 | UX-01、SAFE-01 | fail-closed 样机 | 故障注入 100% |
 | SAFE-INV-08 | 未同意资料不进入 Agent | AGENT-01、PRIV-01 | typed context 授权测试 | 越权 0；真实 Consent 待实现 |
 | SAFE-INV-09 | 身体标记不代表病因/损伤 | BODY-01、SAFE-01 | 数据模型/文案约束 | 违规 0 |
-| SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | 提交 `b9e45d1` 已推送，CI 运行 `31234199534` 两个 job 成功；默认分支已配置两个必需 CI 检查，SafetyBaseline 尚未建立 | 完全一致 |
+| SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | PR #1 在 `31234329478` 两个 job 成功后合并为 `9e0314d`，合并后 CI `31234382019` 两个 job 成功；SafetyBaseline 尚未建立 | 完全一致 |
 
 ## 4. 非功能追踪
 
