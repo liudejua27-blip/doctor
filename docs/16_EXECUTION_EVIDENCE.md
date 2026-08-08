@@ -7,14 +7,14 @@
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
 | 快照日期 | 2026-08-08 |
-| 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；产品代码基线为 `0fa2a17`，证据由 PR #1/#2 复验 |
+| 对应 Git | `codex/initial-git-ci-baseline`；本轮复刻切片提交 `6f232b4`（本地）；此前受保护默认分支基线 `0fa2a17` 由 PR #1/#2 复验 |
 | 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证 |
 
 ## 1. 证据解释
 
 本文件只保留当前可复现结果，不再累计每个临时切片的重复流水账。已实现边界见 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)，需求到证据关系见 [TRACE-01](14_TRACEABILITY_MATRIX.md)，发布门禁见 [REL-01](13_DELIVERY_ROADMAP.md)。
 
-首个基线提交由 `git rev-parse HEAD` 读取；本轮切片证据在提交前只代表当前工作树。它只证明本地可重建边界；进入外测前仍必须由远端 CI 在受保护提交上重建，并绑定 SafetyBaseline。
+本轮切片证据绑定提交 `6f232b4`，只证明本地可重建边界；进入外测前仍必须由远端 CI 在受保护提交上重建，并绑定 SafetyBaseline。
 
 ## 2. 当前验证结果
 
