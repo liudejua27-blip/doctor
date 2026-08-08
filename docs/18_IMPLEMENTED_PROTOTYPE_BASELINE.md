@@ -55,7 +55,7 @@
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
 | iOS Swift | 55 tests、0 failures；iOS `BodyCompanionIOS` 与 prototype generic build 绿色 | 只证明 Core/原生适配器可编译和合成样机 |
 | 后端 Python | 189 tests、0 failures；P2A 聚焦 19 tests | 受控时钟回归已修复；只证明合成/内存样机 |
-| Git/CI | `codex/initial-git-ci-baseline` 提交 `0fa2a17`；双作业 workflow；Python 3.11 constraints；已推送至 `origin` | 本地可追溯基线已建立；GitHub Actions 两个 job 首跑成功，保护分支未验证 |
+| Git/CI | `codex/initial-git-ci-baseline` 提交 `b9e45d1`；双作业 workflow；Python 3.11 constraints；已推送至 `origin` | 本地可追溯基线、GitHub Actions 两个 job 和分支保护配置已验证；真实 PR 合并路径未验证 |
 
 ## 6. 删除登记
 
