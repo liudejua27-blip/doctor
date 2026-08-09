@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.1 |
-| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；未构成生产、真机或资产批准 |
+| 版本 | 0.3.2 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；local accessibility-size structural smoke added in `7d8bf59`, remote CI pending；未构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -104,6 +104,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | HOST-AC-005 | AI 身体助手页 | “普通对话尚未接入”与开始记录入口可见 | AI 分析、建议、行动计划或安全完成 |
 | HOST-AC-006 | 3D 被禁用或失败 | 可理解回退文案，2D/列表仍可完成 | 真机 3D、性能或碰撞验收 |
 | HOST-AC-007 | 显式内部候选 3D probe | 在独立 Simulator 启动中先确认当前 Scene 的 loader-entry，再只接受“候选加载后仍有列表入口”或“固定 2D 回退后仍有列表入口”两种终态 | 候选资产获批、视觉/解剖正确、任一 3D 命中、碰撞、性能、真机或发布验收 |
+| HOST-AC-008 | accessibility-size 结构回归 | `UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、两张今天情境卡、结构化页指定成对动作可纵向且可达 | VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机或发布验收 |
 
 每个可测入口、可见状态与确认动作使用稳定的 identifier；identifier 不得编码身体位置、用户输入、健康事实或诊断词。
 
@@ -135,7 +136,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | ID | 未决项 | 责任角色 | 最晚门禁 | 临时行为 |
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
-| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围 | iOS + 无障碍 + QA | GATE-06 前 | 仅声称 UI smoke，不称无障碍通过 |
+| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；`7d8bf59` 仅完成 accessibility-size 的局部结构 smoke | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
 | HOST-OPEN-003 | 候选 3D 的跨 Simulator/Xcode 加载与回退 probe 稳定性；本地与单次远端重建已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
@@ -149,3 +150,4 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 2026-08-09 | 0.2.0 | `BodyCompanionInternal` App target、共享 scheme、静态边界扫描、7 项本地 UI smoke 与远端 CI 均已通过；证据见 EVIDENCE-01/EVIDENCE-DEVICE-01，真机与发布门禁保持打开。 |
 | 2026-08-09 | 0.3.0 | 实现 `HOST-OPEN-003` 的本地候选 3D Simulator probe：每次请求有独立内存 attempt，先确认 loader-entry，再以 ready 或 fail-closed 回退保留列表路径；不改变候选资产状态或扩大 P0 能力。 |
 | 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建候选 probe 所在完整 Host suite；远端只验证受控 probe 的成功终态集合，不升级资产、真机、性能、碰撞、无障碍或发布结论。 |
+| 2026-08-09 | 0.3.2 | `7d8bf59` 为 HOST-AC-008/HOST-T-015 增加本地 accessibility-size 结构 smoke；当前只验证指定合成路径的纵向与可达布局，远端 CI pending，未关闭无障碍或设备门禁。 |

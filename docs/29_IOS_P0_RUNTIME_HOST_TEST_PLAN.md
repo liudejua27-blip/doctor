@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.5.0-draft |
-| 状态 | Partially executed: HOST-T-001～014 have internal-only Simulator evidence locally and in `0105cd7` remote CI run `31307042209`; HOST-T-015 is planned |
+| 版本 | 0.5.1-draft |
+| 状态 | Executed locally: HOST-T-001～015 have internal-only Simulator evidence; `7d8bf59` binds HOST-T-015 locally and its current remote CI is pending |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -134,6 +134,19 @@ remote CI: 0105cd7 / run 31307042209 成功；Backend and contracts 成功，iOS
 not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布；不关闭 CONFLICT-004 的高风险非感觉事实修订阻断
 ```
 
+### 7.4 当前本地执行记录（accessibility-size 结构回归）
+
+```text
+commit: 7d8bf59
+project/scheme: BodyCompanionInternal.xcodeproj / BodyCompanionInternal
+destination: iPhone 17 Pro Max / iOS 26.5 / 8E7BDCDA-1B31-44ED-A48F-030C64725289
+configuration: DebugInternal
+result: 13 passed, 0 failures；Swift Core 94 passed, 0 failures；iPhoneOS SDK build 与 check_internal_ios_host.py 通过
+coverage: HOST-T-001～015；HOST-T-015 使用 UICTContentSizeCategoryAccessibilityXXXL，只验证合成草稿后的 2D/文字部位 Sheet 选择链路、今天页两张情境提示卡纵向排列，以及结构化描述页“确认/未知”“保存/未知”成对动作纵向且可达
+remote CI: pending
+not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗读或焦点顺序、真实最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度数值、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布
+```
+
 ## 8. 变更记录
 
 | 日期 | 变更 | 说明 |
@@ -148,3 +161,4 @@ not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、
 | 2026-08-09 | 0.4.3-draft | 新增 HOST-T-014：完整感觉词典的“更多感觉”内部入口；实现前先按 CONFLICT-003 锁定修订后的安全失效与高风险 P0 拒绝边界。 |
 | 2026-08-09 | 0.4.4-draft | 归档 `0105cd7` 的 94 项 Core 与 12 项本地 Host UI 收据：HOST-T-014 已执行，完整感觉与两类 unknown 均只进入未确认草稿；感觉修订按 CONFLICT-003 在普通状态失效、在高风险状态拒绝。远端 CI run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建同一 iOS job。 |
 | 2026-08-09 | 0.5.0-draft | 新增 HOST-T-015：只在内部 Simulator 验证 accessibility-size 下的结构与关键动作可达；实现前不把它表述为 VoiceOver、最大字号、深色/高对比度、横屏或真机通过。 |
+| 2026-08-09 | 0.5.1-draft | `7d8bf59` 已在本地 iPhone 17 Pro Max / iOS 26.5 完成 HOST-T-001～015（13 项 UI 流程）；HOST-T-015 只形成 accessibility-size 的局部结构/可达性 Simulator 证据，远端 CI 尚待运行。 |

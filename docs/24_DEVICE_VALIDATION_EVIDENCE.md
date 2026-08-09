@@ -3,10 +3,10 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-DEVICE-01 |
-| 版本 | 1.5.3 |
+| 版本 | 1.5.4 |
 | 状态 | Internal Simulator Host smoke passed; physical device and production 3D validation blocked |
-| 执行日期 | 2026-08-08（设备尝试）；2026-08-09（Host 基线、候选 probe、文字部位切片、完整感觉切片与远端 CI 重建） |
-| 对应 Git | `5dddd83602d0922bf78069dd6fdeaa5e5b5a5a5a`（内部 Host 基线；远端 CI run `31295533318` 已成功）；`79f1f36`（候选 3D 运行时防护）；`ea85c68`（证据提交；远端 CI run `31301067572` 已成功）；`9fc54d4`（文字部位 Area-only 修复；run `31303340128` 已成功）；`0105cd7`（完整感觉与感觉修订安全边界；run `31307042209` 已成功） |
+| 执行日期 | 2026-08-08（设备尝试）；2026-08-09（Host 基线、候选 probe、文字部位切片、完整感觉切片、accessibility-size 结构切片与远端 CI 重建） |
+| 对应 Git | `5dddd83602d0922bf78069dd6fdeaa5e5b5a5a5a`（内部 Host 基线；远端 CI run `31295533318` 已成功）；`79f1f36`（候选 3D 运行时防护）；`ea85c68`（证据提交；远端 CI run `31301067572` 已成功）；`9fc54d4`（文字部位 Area-only 修复；run `31303340128` 已成功）；`0105cd7`（完整感觉与感觉修订安全边界；run `31307042209` 已成功）；`7d8bf59`（P0 accessibility-size 结构优化；当前远端 CI pending） |
 | 适用测试计划 | [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md) |
 | 资产记录 | [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md) |
 
@@ -20,8 +20,9 @@
 4. `79f1f36` 在本地同一 iPhone 17 Pro / iOS 26.5 完成 9 项 UI 测试；候选 probe 先观察当前 Scene 的 loader-entry，再实际出现 candidate-ready、3D 场景和列表入口。`ea85c68` 的远端 run `31301067572` 成功执行完整 Host suite；CI 日志确认 probe 成功，但不单独记录 ready/fallback 分支。它未点击人体，未测试碰撞、区域映射或性能。
 5. `9fc54d4` 在同一 Simulator 完成 10 项 UI 流程与 87 项 Swift Core：共享文字入口可搜索本地中英文目录，选择后只创建待确认的宽泛 Area/Zone；无结果不写草稿；即使图形模式为 Pin 也不产生精确 Point。它同样不构成 VoiceOver、真实设备或网格命中证据。
 6. `0105cd7` 在同一 Simulator 完成 12 项 UI 流程与 94 项 Swift Core：可展开“更多感觉（22 项）”并选中“麻木”，两位置时区分局部和全组 unknown；这些都只形成未确认的显式位置关联草稿。run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 internal Host smoke（Host smoke 09:55:37–10:04:42 UTC）。它同样不构成 VoiceOver、Dynamic Type、Reduce Motion、真实设备、碰撞、性能或资产审核证据。
+7. `7d8bf59` 在本地 iPhone 17 Pro Max / iOS 26.5 完成 13 项 UI 流程与 94 项 Swift Core：HOST-T-015 只在 `UICTContentSizeCategoryAccessibilityXXXL` 下验证文字部位 Sheet、今天页两张情境提示卡和结构化页成对动作的局部纵向/可达结构。当前远端 CI pending；它不构成 VoiceOver、完整最大 Dynamic Type、深色/高对比度、Reduce Motion、真实设备、碰撞、性能或资产审核证据。
 
-因此，Sheet、VoiceOver、Dynamic Type、Reduce Motion、3D 性能、RealityKit 碰撞命中和候选资产的生产批准均保持 **Pending/Blocked**。2D、部位列表和安全入口继续是唯一可外推的可用路径；候选 USDZ 继续为 `candidate`，不得发布。
+因此，Sheet、VoiceOver、Dynamic Type、Reduce Motion、3D 性能、RealityKit 碰撞命中和候选资产的生产批准均保持 **Pending/Blocked**。`7d8bf59` 只补充了 Simulator 的 accessibility-size 结构 smoke，不关闭上述任一设备门禁。2D、部位列表和安全入口继续是唯一可外推的可用路径；候选 USDZ 继续为 `candidate`，不得发布。
 
 ## 2. 环境与可复现检查
 
@@ -35,6 +36,7 @@
 | 本地候选 3D 专用 probe (`79f1f36`) | 同一 iPhone 17 Pro / iOS 26.5；9 passed, 0 failures；先出现 `body-map.candidate-3d-load-attempted`，随后出现 `body-map.candidate-3d-ready`、3D Scene 与列表入口 | 只证明当前 Simulator Scene 进入 loader 入口并完成一次内部候选加载生命周期；不证明模型质量、网格命中、性能或真机 |
 | 本地文字部位切片 (`9fc54d4`) | 同一 iPhone 17 Pro / iOS 26.5；10 passed, 0 failures；2D 中搜索“膝”选择“左膝附近”，无结果不写草稿，候选 ready-or-fallback 终态与默认回退均保留共享文字入口 | 只证明 Simulator 内本地目录与 Area-only 位置契约；不证明 VoiceOver、Dynamic Type、碰撞、性能、真机或资产质量 |
 | 本地完整感觉切片 (`0105cd7`) | 同一 iPhone 17 Pro / iOS 26.5；12 passed, 0 failures；从结构化页展开稳定“更多感觉”入口并选择“麻木”，两位置分别呈现局部和全组 unknown；94 项 Core、iPhoneOS SDK build 和 Host 静态检查通过 | 只证明 Simulator 内未确认草稿、显式 marker 关联和感觉修订安全边界；不证明 VoiceOver、Dynamic Type、Reduce Motion、碰撞、性能、真机或资产质量 |
+| 本地 accessibility-size 结构切片 (`7d8bf59`) | iPhone 17 Pro Max / iOS 26.5；13 passed, 0 failures；`UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、今天两张情境卡、结构化页两组动作均可达且纵向排列；94 项 Core、iPhoneOS SDK build 和 Host 静态检查通过；远端 CI pending | 只证明当前 Simulator 的局部结构路径；不证明 VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、碰撞、性能、真机或资产质量 |
 | GitHub Actions run `31295533318` | macOS runner 的 iPhone 16 / iOS 18.5 成功执行 `scripts/run_internal_ios_host_tests.sh`；iOS job 总时长 7m11s | 云端 Simulator 可重建；不是物理 iPhone 或签名证据 |
 | GitHub Actions run `31301067572` | `ea85c68` 的 macOS runner / iPhone 16 / iOS 18.5 成功执行 Swift 83 项、iPhoneOS build、Host 静态边界检查和完整 `scripts/run_internal_ios_host_tests.sh`；Host smoke 288 秒 | 当前候选 probe 的远端可重建性；测试只接受 ready 或候选专属 2D fallback，未记录分支作为资产质量结论 |
 | GitHub Actions run `31303340128` | `9fc54d4` 的 Backend and contracts 成功（20 秒）；iOS package and internal host 成功（8m28s），包括 Swift tests、iPhoneOS SDK build、Host boundary 与 internal Host smoke | 云端 Simulator 可重建当前文字部位切片；不是物理 iPhone、真实 VoiceOver、性能或签名证据 |
@@ -51,7 +53,7 @@
 |---|---|---|---|
 | Sheet | **Simulator smoke passed / device blocked** | 紧凑宽度通过系统 `.sheet`、`.medium/.large` detents、drag indicator 和 `ScrollView` 承载**位置 Inspector**；UI smoke 打开列表/编辑器并通过显式“完成”返回；删除后状态会由模型清理 | 在 iPhone 上验证首次选择、再次选择、切换标记、删除、旋转和系统返回；确认 Sheet 不遮挡继续入口、焦点不丢失 |
 | VoiceOver | **Blocked** | 2D 有部位列表等价路径；主要按钮有 label/hint；3D 仅提供整体语义说明并保留 2D/列表回退 | 开启 VoiceOver，从 Today → 记录 → 2D/列表 → 位置 Inspector → 结构化描述 → 删除 → 继续全程完成；验证提示、计数、结构化程度控件、回退公告和导航顺序 |
-| Dynamic Type | **Blocked** | 使用 `.body/.headline/.caption/.footnote` 等语义字体，位置 Inspector 和结构化描述均放入 `ScrollView` | 最大可访问字号和横屏下不截断标题、位置摘要、提示、结构化程度控件和按钮；确认 Sheet 可滚动且关键操作仍可达 |
+| Dynamic Type | **Simulator structural smoke passed / device blocked** | 使用 `.body/.headline/.caption/.footnote` 等语义字体；`7d8bf59` 在 `UICTContentSizeCategoryAccessibilityXXXL` 下验证指定文字部位 Sheet、两张情境卡与两组结构化成对动作的纵向/可达结构 | 最大可访问字号和横屏下不截断标题、位置摘要、提示、结构化程度控件和按钮；确认 Sheet 可滚动且关键操作仍可达 |
 | Reduce Motion | **Blocked** | 主题按钮的按压缩放使用 `.animation`，但在 `accessibilityReduceMotion` 时显式置为 `nil`；视角切换代码是直接 `look(at:from:)`，未发现持续旋转 | 开启 Reduce Motion，重复 front/back/left/right/top、焦点和 Sheet 展开；确认无不必要动画、闪烁或自动旋转，手势仍可用 |
 | 3D 性能 | **Blocked** | USDZ 约 606 KB、manifest LOD 三角面 22,804；默认 UI smoke 强制禁用候选 3D，专用 probe 显式开启后仅观察 loader-entry 与 ready/回退终态；代码在加载时同步 `ModelEntity.loadModel` 和 `generateCollisionShapes(recursive:)` | 最低支持 iPhone 冷启动、首次交互、连续旋转/缩放 5 分钟；采集冷启动、P95 命中、FPS、内存、热状态和崩溃 |
 | 碰撞命中 | **Blocked** | 使用 `hitTest(.nearest, mask: .all)`；先识别 `marker_`，再向父链解析 `body_`；保存 root-local position/normal | 真机逐区域黄金点、边界点、遮挡点和已有 Marker 重叠点；验证命中延迟、误落点、Marker 优先级和 2D 回退 |
@@ -69,7 +71,7 @@
 | DEVICE-FINDING-004 | P1 | 候选 USDZ 没有 `body_lower_back` 实体；解析器会把躯干实体映射为 `body.torso.general`，不能证明下背区域命中 | 在资产 region map 中补齐或明确“躯干宽泛候选”，完成解剖/视觉审核和边界黄金集；禁止静默声称下背命中 |
 | DEVICE-FINDING-005 | P1 | USD 根层包含 `xformOp:rotateXYZ = (-90, 0, 0)`，而 manifest `canonical_transform` 为 identity | 由资产负责人核对导出变换、根原点、前后/左右方向并更新不可变 manifest/迁移证据；真机命中前不得批准 |
 | DEVICE-FINDING-006 | P1 | manifest `performance.status=pending` 且冷启动/P95/FPS/内存均为 0；代码没有 FPS/内存/signpost 采集 | 在目标 iPhone 上建立不含健康正文的性能采集和阈值评审；未测量不能改为 passed |
-| DEVICE-FINDING-007 | P2 | 2026-08-09 已从 `MarkEditor` 移除程度 Slider；结构化 `SignalIntakeScreen` 的程度控件虽有可见“程度”标签与 accessibility value，仍未经过真机 VoiceOver/最大 Dynamic Type 验证。固定 520pt 2D 画布和两行位置摘要在大字号下仍可能截断。 | 真机 VoiceOver/Dynamic Type 验证结构化程度控件；必要时取消摘要硬截断，并保留部位列表等价路径。 |
+| DEVICE-FINDING-007 | P2 | 2026-08-09 已从 `MarkEditor` 移除程度 Slider；结构化 `SignalIntakeScreen` 的程度控件虽有可见“程度”标签与 accessibility value，仍未经过真机 VoiceOver/最大 Dynamic Type 验证。`7d8bf59` 已将当前 accessibility-size 下的地图画布和成对动作改为自适应布局，但位置摘要、完整页面、深色/高对比度和横屏仍未经过设备验证。 | 真机 VoiceOver/Dynamic Type 验证结构化程度控件；必要时取消摘要硬截断，并保留部位列表等价路径。 |
 
 ## 5. 候选资产审核读回
 
@@ -91,4 +93,4 @@
 
 ## 7. 发布决定
 
-本轮决定：**记录历史基础 `Simulator host smoke passed`、`79f1f36` 的本地候选 loader lifecycle probe passed、`ea85c68` / run `31301067572` 的远端完整 Host smoke passed，以及 `9fc54d4` 的本地文字部位 Area-only Simulator flow 与 run `31303340128` 的远端 Simulator 重建成功；另记录 `0105cd7` 的本地完整感觉/感觉修订安全边界 Simulator flow 及 run `31307042209` 的远端重建成功。** 不批准生产 3D，不声称真机通过，不关闭 GATE-06/GATE-07/GATE-08。设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。
+本轮决定：**记录历史基础 `Simulator host smoke passed`、`79f1f36` 的本地候选 loader lifecycle probe passed、`ea85c68` / run `31301067572` 的远端完整 Host smoke passed，以及 `9fc54d4` 的本地文字部位 Area-only Simulator flow 与 run `31303340128` 的远端 Simulator 重建成功；另记录 `0105cd7` 的本地完整感觉/感觉修订安全边界 Simulator flow 及 run `31307042209` 的远端重建成功；`7d8bf59` 仅追加本地 accessibility-size 结构 smoke，远端 CI pending。** 不批准生产 3D，不声称真机通过，不关闭 GATE-06/GATE-07/GATE-08。设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。

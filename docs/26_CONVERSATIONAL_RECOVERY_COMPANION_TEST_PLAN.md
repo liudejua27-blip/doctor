@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-COMP-01 |
-| 版本 | 0.5.3-draft |
-| 状态 | Draft / P0 原生编译、87 项 Core 回归与内部 Simulator Host smoke 已通过；端到端、真实 AI、隐私、临床、无障碍与设备测试未执行 |
+| 版本 | 0.5.4-draft |
+| 状态 | Draft / P0 原生编译、94 项 Core 回归与内部 Simulator Host smoke 已通过；端到端、真实 AI、隐私、临床、完整无障碍与设备测试未执行 |
 | 关联功能 | FEAT-COMP-01 |
 | 负责人 | QA 负责人 + 临床安全负责人 + iOS/Agent 负责人 |
 | 依赖 | PROD-01、UX-01、AGENT-01、DATA-01、SAFE-01、PRIV-01、BODY-01、QA-01 |
@@ -131,3 +131,4 @@
 | 2026-08-09 | 0.5.1-draft | 增加 `plan_instance_id` 的单次接受、未确认候选和精确幂等重放测试语义；明确安全题不属于普通问题计划。 |
 | 2026-08-09 | 0.5.2-draft | 同步当时 Swift Core 回归计数为 83；新增覆盖仅为候选 3D 内部运行时代次，不代表对话、情境、资料或行动能力已执行。 |
 | 2026-08-09 | 0.5.3-draft | 同步当前 Swift Core 回归为 87 项；文字部位 Area-only 本地切片不增加真实 AI、情境、资料读取或行动能力。 |
+| 2026-08-09 | 0.5.4-draft | 同步当前 Swift Core 回归为 94 项；`7d8bf59` 的 accessibility-size Host 结构 smoke 仍只覆盖既有 P0 UI 的局部布局，不将完整无障碍或对话主闭环标为已执行。 |
