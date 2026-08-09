@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.2 |
-| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；local accessibility-size structural smoke added in `7d8bf59`, remote CI pending；未构成生产、真机或资产批准 |
+| 版本 | 0.3.4 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；`31311301360` 与 `31312416395` 的 accessibility-size Host smoke 均仅 HOST-T-015 failed（exit 65），`e0f1089` 已在本地复测完整 Host suite 与单测，remote retry pending；未构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -136,7 +136,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | ID | 未决项 | 责任角色 | 最晚门禁 | 临时行为 |
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
-| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；`7d8bf59` 仅完成 accessibility-size 的局部结构 smoke | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
+| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；两次 HOST-T-015 远端尝试失败，`e0f1089` 只完成本地 accessibility-size 局部结构复测，远端 retry pending | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
 | HOST-OPEN-003 | 候选 3D 的跨 Simulator/Xcode 加载与回退 probe 稳定性；本地与单次远端重建已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
@@ -150,4 +150,6 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 2026-08-09 | 0.2.0 | `BodyCompanionInternal` App target、共享 scheme、静态边界扫描、7 项本地 UI smoke 与远端 CI 均已通过；证据见 EVIDENCE-01/EVIDENCE-DEVICE-01，真机与发布门禁保持打开。 |
 | 2026-08-09 | 0.3.0 | 实现 `HOST-OPEN-003` 的本地候选 3D Simulator probe：每次请求有独立内存 attempt，先确认 loader-entry，再以 ready 或 fail-closed 回退保留列表路径；不改变候选资产状态或扩大 P0 能力。 |
 | 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建候选 probe 所在完整 Host suite；远端只验证受控 probe 的成功终态集合，不升级资产、真机、性能、碰撞、无障碍或发布结论。 |
-| 2026-08-09 | 0.3.2 | `7d8bf59` 为 HOST-AC-008/HOST-T-015 增加本地 accessibility-size 结构 smoke；当前只验证指定合成路径的纵向与可达布局，远端 CI pending，未关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.3.2 | `7d8bf59` 为 HOST-AC-008/HOST-T-015 增加本地 accessibility-size 结构 smoke；当时只验证指定合成路径的纵向与可达布局，远端 CI 结果尚待运行（后续结果见 0.3.3），未关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.3.3 | 首次远端 run `31311301360` 在 iPhone 16 / iOS Simulator 18.5 只有 HOST-T-015 失败（exit 65），后端/契约、Swift 94、SDK build 和 Host 静态边界均成功。`7e64833` 只稳定 HOST-T-015 自动化见证；其本地 iPhone 17 Pro / iOS 26.5 复测通过，后续远端结果见 0.3.4，未关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.3.4 | `7e64833` 的第二次远端 run `31312416395` 仍只失败于 HOST-T-015（exit 65）；iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 中为 12 passed、1 failed、0 skipped，未找到 `body-map.next` Button。`e0f1089` 只将断言移至文字部位 Sheet 关闭后；本地完整 Host suite 与单独 HOST-T-015 通过，远端 retry pending，未关闭无障碍或设备门禁。 |

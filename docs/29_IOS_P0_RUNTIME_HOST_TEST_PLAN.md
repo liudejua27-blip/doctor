@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.5.2-draft |
-| 状态 | Executed locally: HOST-T-001～015 have internal-only Simulator evidence; `7d8bf59` binds HOST-T-015 locally and its current remote CI is pending |
+| 版本 | 0.5.4-draft |
+| 状态 | Executed locally: HOST-T-001～015 have internal-only Simulator evidence; `31311301360` 和 `31312416395` 均仅 HOST-T-015 failed（exit 65），`e0f1089` local retry passed / remote retry pending |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -137,13 +137,19 @@ not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、
 ### 7.4 当前本地执行记录（accessibility-size 结构回归）
 
 ```text
-commit: 7d8bf59
+baseline commit: 7d8bf59
+first repair commit: 7e64833
+second repair commit: e0f1089
 project/scheme: BodyCompanionInternal.xcodeproj / BodyCompanionInternal
-destination: iPhone 17 Pro Max / iOS 26.5 / 8E7BDCDA-1B31-44ED-A48F-030C64725289
+baseline destination: iPhone 17 Pro Max / iOS 26.5 / 8E7BDCDA-1B31-44ED-A48F-030C64725289
+retry destination: iPhone 17 Pro / iOS 26.5
 configuration: DebugInternal
-result: 13 passed, 0 failures；Swift Core 94 passed, 0 failures；iPhoneOS SDK build 与 check_internal_ios_host.py 通过
-coverage: HOST-T-001～015；HOST-T-015 使用 UICTContentSizeCategoryAccessibilityXXXL，只验证合成草稿后的 2D/文字部位 Sheet 选择链路、今天页两张情境提示卡纵向排列，以及结构化描述页“确认/未知”“保存/未知”成对动作纵向且可达
-remote CI: pending
+baseline result: 13 passed, 0 failures；Swift Core 94 passed, 0 failures；iPhoneOS SDK build 与 check_internal_ios_host.py 通过
+coverage: HOST-T-001～015；HOST-T-015 使用 UICTContentSizeCategoryAccessibilityXXXL，只验证合成草稿后的 2D/文字部位 Sheet 选择链路、今天页两张情境提示卡纵向排列，以及结构化描述页“确认/未知”“保存/未知”成对动作纵向且可达；`7e64833` 将结构见证改为 `.vertical` 存在、同名 `.horizontal` 不存在，`e0f1089` 将 `body-map.next` 断言移至文字部位 Sheet 关闭后，并保留可点击检查
+remote CI history: 7d8bf59 / run 31311301360 / iPhone 16 / iOS Simulator 18.5；Backend and contracts、Swift 94、iPhoneOS SDK build 与 Host 静态边界通过；仅 internal Host smoke 的 HOST-T-015 失败（exit 65）
+remote CI history: 7e64833 / run 31312416395 / iPhone 16 / iOS Simulator 18.5 / Xcode 16.4；terminal failed；Backend and contracts、Swift 94、iPhoneOS SDK build 与 Host 静态边界通过；internal Host smoke 为 12 passed、1 failed、0 skipped，仅 HOST-T-015 因预期存在的 `body-map.next` Button 未找到而失败（exit 65）
+local retry: e0f1089 / iPhone 17 Pro / iOS 26.5；完整 Internal Host suite 通过；单独 HOST-T-015 通过
+remote retry: pending
 not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗读或焦点顺序、真实最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度数值、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布
 ```
 
@@ -163,3 +169,5 @@ not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗
 | 2026-08-09 | 0.5.0-draft | 新增 HOST-T-015：只在内部 Simulator 验证 accessibility-size 下的结构与关键动作可达；实现前不把它表述为 VoiceOver、最大字号、深色/高对比度、横屏或真机通过。 |
 | 2026-08-09 | 0.5.1-draft | `7d8bf59` 已在本地 iPhone 17 Pro Max / iOS 26.5 完成 HOST-T-001～015（13 项 UI 流程）；HOST-T-015 只形成 accessibility-size 的局部结构/可达性 Simulator 证据，远端 CI 尚待运行。 |
 | 2026-08-09 | 0.5.2-draft | 为跨 Simulator 尺寸的 HOST-T-015 稳定性，将“纵向排列”的自动化见证固定为运行时布局容器 identifier（`.vertical` 存在、`.horizontal` 不存在）并先滚动到对应动作，再检查分支；仍须由后续本地/远端执行记录证明，不外推视觉几何、VoiceOver 或真机。 |
+| 2026-08-09 | 0.5.3-draft | 归档首次远端 run `31311301360`：iPhone 16 / iOS Simulator 18.5 仅 HOST-T-015 失败（exit 65），后端/契约、Swift 94、SDK build 与 Host 静态边界均通过。`7e64833` 的本地 iPhone 17 Pro / iOS 26.5 完整 Host suite 与单独 HOST-T-015 复测通过；后续远端结果见 0.5.4。 |
+| 2026-08-09 | 0.5.4-draft | 归档 `7e64833` 的第二次远端 run `31312416395`：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped，唯一失败的 HOST-T-015 未找到 `body-map.next` Button（exit 65）；Backend and contracts、Swift 94、SDK build 与 Host 静态边界通过。`e0f1089` 仅将该断言移至文字部位 Sheet 关闭后，本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite 与单独 HOST-T-015 通过；远端 retry pending。 |
