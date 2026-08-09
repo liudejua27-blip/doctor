@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.4.3-draft |
-| 状态 | Partially executed: HOST-T-001～013 have internal-only evidence; HOST-T-014 is planned |
+| 版本 | 0.4.4-draft |
+| 状态 | Executed: HOST-T-001～014 have internal-only Simulator evidence locally and in `0105cd7` remote CI run `31307042209` |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -120,6 +120,19 @@ remote CI: 9fc54d4 / run 31303340128 成功；Backend and contracts 与 iOS Swif
 not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布
 ```
 
+### 7.3 当前本地执行记录（完整感觉与感觉修订安全边界）
+
+```text
+commit: 0105cd7
+project/scheme: BodyCompanionInternal.xcodeproj / BodyCompanionInternal
+destination: iPhone 17 Pro / iOS 26.5 / 68F37251-71BE-4F42-9849-62D61BFFE7C3
+configuration: DebugInternal
+result: 12 passed, 0 failures；Swift Core 94 passed, 0 failures；iPhoneOS SDK build 与 check_internal_ios_host.py 通过
+coverage: HOST-T-001～014 的完整内部 Host suite。HOST-T-014 从既有位置路径进入结构化描述，展开 `sensation-picker.more-open` 的“更多感觉（22 项）”，以原生 Toggle 选中“麻木”，只保留带显式 marker 关联的未确认草稿；两个位置分别出现“部分位置的感觉说不清”和“这些位置的感觉都说不清”。Core 同时覆盖常用 10 项/扩展 22 项的单一派生目录、普通本地安全状态下语义感觉修订的 safety/Agent/approval 失效、R0/R1/R2/undetermined/safety_action 的直接修订拒绝，以及 no-op 不变性
+remote CI: 0105cd7 / run 31307042209 成功；Backend and contracts 成功，iOS package and internal host 在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 internal Host smoke（Host smoke 09:55:37–10:04:42 UTC）
+not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布；不关闭 CONFLICT-004 的高风险非感觉事实修订阻断
+```
+
 ## 8. 变更记录
 
 | 日期 | 变更 | 说明 |
@@ -132,3 +145,4 @@ not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、
 | 2026-08-09 | 0.4.1-draft | 已实现本地文字入口、稳定目录项与 Area/Zone-only 写入路径；Core 与本地 Simulator 执行收据由 EVIDENCE-01 归档，VoiceOver/真机门禁不变。 |
 | 2026-08-09 | 0.4.2-draft | 归档 `9fc54d4` 的 87 项 Core 与 10 项本地 Host UI 收据；候选 ready/fallback 共享入口和 Area-only 边界均经 Simulator 自动化覆盖，远端 CI run `31303340128` 已成功。 |
 | 2026-08-09 | 0.4.3-draft | 新增 HOST-T-014：完整感觉词典的“更多感觉”内部入口；实现前先按 CONFLICT-003 锁定修订后的安全失效与高风险 P0 拒绝边界。 |
+| 2026-08-09 | 0.4.4-draft | 归档 `0105cd7` 的 94 项 Core 与 12 项本地 Host UI 收据：HOST-T-014 已执行，完整感觉与两类 unknown 均只进入未确认草稿；感觉修订按 CONFLICT-003 在普通状态失效、在高风险状态拒绝。远端 CI run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建同一 iOS job。 |

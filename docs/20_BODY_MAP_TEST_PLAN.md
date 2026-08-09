@@ -6,7 +6,7 @@
 | SafetyBaseline | 不调用 SafetyEngine；位置非诊断边界必须保持 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
-| 状态 | Active implementation spec / local Core、iOS build、文字部位 Area-only 与候选 3D Simulator evidence recorded；device gate open |
+| 状态 | Active implementation spec / local Core、iOS build、文字部位 Area-only、完整感觉入口与候选 3D Simulator evidence recorded；`0105cd7` remote CI success；device gate open |
 
 ## 1. 测试目标和风险
 
@@ -60,6 +60,7 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 - iOS `BodyCompanionIOS` 与 `BodyCompanionPrototype` generic iOS Debug build：绿色（无签名）；
 - `79f1f36`：本地 iPhone 17 Pro / iOS 26.5 的 9 项内部 Host UI 测试通过；`TEST-BODY-013` 实际观察到当前候选 Scene 的 loader-entry → candidate-ready → 3D 场景/列表入口，未点击网格、未创建位置事实；`TEST-BODY-014` 由 Core 回归锁定当前 attempt 与旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite；CI 不把 ready/fallback 分支外推为资产质量；
 - `9fc54d4`：本地 iPhone 17 Pro / iOS 26.5 的 10 项 Internal Host UI 流程通过；`TEST-BODY-004/015` 验证 2D 文字搜索“膝”可选择“左膝附近”、无结果不写草稿，候选专属 ready-or-fallback 终态与默认 2D fallback 均保留同一文字入口；不点击网格，文字条目始终是宽泛 Area/Zone。远端 CI run `31303340128` 已成功完成后端/契约、Swift tests、SDK build、Host boundary 与 internal Host smoke；
+- `0105cd7`：在同一内部 Simulator 完成 94 项 Swift Core、iPhoneOS SDK build、Host 静态检查和 12 项 UI 流程。它从既有位置入口进入结构化描述，展开“更多感觉（22 项）”并选择“麻木”，只保留带显式 marker 关联的未确认草稿；两位置时分别显示局部和全组 unknown 文案。该集成路径不点击网格、不产生 Point/3D anchor、不把位置解释为组织或病因。语义感觉修订的普通状态失效与高风险拒绝由 Core 覆盖；GitHub Actions run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Backend and contracts、Swift 94、SDK build、Host boundary 与 internal Host smoke；
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；
 - 发布评审：必须绑定 commit SHA、AssetManifest、区域目录和同一测试结果。

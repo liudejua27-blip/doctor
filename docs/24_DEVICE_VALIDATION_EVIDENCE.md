@@ -3,10 +3,10 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-DEVICE-01 |
-| 版本 | 1.5.2 |
+| 版本 | 1.5.3 |
 | 状态 | Internal Simulator Host smoke passed; physical device and production 3D validation blocked |
-| 执行日期 | 2026-08-08（设备尝试）；2026-08-09（Host 基线、候选 probe、文字部位切片与远端 CI 重建） |
-| 对应 Git | `5dddd83602d0922bf78069dd6fdeaa5e5b5a5a5a`（内部 Host 基线；远端 CI run `31295533318` 已成功）；`79f1f36`（候选 3D 运行时防护）；`ea85c68`（证据提交；远端 CI run `31301067572` 已成功）；`9fc54d4`（文字部位 Area-only 修复；run `31303340128` 已成功） |
+| 执行日期 | 2026-08-08（设备尝试）；2026-08-09（Host 基线、候选 probe、文字部位切片、完整感觉切片与远端 CI 重建） |
+| 对应 Git | `5dddd83602d0922bf78069dd6fdeaa5e5b5a5a5a`（内部 Host 基线；远端 CI run `31295533318` 已成功）；`79f1f36`（候选 3D 运行时防护）；`ea85c68`（证据提交；远端 CI run `31301067572` 已成功）；`9fc54d4`（文字部位 Area-only 修复；run `31303340128` 已成功）；`0105cd7`（完整感觉与感觉修订安全边界；run `31307042209` 已成功） |
 | 适用测试计划 | [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md) |
 | 资产记录 | [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md) |
 
@@ -19,6 +19,7 @@
 3. `5dddd83` 的历史基线已在 booted iPhone 17 Pro / iOS 26.5 执行 7 项 UI smoke；远端 CI 在 iPhone 16 / iOS 18.5 成功运行同一脚本。两者都是 Simulator，不能外推为真机。
 4. `79f1f36` 在本地同一 iPhone 17 Pro / iOS 26.5 完成 9 项 UI 测试；候选 probe 先观察当前 Scene 的 loader-entry，再实际出现 candidate-ready、3D 场景和列表入口。`ea85c68` 的远端 run `31301067572` 成功执行完整 Host suite；CI 日志确认 probe 成功，但不单独记录 ready/fallback 分支。它未点击人体，未测试碰撞、区域映射或性能。
 5. `9fc54d4` 在同一 Simulator 完成 10 项 UI 流程与 87 项 Swift Core：共享文字入口可搜索本地中英文目录，选择后只创建待确认的宽泛 Area/Zone；无结果不写草稿；即使图形模式为 Pin 也不产生精确 Point。它同样不构成 VoiceOver、真实设备或网格命中证据。
+6. `0105cd7` 在同一 Simulator 完成 12 项 UI 流程与 94 项 Swift Core：可展开“更多感觉（22 项）”并选中“麻木”，两位置时区分局部和全组 unknown；这些都只形成未确认的显式位置关联草稿。run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 internal Host smoke（Host smoke 09:55:37–10:04:42 UTC）。它同样不构成 VoiceOver、Dynamic Type、Reduce Motion、真实设备、碰撞、性能或资产审核证据。
 
 因此，Sheet、VoiceOver、Dynamic Type、Reduce Motion、3D 性能、RealityKit 碰撞命中和候选资产的生产批准均保持 **Pending/Blocked**。2D、部位列表和安全入口继续是唯一可外推的可用路径；候选 USDZ 继续为 `candidate`，不得发布。
 
@@ -33,12 +34,14 @@
 | 本地 `xcrun simctl` / `xcodebuild test` | iPhone 17 Pro / iOS 26.5 / UDID `68F37251-71BE-4F42-9849-62D61BFFE7C3` booted；7 passed, 0 failures | 内部 Simulator P0 UI smoke，不是设备验证 |
 | 本地候选 3D 专用 probe (`79f1f36`) | 同一 iPhone 17 Pro / iOS 26.5；9 passed, 0 failures；先出现 `body-map.candidate-3d-load-attempted`，随后出现 `body-map.candidate-3d-ready`、3D Scene 与列表入口 | 只证明当前 Simulator Scene 进入 loader 入口并完成一次内部候选加载生命周期；不证明模型质量、网格命中、性能或真机 |
 | 本地文字部位切片 (`9fc54d4`) | 同一 iPhone 17 Pro / iOS 26.5；10 passed, 0 failures；2D 中搜索“膝”选择“左膝附近”，无结果不写草稿，候选 ready-or-fallback 终态与默认回退均保留共享文字入口 | 只证明 Simulator 内本地目录与 Area-only 位置契约；不证明 VoiceOver、Dynamic Type、碰撞、性能、真机或资产质量 |
+| 本地完整感觉切片 (`0105cd7`) | 同一 iPhone 17 Pro / iOS 26.5；12 passed, 0 failures；从结构化页展开稳定“更多感觉”入口并选择“麻木”，两位置分别呈现局部和全组 unknown；94 项 Core、iPhoneOS SDK build 和 Host 静态检查通过 | 只证明 Simulator 内未确认草稿、显式 marker 关联和感觉修订安全边界；不证明 VoiceOver、Dynamic Type、Reduce Motion、碰撞、性能、真机或资产质量 |
 | GitHub Actions run `31295533318` | macOS runner 的 iPhone 16 / iOS 18.5 成功执行 `scripts/run_internal_ios_host_tests.sh`；iOS job 总时长 7m11s | 云端 Simulator 可重建；不是物理 iPhone 或签名证据 |
 | GitHub Actions run `31301067572` | `ea85c68` 的 macOS runner / iPhone 16 / iOS 18.5 成功执行 Swift 83 项、iPhoneOS build、Host 静态边界检查和完整 `scripts/run_internal_ios_host_tests.sh`；Host smoke 288 秒 | 当前候选 probe 的远端可重建性；测试只接受 ready 或候选专属 2D fallback，未记录分支作为资产质量结论 |
 | GitHub Actions run `31303340128` | `9fc54d4` 的 Backend and contracts 成功（20 秒）；iOS package and internal host 成功（8m28s），包括 Swift tests、iPhoneOS SDK build、Host boundary 与 internal Host smoke | 云端 Simulator 可重建当前文字部位切片；不是物理 iPhone、真实 VoiceOver、性能或签名证据 |
+| GitHub Actions run `31307042209` | `0105cd7` 的 Backend and contracts 成功；iOS package and internal host 在 iPhone 16 / iOS Simulator 18.5 成功执行 Swift 94、iPhoneOS SDK build、Host boundary 与 internal Host smoke（Host smoke 09:55:37–10:04:42 UTC） | 云端 Simulator 可重建当前完整感觉/感觉修订边界；不是物理 iPhone、真实 VoiceOver、性能、碰撞或签名证据 |
 | Swift iPhoneOS build | `BodyCompanionIOS` target 成功 | 只证明 iOS SDK 编译 |
 | Swift iPhoneSimulator build | `BodyCompanionIOS` target 成功 | 只证明 Simulator SDK 编译 |
-| Swift Core tests | `5dddd83` 的历史 Host 收据为 `80 tests, 0 failures`；`9fc54d4` 当前 checkout 已在本轮 `swift test` 复验为 `87 tests, 0 failures`，含当前/替代 3D attempt 的 loader-entry/ready 与旧回调失效，以及文字目录的 Area-only/无伪 Point 回归 | 只证明状态/契约，不证明 UI/设备 |
+| Swift Core tests | `5dddd83` 的历史 Host 收据为 `80 tests, 0 failures`；`9fc54d4` 的历史 Area-only 收据为 `87 tests, 0 failures`；`0105cd7` 当前 checkout 已在本轮 `swift test` 复验为 `94 tests, 0 failures`，新增完整感觉目录、显式 marker 关联、unknown 边界和感觉修订安全回归 | 只证明状态/契约，不证明 UI/设备 |
 
 运行时前置条件缺失时，不能使用临时 `swift run`、macOS prototype 或无签名的 library 产物替代 iOS App 安装测试。
 
@@ -88,4 +91,4 @@
 
 ## 7. 发布决定
 
-本轮决定：**记录历史基础 `Simulator host smoke passed`、`79f1f36` 的本地候选 loader lifecycle probe passed、`ea85c68` / run `31301067572` 的远端完整 Host smoke passed，以及 `9fc54d4` 的本地文字部位 Area-only Simulator flow 与 run `31303340128` 的远端 Simulator 重建成功；但不批准生产 3D，不声称真机通过，不关闭 GATE-06/GATE-07/GATE-08。** 在设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。
+本轮决定：**记录历史基础 `Simulator host smoke passed`、`79f1f36` 的本地候选 loader lifecycle probe passed、`ea85c68` / run `31301067572` 的远端完整 Host smoke passed，以及 `9fc54d4` 的本地文字部位 Area-only Simulator flow 与 run `31303340128` 的远端 Simulator 重建成功；另记录 `0105cd7` 的本地完整感觉/感觉修订安全边界 Simulator flow 及 run `31307042209` 的远端重建成功。** 不批准生产 3D，不声称真机通过，不关闭 GATE-06/GATE-07/GATE-08。设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。

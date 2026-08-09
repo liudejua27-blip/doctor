@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 3.0.3-draft |
+| 版本 | 3.0.4-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -19,7 +19,7 @@
 
 | 需求 | 核心设计真源 | 机器契约 | 当前实现/测试 | 当前状态 | 发布门禁 |
 |---|---|---|---|---|---|
-| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；完整感觉目录与语义感觉修订的安全失效/高风险拒绝正在按 CONFLICT-003 收敛；位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P0 safety correction in progress | GATE-03/06/07/08 |
+| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；`0105cd7` 已在本地实现完整稳定感觉目录（首屏 10 项、扩展 22 项）、普通状态的语义感觉修订安全失效与 R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝，并由 94 项 Core/12 项 Host flow 覆盖。位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P1D 感觉安全修订已本地验证；外部发布仍阻断 | GATE-03/06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001、CONFLICT-002、FEAT-COMP-01 §10.2 | `agent-turn`、内部 handoff schemas；P1I `QuestionPlan` 契约待批准 | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3。P1I 的目录/失效/测试评审输入已定义，但现有 Agent 仍可表达多题，不能当作单题计划实现 | Prototype verified; P1I / 情境化产品能力未实现 | GATE-02/03/04/07/08 |
 | PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；`9fc54d4` 的本地文字目录只产生 `Zone + Area + body_part_search`，Pin 模式也不伪造 Point/3D anchor；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
@@ -33,7 +33,7 @@
 | PRD-F09B HealthKit/文件 | AGENT-01、PRIV-01 | Connector capabilities | 未实现 | Planned P1 | 首发后独立门禁 |
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
 | PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001、CONFLICT-002 | 待 ADR 批准后新增上下文、资料收据、行动引用、报告显示类型与 P1I `QuestionPlan` 契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；P1I 审核附录与 COMP-T-024～030 已定义；无情境化 API、目录或生产实现 | Draft / P0 prototype only | GATE-02/03/04/07/08 |
-| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表；`9fc54d4` 本地 10 项 UI 流程覆盖文字搜索、无结果与候选 ready/fallback 共用入口；run `31303340128` 已成功（不记录 probe 分支为质量结论） | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
+| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表；`9fc54d4` 本地 10 项 UI 流程覆盖文字搜索、无结果与候选 ready/fallback 共用入口；`0105cd7` 本地 12 项流程覆盖 HOST-T-001～014 的完整感觉/unknown 路径，run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 smoke（不记录 probe 分支为质量结论） | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
 
 ## 3. 安全不变量追踪
 
@@ -51,7 +51,7 @@
 | SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | PR #1 在 `31234329478` 两个 job 成功后合并，合并后 CI `31234382019` 两个 job 成功；PR #2 复验路径也通过；SafetyBaseline 尚未建立 | 完全一致 |
 | SAFE-INV-11 | 审核行动与营养/动作输出边界 | SAFE-01、DATA-01、FEAT-COMP-01 | TEST-COMP-01 已定义；无已审核内容或生产实现 | 未审核动作/具体食物/补剂/药物/剂量输出 0 |
 | SAFE-INV-12 | R2 不得进入普通 Agent | SAFE-01、AGENT-01、CONFLICT-001 | Swift 状态机、Python validator/adapter/application handoff 与 JSON Schema 回归 | R2 普通 Agent/行动输出 0 |
-| SAFE-INV-13 | 语义感觉修订不得复用旧安全、普通 Agent 或审批 | UX-01、DATA-01、SAFE-01、CONFLICT-003 | P0 修复与 Core/Host 回归待实施；高风险修订必须保留安全行动或拒绝 | 旧安全/Agent/approval 复用 0；R0/R1/R2/undetermined 不得被本地清空 |
+| SAFE-INV-13 | 语义感觉修订不得复用旧安全、普通 Agent 或审批 | UX-01、DATA-01、SAFE-01、CONFLICT-003 | `0105cd7` 的 94 项 Core 回归覆盖普通本地安全状态下的原子失效、R0/R1/R2/`undetermined`/`safety_action` 拒绝、malformed action phase 与 no-op 不变性；12 项本地 Host 流程覆盖“更多感觉”结构化入口。run `31307042209` 已成功重建 Backend and contracts 与 iPhone 16 / iOS Simulator 18.5 iOS job | 旧安全/Agent/approval 复用 0；R0/R1/R2/undetermined 不得被本地清空 |
 | SAFE-INV-14 | 非感觉安全相关事实修订不得隐藏既有安全行动 | UX-01、IOS-01、DATA-01、SAFE-01、CONFLICT-004 | 当前 P1D 未完成 retained action/revision 闭环，不能作为发布能力 | 未关闭；受影响能力不得外部发布 |
 
 ## 4. 非功能追踪
@@ -63,11 +63,11 @@
 | NFR-PERF-003 3D 帧率 | 未真机验证；候选 manifest performance=pending | 默认资产最低设备持续交互 |
 | NFR-REL-001 草稿恢复 | CryptoKit/内存样机；P4 1.1 保留感觉—位置关系并拒绝重复位置/悬空关联 | Keychain、文件、杀进程、后台同步 |
 | NFR-REL-002 幂等/事务 | 进程内/fake repository 样机 | PostgreSQL、跨实例、崩溃恢复、read-back |
-| NFR-A11Y-001 等价路径 | 2D/列表设计存在；`9fc54d4` 的文字部位 Sheet 已由 Simulator UI 流程覆盖，但 EVIDENCE-DEVICE-01 记录真机执行阻塞 | VoiceOver、Dynamic Type、Reduce Motion 真机 |
+| NFR-A11Y-001 等价路径 | 2D/列表设计存在；`9fc54d4` 的文字部位 Sheet 与 `0105cd7` 的完整感觉入口均有 Simulator UI 流程覆盖，但 EVIDENCE-DEVICE-01 记录真机执行阻塞 | VoiceOver、Dynamic Type、Reduce Motion 真机 |
 | NFR-PRIV-001 最小数据 | typed scope 与禁日志规范 | 真实 Consent、Provider、遥测审计 |
 | NFR-TRUST-CTX-001 资料范围可见性 | FEAT-COMP-01/ADR-0019 Draft；无生产实现 | 本次实际使用资料收据、拒绝可选资料完成率与真实审计 |
 | NFR-COMP-001 契约兼容 | OpenAPI/16 schemas、Markdown 和禁止引用已有版本化检查器及 CI job | 生成客户端、相邻版本兼容和首次远端 CI 证据 |
-| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；`9fc54d4` 本地 10 项覆盖文字部位 Area-only 与候选 ready/fallback 共享入口；run `31303340128` 已成功；静态扫描通过 | 不得外推真机、签名、VoiceOver、Dynamic Type、Reduce Motion、3D 性能/碰撞或无障碍通过 |
+| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；`9fc54d4` 本地 10 项覆盖文字部位 Area-only 与候选 ready/fallback 共享入口，run `31303340128` 已成功；`0105cd7` 本地 12 项覆盖完整 Host suite，run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建；静态扫描通过 | 不得外推真机、签名、VoiceOver、Dynamic Type、Reduce Motion、3D 性能/碰撞或无障碍通过 |
 
 ## 5. 参考项目采用追踪
 

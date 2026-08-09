@@ -3,12 +3,12 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-01 |
-| 版本 | 2.10.0 |
+| 版本 | 2.11.0 |
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
 | 快照日期 | 2026-08-09 |
-| 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；PR #4 合并提交 `2bb8e8a`；复刻切片提交 `6f232b4`、证据绑定提交 `f6a6d5b`；P0 体验/边界提交 `e93fc75`、GATE-02 决策包 `a91f103`、内部 Host `5dddd83`、候选 3D 运行时防护 `79f1f36`、候选 probe 证据提交 `ea85c68`、文字部位 Area-only 修复 `9fc54d4` |
-| 本轮变更状态 | `9fc54d4` 已完成本地 Swift Core、iPhoneOS SDK、静态边界与 Internal Host Simulator 验证；远端 CI run `31303340128` 的 Backend and contracts 与 iOS package and internal host 均成功。所有 iOS Host 结论仅限 Simulator，不构成真机或生产批准 |
+| 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；PR #4 合并提交 `2bb8e8a`；复刻切片提交 `6f232b4`、证据绑定提交 `f6a6d5b`；P0 体验/边界提交 `e93fc75`、GATE-02 决策包 `a91f103`、内部 Host `5dddd83`、候选 3D 运行时防护 `79f1f36`、候选 probe 证据提交 `ea85c68`、文字部位 Area-only 修复 `9fc54d4`、完整感觉与感觉修订安全边界 `0105cd7` |
+| 本轮变更状态 | `0105cd7` 已完成本地 Swift Core、iPhoneOS SDK、静态边界与 Internal Host Simulator 验证；GitHub Actions run `31307042209` 已成功完成 Backend and contracts 与 iOS package and internal host（Swift 94、iPhoneOS SDK build、Host boundary、internal Host smoke）。远端 iOS 为 iPhone 16 / iOS Simulator 18.5，仍仅形成 Simulator 证据，不构成真机或生产批准 |
 
 ## 1. 证据解释
 
@@ -20,22 +20,22 @@
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=61 checked_links=361 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁；`.pytest_cache` 等临时目录不计入工程文档清单 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=63 checked_links=399 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁；`.pytest_cache` 等临时目录不计入工程文档清单 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `87 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 位置状态、Zone + Pin 合计 20 个位置上限且超限不截断、地图仅同步位置、typed facts 不被地图覆盖、同 ID 位置语义替换的地图投影与感觉复核、删除最后一个关联位置时移除空感觉关系、候选 3D request → loader-entry → ready 的仅内存 attempt 权威及旧回调失效，以及文字目录的本地中英文查询、当前视图筛选、Pin 模式仍固定生成 `Zone + Area + body_part_search`、无 `anchor_2d.point` / `anchor_3d` / 顶层 `model_asset`、重复选择不增加 revision、位置同步与草稿校验；不证明真机/签名/生产资产 |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `94 tests, 0 failures` | Swift Core 样机；保留 `9fc54d4` 的 Zone/Pin、Area-only 文字目录和候选 3D attempt 回归，并新增完整既有感觉目录（常用 10 项、扩展 22 项）单一派生、扩展感觉显式 marker 关联、单位置/多位置 unknown 区分、普通本地安全状态下语义感觉修订使旧 safety/Agent/approval 失效，以及 R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝与 no-op 不变性；不证明真机/签名/生产资产、临床规则或服务端 retained action |
 | EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `194 passed` | 后端合成/内存样机全量绿色；包含 R2 许可与 JSON Schema 负例回归；不证明生产依赖 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
 | EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
-| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA；iOS job 新增 Host 静态扫描与 Simulator smoke | `5dddd83` 的 run `31295533318` 成功：Backend and contracts 19s；iOS package and internal host 7m11s。`ea85c68` 的 run `31301067572` 亦成功：后端/契约通过，iOS Swift tests、iPhoneOS build、`check_internal_ios_host.py` 与完整 Host smoke 均成功。`9fc54d4` 的 run `31303340128` 亦成功：Backend and contracts 20s；iOS Swift tests、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功（iOS job 8m28s） |
+| EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA；iOS job 新增 Host 静态扫描与 Simulator smoke | `5dddd83` 的 run `31295533318` 成功：Backend and contracts 19s；iOS package and internal host 7m11s。`ea85c68` 的 run `31301067572` 亦成功：后端/契约通过，iOS Swift tests、iPhoneOS build、`check_internal_ios_host.py` 与完整 Host smoke 均成功。`9fc54d4` 的 run `31303340128` 亦成功：Backend and contracts 20s；iOS Swift tests、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功（iOS job 8m28s）。`0105cd7` 的 run `31307042209` 亦成功：Backend and contracts 成功；iOS package and internal host 成功，包含 Swift 94、iPhoneOS SDK build、Host boundary 与 internal Host smoke（iPhone 16 / iOS Simulator 18.5） |
 | EV-CURRENT-010 | BODY-ASSET-01 候选资产 | USDZ SHA-256 `299d896513a8c7ef7e5d584495c9bc5ba78505da5f20c9dc2b50e0ef9d7e5668`；1.1.0 清单 schema 和 Bundle 读回通过 | 只证明文件与清单一致；candidate、未签名、未解剖/性能审核，不能发布 |
 | EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 与 PR #4 已合并 | 证明远端设置和两次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 | EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
 | EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核 | 历史 `5dddd83` 已解除“无 Simulator App target”阻塞：本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 与远端 iPhone 16 / iOS 18.5 的同一脚本均成功。`79f1f36` 在本地 iPhone 17 Pro / iOS 26.5 运行 9 项 UI 测试，专用 probe 实际观察到当前 Scene 的 loader-entry，随后进入 candidate-ready，并保留 3D 场景与列表入口；`ea85c68` 的远端 run `31301067572` 成功运行同一完整 Host suite。CI 日志只证明 probe 接受的成功终态，未将 ready/fallback 分支另作质量结论。两部登记 iPhone 仍 Offline/unavailable；USDZ `usdchecker`/ZIP/哈希及 CollisionGroup、triangle/barycentric、下背实体、根变换发现仍在 | 证明 Simulator Host 与一次内部候选加载生命周期及其远端可重建性；不证明 Sheet 的真机体验、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集、签名或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
-| EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | `9fc54d4` 的本轮 `swift test` 87 项、iPhoneOS SDK build 和 iPhone 17 Pro / iOS 26.5 的 10 项本地 UI smoke 绿色。文字部位入口只查询本地静态中文/英文目录：输入“膝”并选择“左膝附近”会以待确认 `Area/Zone` 进入结构化描述；无结果不会生成草稿；即使图形 UI 当前处于 Pin 模式，文字入口仍不产生 `anchor_2d.point`、`anchor_3d` 或顶层 `model_asset`（Area 仍保留目录 2D 区域锚点的资产元数据）。默认 3D 仍显式关闭并回退 2D；候选 ready 或候选专属 fallback 都保留同一文字入口，未点击人体、未创建精确网格位置事实。今天/记录/AI 身体助手入口统一显示进程内未确认草稿的继续或确认放弃后新建；位置 Inspector 不含感觉/程度/动作线索；多位置感觉不自动复制；canonical location 保持地图与 typed draft 同步，同 ID 语义替换重新复核感觉，删除不保留空感觉关联；位置变更会清除旧 safety/普通 Agent/审批阶段；R2 不进入普通 Agent；P4 1.1 保留感觉与位置关系 | 证明 P0 路由、草稿状态、地图—结构化事实边界、文字列表回退、安全门和内部可运行壳未破坏；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI 或医疗能力 |
-| EV-CURRENT-016 | 内部 iOS App Host | `xcodebuild -list` 发现 App target、UI test target 与共享 scheme；`check_internal_ios_host.py` 通过；`9fc54d4` 本地 `bash scripts/run_internal_ios_host_tests.sh` 在 iPhone 17 Pro / iOS 26.5 产生 `10 passed, 0 failures`。UI black-box 覆盖 2D 文字搜索/选中/无结果、候选 fallback 文字入口，以及候选专用 probe 的 ready-or-fallback 终态后共享文字入口；不点击人体。历史远端 run `31295533318` 与 `a796f0b` 的 run `31296924827` 均成功运行基础 Host 脚本；`ea85c68` 的 run `31301067572` 成功重建此前完整 Host smoke；`9fc54d4` 的 run `31303340128` 成功运行 iOS Swift tests、SDK build、Host boundary 与 internal Host smoke。远端结果不声称 candidate-ready 分支、命中或资产质量 | 只证明无网络/Provider/权限/持久化/遥测入口的内部 Simulator UI smoke；不证明系统权限弹窗、网络抓包、真机、无障碍、性能、资产许可或发布 |
+| EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | `9fc54d4` 的 Area-only 文字部位收据仍保留。`0105cd7` 在本地完成 94 项 Swift Core、iPhoneOS SDK build、静态 Host 检查和 iPhone 17 Pro / iOS 26.5 的 12 项 Internal Host UI 流程：结构化页可展开“更多感觉（22 项）”并选中“麻木”，仅形成带显式位置关联的未确认草稿；多位置分别显示“部分位置的感觉说不清”和“这些位置的感觉都说不清”。普通本地安全状态的语义感觉修订会撤销旧安全、普通 Agent 与审批下游资格；高风险安全行动中控件禁用并由 Core 拒绝直接修订。没有新增 API/Schema/健康字段、网络、Provider、资料读取、行动建议、持久化或正式写入 | 证明 P0 路由、未确认草稿、感觉目录入口和该感觉修订安全边界的内部本地回归；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI、临床安全或高风险非感觉事实修订 |
+| EV-CURRENT-016 | 内部 iOS App Host | `xcodebuild -list` 发现 App target、UI test target 与共享 scheme；`check_internal_ios_host.py` 通过；`0105cd7` 本地 `bash scripts/run_internal_ios_host_tests.sh` 在 iPhone 17 Pro / iOS 26.5 产生 `12 passed, 0 failures`，覆盖 HOST-T-001～014。HOST-T-014 使用稳定 identifier 展开“更多感觉”，以原生 Toggle 选中“麻木”，并验证两位置的局部 unknown 与全组 unknown 文案互不重复；不点击人体。远端 run `31307042209` 亦成功完成 Backend and contracts，以及 iPhone 16 / iOS Simulator 18.5 上的 Swift 94、iPhoneOS SDK build、Host boundary 与 internal Host smoke。历史远端 run `31295533318`、`31301067572` 与 `31303340128` 的成功记录保留 | 只证明无网络/Provider/权限/持久化/遥测入口的内部 Simulator UI smoke；不证明系统权限弹窗、网络抓包、真机、VoiceOver、Dynamic Type、Reduce Motion、性能、碰撞、资产许可或发布 |
 
 ## 3. 当前已证明
 
@@ -47,7 +47,8 @@
 - 机器契约和当前测试代码仍保留；删除的是重复的过程性 Feature/Test 文档。
 - P0 明亮中文体验壳已连接到既有 2D/3D 位置与未确认结构化草稿路径；地图只产生位置，感觉、程度和因素只能在结构化页填写；没有新增真实资料读取、行动建议或正式写入。
 - R2 已在 Swift/Python 状态机和机器契约中抑制普通 Agent；多位置的感觉关联、结构化删除与草稿继续/新建均需要明确用户动作；位置变化会使本地 safety、普通 Agent 与审批阶段失效，避免复用旧结果。
-- 受版本控制的 `BodyCompanionInternal` 已可在本地和远端 Simulator 构建、安装、启动并通过历史 7 项基础 UI smoke；`9fc54d4` 又在本地 iPhone 17 Pro / iOS 26.5 通过 10 项 UI 流程，覆盖本地中英文文字目录、无结果不写草稿、Pin 模式仍为 Area/Zone，以及候选 ready/fallback 的共享文字入口。候选开关、网络/Provider、权限、持久化、遥测和正式档案能力均显式保持关闭。
+- `0105cd7` 将感觉目录固定为常用 10 项与从同一稳定枚举派生的扩展 22 项；扩展选择、`other` 标签与感觉 unknown 都只写未确认草稿。对普通本地安全状态，语义感觉修订会使旧 safety/Agent/approval 失效；对 R0/R1/R2/`undetermined`/`safety_action`，直接本地感觉修订被拒绝。该修复不关闭 CONFLICT-004：位置、程度、时间、因素、功能影响和背景的高风险修订仍不能外部发布。
+- 受版本控制的 `BodyCompanionInternal` 已可在本地和远端 Simulator 构建、安装、启动并通过历史 7 项基础 UI smoke；`9fc54d4` 的 10 项文字部位流程和 `0105cd7` 的 12 项完整 Host 流程均有本地证据，后者已由 run `31307042209` 的 iPhone 16 / iOS Simulator 18.5 重建。候选开关、网络/Provider、权限、持久化、遥测和正式档案能力均显式保持关闭。
 
 ## 4. 已关闭项与剩余阻断
 
@@ -66,6 +67,10 @@
 ### PARTIAL-EV-003 文字部位 Area-only Simulator 切片
 
 `9fc54d4` 在本地 iPhone 17 Pro / iOS 26.5 完成 87 项 Swift Core 与 10 项 Internal Host UI 测试。文字入口只对本地静态目录做中文/英文匹配，当前视图先过滤；输入“膝”后选择“左膝附近”只会创建待确认的 `Zone + Area + body_part_search + region_mask_id`，即使图形模式为 Pin 也不产生 `anchor_2d.point`、`anchor_3d` 或顶层 `model_asset`（保留 2D 区域锚点所需的目录资产元数据）。无匹配结果不改变草稿；候选 ready 与专属 fallback 都保留同一文字入口。该切片没有读取网络、资料、历史或 Agent，没有持久化或创建正式档案。远端 run `31303340128` 已成功完成后端/契约与 iOS internal Host 验证；无论本地或远端结果如何，本条不构成 VoiceOver、Dynamic Type、Reduce Motion、真实 iPhone、碰撞/命中、性能、资产许可、签名或生产批准。
+
+### PARTIAL-EV-004 完整感觉目录与感觉修订安全边界
+
+`0105cd7` 在本地 iPhone 17 Pro / iOS 26.5 完成 94 项 Swift Core 与 12 项 Internal Host UI 流程，并通过 iPhoneOS SDK build 与 `check_internal_ios_host.py`。完整目录仍是既有 32 个稳定 code：首屏呈现常用 10 项，扩展 22 项由同一枚举派生；“更多感觉”选中“麻木”只形成未确认、显式 marker 关联的草稿。单位置不再同时提供重复的 unknown 初始入口；多位置区分局部和全组 unknown。按 CONFLICT-003，普通本地状态中的语义感觉变更会原子撤销旧 safety、普通 Agent 和审批下游资格，而 R0/R1/R2/`undetermined`/`safety_action` 则拒绝直接本地修订；no-op 不改变草稿。GitHub Actions run `31307042209` 已成功重建 Backend and contracts 与 iPhone 16 / iOS Simulator 18.5 的 Swift 94、SDK build、Host boundary 和 internal Host smoke。该切片不新增安全规则、医学结论、网络、Provider、资料读取、持久化或正式写入；也不关闭 CONFLICT-004 的高风险非感觉事实修订发布阻断。
 
 ## 5. 不得外推
 
