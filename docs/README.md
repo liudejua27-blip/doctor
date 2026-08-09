@@ -9,6 +9,7 @@
 - 首发产品重心已明确为“运动/工作不适 → 位置 → 情境化 AI 追问 → 安全行动 → 复查/沟通摘要”；具体功能仍是 Draft，不能被描述为已上线或临床批准能力。
 - [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的仅限内部 Simulator App Host 已在本地与远端 CI 通过；接下来仍须按 [REL-01 当前执行顺序](13_DELIVERY_ROADMAP.md#3-当前执行顺序)关闭生产门禁。该工程例外不新增产品样机层，也不替代真机/生产验证。
 - [GOV-01 GATE-02 决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 已准备好供具名责任人填写和书面批准；在其关闭前保持内部原型边界。
+- [FEAT-COMP-01](25_CONVERSATIONAL_RECOVERY_COMPANION.md) 已附 P1I“情境 → 单一确定性追问”评审输入：当前按 CONFLICT-002 的保守临时行为由 Application Service 决定未来普通题选择权，模型只可处理当前计划的回答；它不构成 API、Schema、临床题目或实现授权。
 
 ## 文档退役登记
 
@@ -62,7 +63,7 @@ flowchart TD
 - [FEAT-BODY-MAP-V2 RehabMate 原生行为等价切片](22_REHABMATE_NATIVE_PARITY.md)：Zone/Pin、焦点、位置摘要/Inspector、Zone + Pin 合计 20 个位置上限和安全语义适配。
 - [TEST-BODY-MAP-V2 原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)：状态、回退、无障碍、性能和供应链门禁。
 - [EVIDENCE-DEVICE-01 真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md)：本轮设备可用性、Sheet/VoiceOver/Dynamic Type/Reduce Motion、3D 性能、碰撞命中和候选资产审核结果；Blocked 不得外推为通过。
-- [FEAT-COMP-01 对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md)：运动/工作不适的主闭环、AI 对话、资料可见性、审核行动和沟通摘要的产品/交互真源；Draft，未实现。
+- [FEAT-COMP-01 对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md)：运动/工作不适的主闭环、AI 对话、资料可见性、审核行动、沟通摘要与 P1I 单题确定性追问的审核附录；Draft，未实现。
 - [UX-COMP-01 对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md)：上述主闭环的评审级屏幕、来源标签、安全替代、无障碍与六个走查场景；不新增契约或实现授权。
 - [TEST-COMP-01 对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)：上述主闭环的安全、隐私、无障碍、可用性和发布门禁；未执行。
 - [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
@@ -106,7 +107,7 @@ flowchart TD
 | FEAT-BODY-MAP-V2 | [原生 iOS 身体地图交互切片](22_REHABMATE_NATIVE_PARITY.md) | Zone/Pin、焦点、位置摘要/Inspector、窄屏 Sheet 和反馈的原生重写边界；地图仅写位置，Zone + Pin 合计最多 20 个，重复 Zone 点击只选中，删除显式完成 | V2.4 automated slice implemented / device run blocked |
 | TEST-BODY-MAP-V2 | [原生身体地图交互测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) | 行为状态、回退、无障碍和供应链测试 | Automated slice implemented / device run blocked |
 | EVIDENCE-DEVICE-01 | [真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md) | 真机可用性、无障碍、3D 性能、碰撞命中和候选资产生产审核 | Simulator Host passed / physical device and production approval blocked |
-| FEAT-COMP-01 | [对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md) | 运动/工作不适的情境化 AI 追问、审核行动、复查和沟通摘要 | Draft / P0 visual prototype only |
+| FEAT-COMP-01 | [对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md) | 运动/工作不适的情境化 AI 追问、P1I 单题确定性编排审核附录、审核行动、复查和沟通摘要 | Draft / P0 visual prototype only |
 | UX-COMP-01 | [对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md) | 将既有对话式评估真源转为屏幕、来源、替代安全、无障碍与走查交付；不定义新能力 | Draft / Review-only / GATE-02 + ADR-0019 blocked |
 | TEST-COMP-01 | [对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md) | 主闭环的产品、安全、隐私、无障碍与可用性验证 | Draft / P0 build passed; full plan not executed |
 
@@ -154,6 +155,7 @@ flowchart TD
 - [ADR-0018：BodyAssetManifest 与 3D 运行时门禁边界](decisions/ADR-0018-body-asset-manifest-runtime-gate.md)
 - [ADR-0019：情境化行动建议与沟通摘要边界](decisions/ADR-0019-contextual-guidance-and-communication-summary.md)
 - [CONFLICT-001：R2 普通 Agent 门禁语义](decisions/CONFLICT-001-r2-ordinary-agent-gate.md)（开放；当前按更保守的 R3-only 行为执行）
+- [CONFLICT-002：普通问题选择权与 PydanticAI 职责](decisions/CONFLICT-002-question-selection-authority.md)（开放；当前不实施 P1I，并按保守临时行为由 Application Service 决定未来普通题选择权）
 
 FRAME-01 是参考采用和模块落地真源；它不替代产品、数据、安全、隐私、契约或 ADR。上游项目只在 OSS-01 与 FRAME-01 明确的分类、版本和禁止清单内使用。
 

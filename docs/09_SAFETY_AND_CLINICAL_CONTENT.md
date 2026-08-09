@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | SAFE-01 |
-| 版本 | 1.1.0-draft |
+| 版本 | 1.1.1-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 临床安全负责人 |
 | 审核角色 | 产品、急诊/全科、运动医学、康复、AI、iOS、后端、隐私法务、QA |
 | 批准角色 | 产品负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、PROD-01、AGENT-01、PRIV-01、QA-01、ADR-0002、ADR-0018、ADR-0019 |
+| 依赖 | DOC-00、TERM-01、PROD-01、AGENT-01、PRIV-01、QA-01、ADR-0002、ADR-0018、ADR-0019、CONFLICT-001、CONFLICT-002 |
 | 生效条件 | 责任角色完成评审并形成批准记录；每条医学规则和内容仍须独立临床批准 |
 | 下次复审 | 首个代码脚手架创建前；之后每季度、严重事件或 A 类变更时复审 |
 
@@ -175,8 +175,8 @@ stateDiagram-v2
     SafetyQuestions --> DeterministicRules
     DeterministicRules --> EmergencyMode: R0
     DeterministicRules --> UrgentMode: R1
-    DeterministicRules --> ProfessionalPreparation: R2 且场景已审核
-    DeterministicRules --> SupportedNormalFlow: R3 且场景已审核
+    DeterministicRules --> ProfessionalPreparation: complete + supported + R2 + 无 UnresolvedSafety
+    DeterministicRules --> SupportedNormalFlow: complete + supported + R3 + 无 UnresolvedSafety + ordinary_agent_allowed
     DeterministicRules --> UnsupportedFlow: 场景未审核
     ProfessionalPreparation --> UserReview
     SupportedNormalFlow --> RetrieveApprovedContent
@@ -239,7 +239,7 @@ R0–R3 表示产品行动优先级，不是疾病严重程度，也不是诊断
 | R0 / `Emergency` | 当前信息满足经审核的“立即获得紧急帮助”规则 | 中止普通流程；显示本地紧急电话/急诊入口；解释触发的用户事实；提供由用户主动发起的紧急联系人入口；保留无障碍与离线入口 | 未经用户操作自动拨号、发送或分享；继续原因分析、训练/拉伸/等待观察建议、要求继续聊天后再决定 |
 | R1 / `SameDayUrgent` | 当前信息满足经审核的“当日或紧急专业评估”规则 | 明确行动优先级；生成事实摘要；允许显示审核过的就医准备内容和升级条件 | 弱化为普通预约；输出可能延误评估的自我处理建议 |
 | R2 / `PromptProfessionalReview` | 当前信息适合尽快预约专业评估 | 说明不确定性；只提供 Application Service 固定的专业评估准备事实澄清、预约准备、等待期间记录方式与升级条件 | 运行普通 PydanticAI 情境追问；以短期观察或自我管理替代专业评估；展示普通行动、动作/营养内容；宣称安全、排除疾病、给出诊断或个体治疗 |
-| R3 / `SelfManagementAndMonitor` | 当前回答未触发当前已审核规则，且场景允许普通流程 | 使用“当前回答未触发已审核的紧急规则”；提供审核过的 R3 自我管理与观察内容；保留升级条件 | 显示“无红旗”“低风险已确认”“可以放心继续训练” |
+| R3 / `SelfManagementAndMonitor` | 当前回答未触发当前已审核规则、规则完整执行、无未解决安全且场景允许普通流程 | 使用“当前回答未触发已审核的紧急规则”；提供审核过的 R3 自我管理与观察内容；保留升级条件 | 显示“无红旗”“低风险已确认”“可以放心继续训练” |
 
 ### 6.1 组合与未知状态
 
@@ -250,7 +250,7 @@ R0–R3 表示产品行动优先级，不是疾病严重程度，也不是诊断
 - `UnresolvedSafety` 可以触发一条经审核的必要澄清问题；若仍不明确，按该规则的 `unknown_policy` 进入更保守行动。
 - 普通体验追问的数量上限不得限制安全问题。
 - 用户拒绝回答关键安全问题时，必须执行规则规定的拒答路径，并明确“由于关键信息缺失，无法进入普通建议”。
-- `ordinary_agent_allowed=true` 只能出现在完整、支持且 tier=R3 的 Gate。R2 的专业准备不使用普通 Agent，不能通过把问法称为“澄清”绕过此抑制。
+- `ordinary_agent_allowed=true` 只能出现在完整、支持、`tier=R3`、`unresolved_safety=false` 且当前规则完整执行的 Gate。R2 的专业准备不使用普通 Agent，不能通过把问法称为“澄清”绕过此抑制。
 
 ---
 
@@ -381,19 +381,19 @@ Emergency/Urgent 首屏不得自动写入用户长期档案，也不得先要求
 
 #### ProfessionalPreparationMode
 
-仅在完整、支持场景的 R2 使用。Application Service 只能显示固定、经审核的专业评估准备、预约准备、等待期间记录方式和升级条件，并允许用户复核事实或准备沟通摘要。不得调用普通 PydanticAI、显示普通行动/训练调整/动作/营养内容，或把该模式写成自我管理。
+仅在完整、支持、无未解决安全的 R2 使用。Application Service 只能显示固定、经审核的专业评估准备、预约准备、等待期间记录方式和升级条件，并允许用户复核事实或准备沟通摘要。不得调用普通 PydanticAI、显示普通行动/训练调整/动作/营养内容，或把该模式写成自我管理。
 
 #### NormalMode
 
-仅在完整、支持场景的 R3，且输出通过策略验证时使用。可以包含事实摘要、非诊断性模式、审核行动内容、复查计划和升级条件。
+仅在完整、支持、无未解决安全且 `ordinary_agent_allowed=true` 的 R3，且输出通过策略验证时使用。可以包含事实摘要、非诊断性模式、审核行动内容、复查计划和升级条件。
 
 #### ManualMode
 
-用于用户拒绝可选云端 AI、第三方模型不可用，或用户主动选择纯手动记录，但确定性安全规则已完整执行、场景在支持范围内且 tier 为 R2/R3 的情况。Application Service 用固定表单/确定性规范化生成 typed draft，允许走“复核事实→创建 Intent→批准/拒绝→正式 Event”的同一两阶段确认流程；不得调用 LLM/Agent 工具，不得记录 provider/model/prompt 运行字段，不生成 `AIInterpretation`、普通行动或自动 check-in，也不得把通用模板伪装成个体 AI 分析。若安全规则、必要审核题或策略校验本身不可用，不能使用 manual，必须进入 degraded。
+用于用户拒绝可选云端 AI、第三方模型不可用，或用户主动选择纯手动记录，但确定性安全规则已完整执行、场景在支持范围内、`unresolved_safety=false` 且 tier 为 R2/R3 的情况。Application Service 用固定表单/确定性规范化生成 typed draft，允许走“复核事实→创建 Intent→批准/拒绝→正式 Event”的同一两阶段确认流程；不得调用 LLM/Agent 工具，不得记录 provider/model/prompt 运行字段，不生成 `AIInterpretation`、普通行动或自动 check-in，也不得把通用模板伪装成个体 AI 分析。若安全规则、必要审核题或策略校验本身不可用，不能使用 manual，必须进入 degraded。
 
 #### UnsupportedMode
 
-用于未开放身体区域、未覆盖人群或超出产品范围的输入。只有确定性安全规则完整执行且得到 R2/R3 时，Application Service 才可生成只含事实的 typed draft，并沿用两阶段确认写入正式 Event；不生成 `AIInterpretation`、普通建议或自动 check-in，只提供审核过的专业帮助入口。规则不完整时进入 degraded，不得借 unsupported 绕过门禁。
+用于未开放身体区域、未覆盖人群或超出产品范围的输入。只有确定性安全规则完整执行、`unresolved_safety=false` 且得到 R2/R3 时，Application Service 才可生成只含事实的 typed draft，并沿用两阶段确认写入正式 Event；不生成 `AIInterpretation`、普通建议或自动 check-in，只提供审核过的专业帮助入口。规则不完整或安全未解决时进入 degraded，不得借 unsupported 绕过门禁。
 
 #### DegradedMode
 
@@ -433,7 +433,7 @@ Emergency/Urgent 首屏不得自动写入用户长期档案，也不得先要求
 | 类别 | 可解决的用户任务 | 首发边界 |
 |---|---|---|
 | 观察与记录 | 记录明显加重因素、比较变化、设置复查 | 可在 R3 匹配时使用；不得表述为“已恢复”或疗效结论 |
-| 工作/训练负荷调整 | 识别明显加重的工作姿势、节奏或训练负荷，并给出经审核的保守调整 | 只在 R3、支持场景和完整事实匹配时出现；不得构成训练处方或复出许可 |
+| 工作/训练负荷调整 | 识别明显加重的工作姿势、节奏或训练负荷，并给出经审核的保守调整 | 只在完整、支持、无未解决安全的 R3 和完整事实匹配时出现；不得构成训练处方或复出许可 |
 | 低风险舒适活动 | 提供经审核、适用条件明确的可选舒适活动 | 首发默认关闭，直至临床审核动作、适用人群、停止/升级条件和地区内容 |
 | 一般恢复支持 | 解释通用的休息、睡眠、补水、规律饮食等生活支持 | 只使用临床与营养审核过的通用教育内容；不得从不适推导具体食物、补剂、药物或剂量 |
 | 专业帮助与沟通准备 | 提供就诊/教练沟通摘要、专业帮助入口和升级条件 | R0/R1/R2 按对应固定内容优先，不能被普通自我管理替代 |

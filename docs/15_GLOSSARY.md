@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TERM-01 |
-| 版本 | 1.1.0-draft |
+| 版本 | 1.2.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构 + 临床安全 |
 | 原则 | 其他文档引用这里的术语，不自行创造近义状态 |
@@ -25,13 +25,14 @@
 
 ## 2. 事实、推断与确认
 
-| 术语 | 稳定英文名 | 定义 |
-|---|---|---|
+| 术语 | 稳定英文名 | 定义 | 禁止误用 |
+|---|---|---|---|
 | 用户确认事实 | `UserConfirmedFact` | 用户明确查看并确认写入的结构化事实 |
 | 未确认输入 | `UnconfirmedInput` | AI 提取、设备导入或草稿中尚未获用户确认的内容 |
 | AI 推断 | `AIInference` | 模型基于事实产生的解释或归纳，必须标明不确定性和来源 |
 | 可能相关因素 | `PossibleContributor` | 与一个或多个确认事实相关的非诊断性影响因素，不代表病因 |
 | 本次情境透镜 | `context_lens` | 用户选择或确认的 exercise_load / desk_work_load / daily_activity / unknown 会话意图；只影响普通问题排序和内容筛选 | 不是病因、SafetyTier、受损组织或默认长期档案事实 |
+| 分析焦点 | `analysis_subject` | 用户选择或确认的本轮普通追问对象：一个或一组既有 `marker_id + sensation`；未选择时只能讨论所有位置共用的基础事实 | 不是长期事实、医学定位、默认主问题或把一个感觉复制到其他位置的依据 |
 | 本次实际使用资料收据 | `DataUseReceipt` | 面向用户和审计的最小记录：本轮实际读取的资料类别、来源、时间范围、用途、使用结果、同意/版本引用 | 不保存原始健康正文，不等同“AI 已读取全部资料” |
 | 审核行动计划 | `ActionPlan` | 应用服务从有效 ApprovedGuidance 组合的本次下一步；每项绑定事实、Tier、内容版本、适用条件与停止/升级条件 | 不等同处方、治疗计划、疗效保证或模型临时建议 |
 | 来源引用 | `FactProvenance` | 声明事实来自用户自报、设备、文件、专业人员或 AI 提取 |
@@ -159,6 +160,11 @@ v1 感觉代码的唯一序列化集合如下；显示文案、分组顺序和�
 | Turn 重试 | `TurnRetry`；仅对 latest、retryable 且输入已保留的 failed Turn 追加 `turn_retry_started`，不改写失败历史、不自动批准副作用 |
 | `DeferredRun` | 因用户确认或外部结果暂停的运行；服务端持久化后才能恢复 |
 | `PolicyValidator` | 独立于 LLM 的确定性输出校验器，失败则丢弃模型输出并降级 |
+| 普通问题目录 | `QuestionCatalog` | 由 Application Service 管理、版本化的普通结构化问题元数据集合；每个条目须声明目标事实组、答案契约、unknown 语义、适用情境、理由、状态和测试/审核引用 | 不包含安全题、医学阈值、自由行动内容或模型临时问题 |
+| 普通问题策略 | `QuestionPolicy` | Application Service 在完整、支持、无未解决安全的 R3 路径中，依据当前 canonical 输入和已批准普通目录确定是否产生一个普通问题计划的规则 | 不运行安全题、不可由 PydanticAI 选择、重排或绕过；无有效目录条目时不生成普通问题 |
+| 普通问题计划 | `QuestionPlan` | 带不可变 `plan_instance_id`、与本次 Session revision、canonical draft digest、位置—感觉关系、情境、焦点、安全/目录/locale 版本绑定的 transient 单题计划；只用于当前一轮的用户回答契约 | 不是正式 Event、长期档案、行动计划、开放聊天 prompt 或当前已实现的公开 API/Schema 字段 |
+| 问题计划实例 ID | `plan_instance_id` | 服务端为一次单题计划生成的不可变、不透明身份；用于把当前计划、答案提交、失效和精确幂等重放绑定到同一实例 | 不是 `question_id`、用户 ID、长期会话 ID 或客户端可自行创建的值 |
+| 规范草稿摘要 | `canonical_draft_digest` | 对用于普通问题计划的最小规范化草稿输入计算的版本化摘要；用于检测计划与答案是否仍匹配，不保存原始健康正文 | 不等同确认申请的 `request_digest`，不应由客户端自行伪造 |
 | `FrameworkBlueprint` / `FRAME-01` | 参考项目到本产品模块、依赖方向、采用分类和实施门禁的文档真源；不等于代码或发布证据 |
 | `ReferenceAdoptionClass` | `Runtime dependency`、`Pattern reference`、`Interaction reference`、`Prototype fixture` 或 `Prohibited reuse`；描述上游项目可以怎样影响本产品 |
 | `Application Handoff` | Application Service 在结构化 DTO、安全评估、Agent 候选和正式领域对象之间进行的有界类型交接；不允许用自由 Mapping 绕过校验 |

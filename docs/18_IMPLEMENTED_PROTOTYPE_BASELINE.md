@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | BASELINE-01 |
-| 版本 | 1.8.0 |
+| 版本 | 1.8.1 |
 | 状态 | Current prototype snapshot |
 | 快照日期 | 2026-08-09 |
 | 作用 | 取代已完成切片的独立 Feature Spec 与 Test Plan；记录现有代码边界、契约、测试和未证明范围 |
@@ -23,7 +23,7 @@
 | 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；内部 prototype 可显式展示候选状态；USDZ 容器和哈希读回通过 | 真实生产文件哈希/签名、商用权、App Store 分发、解剖与性能、下背实体/根变换/碰撞复核 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系；多位置时新增感觉必须显式选择 Marker | 未确认事实不会静默升级；新增位置不会复制既有感觉；空、重复或非活动 Marker 关联被拒绝；显式未知和安全回退存在 | 真实用户 30 秒完成率、公开 API 联调、生产持久化 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机；P4 1.1 未确认感觉保留 code/可选标签/显式位置关联 | 所有者隔离、篡改失败、幂等/冲突状态；重复位置 ID、悬空感觉关联和旧 code-only 1.0 恢复被拒绝 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |
-| 安全与 Agent | 确定性 SafetyEngine、PydanticAI typed candidate、PolicyValidator、授权只读上下文 | Safety 先于 Agent；R2 只进入固定专业评估准备，普通 Agent 仅完整支持的 R3；LLM 不能降级、确认或正式写入 | 临床规则批准、真实 Provider、Golden Set、影子验证 |
+| 安全与 Agent | 确定性 SafetyEngine、PydanticAI typed candidate、PolicyValidator、授权只读上下文 | Safety 先于 Agent；R2 只进入固定专业评估准备，普通 Agent 仅完整、支持、无未解决安全且 `ordinary_agent_allowed=true` 的 R3；LLM 不能降级、确认或正式写入 | 临床规则批准、真实 Provider、Golden Set、影子验证 |
 | 确认链 | typed Session/Turn、ConfirmationIntent、approve/deny、事务 write-set/read-back 原型 | revision、前驱、摘要、幂等、全有/全无关系在内存/fake repository 中可测 | OIDC、Consent、正式数据库、分布式锁、审计、公开 API |
 | 研究记录 | 默认关闭的 metadata-only 研究记录器 | 不采集健康正文、身份或音视频 | 真实参与者研究、伦理/隐私批准、可用性结论 |
 

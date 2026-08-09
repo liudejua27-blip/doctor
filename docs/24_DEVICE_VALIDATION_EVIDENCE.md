@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-DEVICE-01 |
-| 版本 | 1.4.0 |
+| 版本 | 1.4.1 |
 | 状态 | Internal Simulator Host smoke passed; physical device and production 3D validation blocked |
 | 执行日期 | 2026-08-08（设备尝试）；2026-08-09（Host 本地与远端 Simulator 验证） |
 | 对应 Git | `5dddd83602d0922bf78069dd6fdeaa5e5b5a5a5a`（内部 Host 实现）；远端 CI run `31295533318` 已成功 |
@@ -32,7 +32,7 @@
 | GitHub Actions run `31295533318` | macOS runner 的 iPhone 16 / iOS 18.5 成功执行 `scripts/run_internal_ios_host_tests.sh`；iOS job 总时长 7m11s | 云端 Simulator 可重建；不是物理 iPhone 或签名证据 |
 | Swift iPhoneOS build | `BodyCompanionIOS` target 成功 | 只证明 iOS SDK 编译 |
 | Swift iPhoneSimulator build | `BodyCompanionIOS` target 成功 | 只证明 Simulator SDK 编译 |
-| Swift Core tests | `5dddd83` 内容在本地：`80 tests, 0 failures` | 只证明状态/契约，不证明 UI/设备 |
+| Swift Core tests | `5dddd83` 的历史 Host 收据为 `80 tests, 0 failures`；当前 checkout 已在本轮 `swift test` 复验为 `82 tests, 0 failures` | 只证明状态/契约，不证明 UI/设备 |
 
 运行时前置条件缺失时，不能使用临时 `swift run`、macOS prototype 或无签名的 library 产物替代 iOS App 安装测试。
 

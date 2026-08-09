@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | GOV-01 |
-| 版本 | 0.1.0-draft |
+| 版本 | 0.1.1-draft |
 | 状态 | Pending written approval / GATE-02 未关闭 |
 | 负责人 | 产品负责人（待实名指定） |
 | 审核角色 | 产品、临床安全、隐私法务、安全、iOS、后端、Agent、QA、资产、内容负责人 |
@@ -88,12 +88,12 @@ GATE-02 完成**不会**自动批准 ADR-0019、真实 Agent、资料读取、�
 
 ```text
 用户确认本次情境与分析焦点
-→ 服务端在完整、支持、R3 的安全结果后生成恰好一个版本化 QuestionPlan
+→ 服务端在 `complete + supported + R3 + unresolved_safety=false` 的安全结果后生成恰好一个版本化 QuestionPlan
 → iOS 渲染该题、选项与“不确定”出口
 → 情境、位置或感觉关系变化使旧计划失效
 ```
 
-P1I 仍不得读取 Profile/历史/HealthKit/上传资料，不调用真实 Provider，不生成病因、动作、营养或药物建议，不写正式档案。进入实现前必须先完成 ADR-0019 的批准/替代关系、DATA-01/API-01/Schema/测试计划的正式变更；R0/R1/R2、未解决安全、离线或不支持场景始终不得进入普通追问。
+GATE-02 通过本身不授权 P1I 实现。P1I 仍不得读取 Profile/历史/HealthKit/上传资料，不调用真实 Provider，不生成病因、动作、营养或药物建议，不写正式档案。进入实现前必须依 [FEAT-COMP-01 §10.2](25_CONVERSATIONAL_RECOVERY_COMPANION.md) 关闭 P1I-OPEN-001～006，并完成 ADR-0019 的批准/替代关系、DATA-01/API-01/Schema/测试计划的正式变更；R0/R1/R2、未解决安全、离线或不支持场景始终不得进入普通追问。
 
 ## 7. 审批记录
 
@@ -115,3 +115,4 @@ P1I 仍不得读取 Profile/历史/HealthKit/上传资料，不调用真实 Prov
 | 日期 | 变更 | 说明 |
 |---|---|---|
 | 2026-08-09 | 新建 GOV-01 | 为 GATE-02 建立不假设具名责任人、地区或批准结论的决策与签字包。 |
+| 2026-08-09 | 0.1.1-draft | 明确 GATE-02 通过不授权 P1I；P1I 仍需其全部未决项、ADR 与跨端契约完成。 |

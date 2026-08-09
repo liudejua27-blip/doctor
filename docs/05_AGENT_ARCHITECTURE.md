@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | AGENT-01 |
-| 版本 | 1.3.0-draft |
+| 版本 | 1.3.3-draft |
 | 状态 | Baseline Draft |
 | 负责人 | AI 工程负责人 |
 | 审核角色 | 产品、后端、临床安全、隐私法务、安全、QA |
 | 批准角色 | 产品负责人、工程负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、SAFE-01、PRIV-01、FRAME-01、BASELINE-01、ADR-0002、ADR-0018、ADR-0019 |
+| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、SAFE-01、PRIV-01、FRAME-01、BASELINE-01、ADR-0002、ADR-0018、ADR-0019、CONFLICT-001、CONFLICT-002 |
 | Agent 框架 | `pydantic-ai-slim==2.23.0` |
 | 生效条件 | 责任角色完成评审并形成批准记录；当前状态不代表已批准实施或发布 |
 
@@ -25,7 +25,7 @@
 Agent 子系统负责把用户关于身体不适的自然语言、人体标记和已授权背景转换为：
 
 1. 可验证的候选结构化字段；
-2. 下一条最有信息价值的问题；
+2. 由 Application Service 的 `QuestionPolicy` 选择、由 Agent 仅在当前有效计划内表达或理解的下一条普通问题；
 3. 事实、推断和未知项明确分离的解释草稿；
 4. 供确定性安全规则和应用服务处理的强类型结果；
 5. 用户可见、可修改、可拒绝的事实、行动和报告草稿；
@@ -111,7 +111,7 @@ flowchart LR
     PRE --> QUESTIONS["不可跳过安全问题"]
     QUESTIONS --> SAFE["确定性安全规则引擎\n输出最高 SafetyTier"]
     SAFE -->|"R0/R1/R2、Unresolved 或场景未审核"| FIXED["固定升级/受限专业准备/降级响应\n不调用普通 Agent"]
-    SAFE -->|"R3 且场景已审核"| PLAN["Application QuestionPolicy\n至多一个 QuestionPlan"]
+    SAFE -->|"complete + supported + R3\n且 unresolved_safety=false"| PLAN["Application QuestionPolicy\n至多一个 QuestionPlan"]
     PLAN --> AGENT["PydanticAI AssessmentAgent\n不可信候选输出"]
     AGENT --> POST["Schema + PolicyValidator"]
     POST --> CONTENT["审核内容解析器"]
@@ -178,11 +178,13 @@ Agent 仅执行：
 
 - 结构化提取；
 - 矛盾和缺失字段识别；
-- 普通追问选择；
+- 对 Application Service 已下发的单一普通 `QuestionPlan` 做受限自然表达与候选字段提取；
 - 审核内容的选择与通俗解释；
 - 报告草稿生成。
 
 Agent 不持有数据库会话，不掌握跨用户查询能力，不接收客户端提供的模型密钥。
+
+普通问题 ID、顺序、答案契约、完成条件、失效和下一状态均由 Application Service 的版本化 `QuestionPolicy` 决定；Agent 不能自由选题、批量提问或改变计划。当前原型可表达多题 `AskQuestionCandidate` 的历史边界与此目标存在差距，按 [CONFLICT-002](decisions/CONFLICT-002-question-selection-authority.md) 的保守临时行为处理，不能作为 P1I 已实现证据。
 
 ### 4.4 iOS P1D DTO 边界
 
@@ -200,9 +202,9 @@ P1D 的 iOS Core 测试只验证状态机和映射边界，不能代替 Pydantic
 
 P1E 的 `body_companion.domain.ios_signal_intake` 是一个内部纯适配模块，不是公开写入端点。它严格解析 `ios-signal-intake.schema.json` `1.1`，检查 session/revision、位置 marker 关系和事实组完整性，再按 `SignalFactSource` 生成后端 `AssessmentDraft`。每个感觉必须带显式 `location_marker_ids`；服务端不得把缺失的空间关系复制到全部位置。
 
-适配器的结果只能是 `needs_safety_precheck`、`ready_for_agent`、`safety_action_required`、`offline_only` 或 `rejected`。客户端 `ordinary_agent_allowed`、`phase` 和安全文案不具备授权作用；只有 Application Service 传入本次重新运行、完整、支持场景且 tier=R3 的 `SafetyEvaluation` 时，才可以产生 Agent 可用草稿。R2 只能返回固定的专业评估准备路径，不能以内部 DTO 名称绕过普通 Agent 抑制。P1E 不读取客户端未声明的 Profile、HealthKit 或文件，不创建 Event/Approval/Episode/Report，也不把 `raw_user_text` 放入结果或日志。具体字段和测试见 [FEAT-P1E](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)。
+适配器的结果只能是 `needs_safety_precheck`、`ready_for_agent`、`safety_action_required`、`offline_only` 或 `rejected`。客户端 `ordinary_agent_allowed`、`phase` 和安全文案不具备授权作用；只有 Application Service 传入本次重新运行、完整、支持、`tier=R3`、`unresolved_safety=false` 且 `ordinary_agent_allowed=true` 的 `SafetyEvaluation` 时，才可以产生 Agent 可用草稿。R2 只能返回固定的专业评估准备路径，不能以内部 DTO 名称绕过普通 Agent 抑制。P1E 不读取客户端未声明的 Profile、HealthKit 或文件，不创建 Event/Approval/Episode/Report，也不把 `raw_user_text` 放入结果或日志。具体字段和测试见 [FEAT-P1E](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)。
 
-P1F 将 P1E 放入 Application Service 的固定顺序，但暂不调用 Agent：`P1E(structural)` → 当前 SafetyEngine → `P1E(server_safety)` → 脱敏 handoff。只有 tier=R3 的 `ready_for_agent` 才能成为后续 Agent use case 的输入；R0/R1/R2/incomplete/unsupported/unavailable 永远不能携带 `AssessmentDraft` 进入普通 Agent。R2 的固定专业评估准备可以保留事实复核或沟通准备，但不能复用该 handoff。P1F 的结果、隐私和无副作用边界见 [FEAT-P1F](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)、[ADR-0010](decisions/ADR-0010-p1f-application-handoff-boundary.md)；它不是公开 API，也不改变现有 P1B `AssessmentService.assess()`。
+P1F 将 P1E 放入 Application Service 的固定顺序，但暂不调用 Agent：`P1E(structural)` → 当前 SafetyEngine → `P1E(server_safety)` → 脱敏 handoff。只有 `complete + supported + tier=R3 + unresolved_safety=false + ordinary_agent_allowed=true` 的 `ready_for_agent` 才能成为后续 Agent use case 的输入；R0/R1/R2/incomplete/unsupported/unavailable 永远不能携带 `AssessmentDraft` 进入普通 Agent。R2 的固定专业评估准备可以保留事实复核或沟通准备，但不能复用该 handoff。P1F 的结果、隐私和无副作用边界见 [FEAT-P1F](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)、[ADR-0010](decisions/ADR-0010-p1f-application-handoff-boundary.md)；它不是公开 API，也不改变现有 P1B `AssessmentService.assess()`。
 
 ### 4.4.2 P1G P1F → PydanticAI Agent 内部交接
 
@@ -351,8 +353,8 @@ Turn 顶层 `workflow` 固定为 `assessment | post_escalation_record`。R0/R1 �
 本节落实 ADR-0019 的产品主闭环，但不在本次文档更新中声称 API 或 Schema 已经改变。
 
 1. **情境只影响排序。**Application Service 可以把用户确认的训练/运动、久坐/工作、日常活动或未知的非空集合，以及用户确认的 `analysis_subject` 投影给 QuestionPolicy；Agent 只能据此整理已下发问题的候选回答。它不得把情境表达为病因、受损组织、诊断、恢复期限或长期 Profile 更新，也不得把一个 Marker 的感觉复制给其他 Marker。
-2. **问题不是模型自由选择。**QuestionPolicy 固定执行“安全 → 基础事实 → 当前焦点情境 → 已授权资料 → 行动匹配补充”的优先级、单题限制、未知出口、完成门槛、重复抑制与确定性 tie-break。它输出一个版本化 `QuestionPlan`；没有有效计划时，普通 Agent 不运行。
-3. **安全永远优先。**安全必答项、位置/感觉/程度/时间/功能的高价值缺失项优先于普通情境追问；R0/R1、R2、未解决安全、未覆盖场景、手动和降级路径没有普通 Agent 对话。R2 只允许为专业评估准备的固定事实澄清与沟通摘要，不能显示普通自我管理、训练调整、营养或舒适活动。
+2. **安全题与普通题分离。**`category=safety` 的题目、题目 ID、顺序和完成条件只由 SafetyGate 与 `required_question_ids` 的审核安全目录决定，不属于普通 `QuestionPolicy` 或普通 `QuestionPlan`。只有安全结果为 `complete + supported + R3 + unresolved_safety=false` 时，普通 QuestionPolicy 才可能运行；R0/R1/R2、未解决安全、未覆盖场景、手动和降级路径没有普通 Agent 对话。R2 只允许为专业评估准备的固定事实澄清与沟通摘要，不能显示普通自我管理、训练调整、营养或舒适活动。
+3. **普通问题不是模型自由选择。**在未来完整 R3 的普通路径中，QuestionPolicy 固定执行基础事实 → 当前焦点情境事实的优先级、单题限制、未知出口、完成门槛、重复抑制与确定性 tie-break。P1I 明确关闭可选资料读取和行动匹配补充；这些层级只能在另一份获批 Feature/ADR、资料收据、内容审核和跨端契约完成后再评审。它输出一个版本化 `QuestionPlan`；没有有效计划时，普通 Agent 不运行。
 4. **实际资料使用必须可见。**默认模型只接收本次会话的最小结构化事实。每一个额外资料工具调用都要让 Application Service 记录类别、来源、时间范围、用途、许可/版本引用和 requested/declined/denied/no-data/stale/read/included/failed/not-used 状态；最终页面显示的是本次实际使用收据，不是“已了解全部身体情况”的笼统描述。
 5. **行动不是模型输出。**Agent 可以解释被选中的审核内容，但 `ActionPlanPreview` 和正式 ActionPlan 只能由 Application Service 在安全结果、用户确认事实、场景、人群、地区和有效内容版本均匹配后组合。模型不得自由生成动作、拉伸、食物、补剂、药物、剂量、治疗方案、疗效承诺或复出许可。
 6. **无匹配即保守。**没有完全匹配的审核内容时，关闭相应行动类别，转入记录、复查、专业帮助或 Degraded/Unsupported 路径；不得为了完成聊天而补写建议。
@@ -656,3 +658,11 @@ backend/src/body_companion/
 - [ ] 模型失败时仍可记录、安全问答和显示紧急入口。
 - [ ] Telemetry 默认不含提示词、工具参数和健康原文。
 - [ ] 确定性测试和真实模型 eval 均通过上线门槛。
+
+## 15. 变更记录
+
+| 日期 | 变更 | 说明 |
+|---|---|---|
+| 2026-08-09 | 1.3.1-draft | 澄清普通问题选择权属于 Application Service 的 `QuestionPolicy`；Agent 只在当前有效单题计划内做受限表达/候选提取，并登记 CONFLICT-002。未新增实现或跨端契约。 |
+| 2026-08-09 | 1.3.2-draft | 进一步分离 SafetyGate 的安全题权威与普通 QuestionPolicy；P1I 只允许基础/当前焦点情境事实，资料与行动匹配仍关闭。 |
+| 2026-08-09 | 1.3.3-draft | 统一所有普通 Agent/P1E/P1F 准入文字为完整、支持、R3、无未解决安全且 `ordinary_agent_allowed=true`。 |

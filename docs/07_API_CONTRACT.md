@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | API-01 |
-| 版本 | 1.3.0-draft |
+| 版本 | 1.3.1-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 后端/API 负责人 |
 | 审核角色 | 产品、iOS、后端、AI、临床安全、隐私法务、安全、QA |
 | 批准角色 | 产品负责人、工程负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、AGENT-01、SAFE-01、PRIV-01、FRAME-01、ADR-0018、ADR-0019 |
+| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、AGENT-01、SAFE-01、PRIV-01、FRAME-01、ADR-0018、ADR-0019、CONFLICT-001、CONFLICT-002 |
 | Base path | `/v1` |
 | OpenAPI | [`contracts/openapi-v1.yaml`](contracts/openapi-v1.yaml) |
 | 数据 Schema | [`contracts/`](contracts/) |
@@ -212,7 +212,7 @@ sequenceDiagram
     A->>S: 对全部当前可用输入执行完整确定性规则
     alt R0/R1/R2、Unresolved 或场景未审核
         A->>A: 保存固定 emergency/urgent/unsupported/degraded 信封
-    else R3 且场景已审核
+    else complete + supported + R3 + unresolved_safety=false + ordinary_agent_allowed=true
         A->>G: 强类型运行
         G-->>A: 不可信候选 AgentTurn.output
         alt Agent 发现新的候选 SafetySignal
@@ -266,7 +266,7 @@ iOS 只缓存仍在有效期且签名/digest/Schema 可识别的响应；网络�
 - `immediate_action`：审核 `content_id/content_release_id`、解析文案、行动代码和普通建议抑制位；
 - `safetyBaselineId`；完整 canonical `SafetyBaseline` 留在服务端发布 manifest/审计系统，不强制下发给 iOS。
 
-只有 `complete + all_current_rules_executed=true + tier=R3 + scenario_support=supported + unresolved_safety=false` 才允许普通 Agent 调用。R2 必须进入应用服务固定的专业评估准备，不得调用普通 PydanticAI 或下发普通行动。`incomplete/unavailable` 必须序列化为 false 并进入安全澄清或保守模式，不得假装规则已经执行完成。
+只有 `complete + all_current_rules_executed=true + tier=R3 + scenario_support=supported + unresolved_safety=false + ordinary_agent_allowed=true` 才允许普通 Agent 调用。R2 必须进入应用服务固定的专业评估准备，不得调用普通 PydanticAI 或下发普通行动。`incomplete/unavailable` 必须序列化为 false 并进入安全澄清或保守模式，不得假装规则已经执行完成。
 
 `required_questions[].question_id` 必须与 gate 的 `required_question_ids` 去重集合完全相同；R0/R1 时 `ordinary_advice_suppressed=true`。集合相等和 `content_id` 对当前 SafetyBaseline 的有效性由 Application Service / PolicyValidator 强制，并由 `T-CONTRACT-SAFETY-*`、`T-SAFE-SUPPRESS-*` 验证；客户端不得自行生成问题或紧急文案。
 

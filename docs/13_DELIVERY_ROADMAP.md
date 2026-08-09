@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | REL-01 |
-| 版本 | 2.5.0-draft |
+| 版本 | 2.6.0-draft |
 | 状态 | Active roadmap |
 | 负责人 | 交付负责人 + 产品负责人 |
 | 审核角色 | 临床安全、隐私安全、iOS、后端、Agent、QA、运营 |
@@ -30,7 +30,7 @@
 
 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 是 GATE-02 前唯一允许并行的工程运行时例外：它只为现有 P0 SwiftUI 壳建立内部 Simulator App Host、显式关闭能力集和 UI smoke，不新增领域字段、内存产品层、Agent、Provider、资料读取、行动或正式数据链。它不构成 GATE-02、GATE-06 或任何生产门禁通过。
 
-FEAT-COMP-01 已把后续产品纵向切片重新收拢为“运动/工作不适 → 位置 → 本次情境 → 安全分流 → AI 一次一问 → 事实复核 → 审核行动 → 保存/复查/沟通摘要”。该规格与 ADR-0019 均为 Draft/Proposed，尚未形成 API、Schema 或已实现能力。
+FEAT-COMP-01 已把后续产品纵向切片重新收拢为“运动/工作不适 → 位置 → 本次情境 → 安全分流 → AI 一次一问 → 事实复核 → 审核行动 → 保存/复查/沟通摘要”。其 P1I 审核附录已明确目录元数据、单题编排、失效和未来测试输入；该规格与 ADR-0019 均为 Draft/Proposed，尚未形成 API、Schema 或已实现能力。
 
 ## 2. 首发闭环
 
@@ -169,8 +169,8 @@ GATE-03～06 可以并行，但任何一项未通过都不能进入正式纵向�
 
 1. 已完成并留存 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的内部 Simulator Host smoke：本地与远端 CI 均通过；它仍是工程例外，不替代任何 GATE。
 2. 填写并书面批准 [GOV-01](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 的责任矩阵和 G2-DEC-001～008；在此之前不增加新的内存产品样机层。
-3. 评审 ADR-0019，确认情境透镜、资料使用收据、审核行动和沟通摘要的产品/安全/隐私边界。
+3. 评审 ADR-0019 与 FEAT-COMP-01 §10.2，确认情境透镜、资料使用收据、QuestionPlan、审核行动和沟通摘要的产品/安全/隐私边界；在 P1I-OPEN-001～006 未关闭前不实现普通情境追问。
 4. 在 GATE-03 内锁定运动/工作情境的内容范围、停止条件和营养边界，并将其映射到 TEST-COMP-01。
-5. 在获批后并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
+5. 仅在各自的 GATE-03/04/05/06、GOV-01 能力开关决定和相关 ADR/契约批准后，再并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
 
 在远端基线和 GATE-02 完成前，不继续增加新的内存产品样机层；仅可执行本节明确列出的内部 iOS App Host 工程例外。

@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 2.8.0-draft |
+| 版本 | 2.9.0-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -20,7 +20,7 @@
 | 需求 | 核心设计真源 | 机器契约 | 当前实现/测试 | 当前状态 | 发布门禁 |
 |---|---|---|---|---|---|
 | PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified | GATE-06/07/08 |
-| PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001 | `agent-turn`、内部 handoff schemas | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3 | Prototype verified; 情境化产品能力未实现 | GATE-03/04/07/08 |
+| PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001、CONFLICT-002、FEAT-COMP-01 §10.2 | `agent-turn`、内部 handoff schemas；P1I `QuestionPlan` 契约待批准 | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3。P1I 的目录/失效/测试评审输入已定义，但现有 Agent 仍可表达多题，不能当作单题计划实现 | Prototype verified; P1I / 情境化产品能力未实现 | GATE-02/03/04/07/08 |
 | PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
@@ -32,7 +32,7 @@
 | PRD-F09A 资料权限 | AGENT-01、PRIV-01 | `agent-context`、Consent operations | typed scope/owner/expiry/allowlist 样机 | Prototype verified | GATE-04/07 |
 | PRD-F09B HealthKit/文件 | AGENT-01、PRIV-01 | Connector capabilities | 未实现 | Planned P1 | 首发后独立门禁 |
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
-| PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001 | 待 ADR 批准后新增上下文、资料收据、行动引用与报告显示类型契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；TEST-COMP-01 已定义；无情境化 API 或生产实现 | Draft / P0 prototype only | GATE-03/04/07/08 |
+| PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001、CONFLICT-002 | 待 ADR 批准后新增上下文、资料收据、行动引用、报告显示类型与 P1I `QuestionPlan` 契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；P1I 审核附录与 COMP-T-024～030 已定义；无情境化 API、目录或生产实现 | Draft / P0 prototype only | GATE-02/03/04/07/08 |
 | PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过 | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
 
 ## 3. 安全不变量追踪

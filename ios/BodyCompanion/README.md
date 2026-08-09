@@ -29,7 +29,7 @@ python3 ../scripts/check_internal_ios_host.py
 bash ../scripts/run_internal_ios_host_tests.sh
 ```
 
-当前 Swift Core 为 80 tests、0 failures；内部 Host 在本地 7 项 UI smoke 与远端 CI 中均通过。它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
+当前 Swift Core 为 82 tests、0 failures；内部 Host 在本地 7 项 UI smoke 与远端 CI 中均通过。它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
 
 - [IOS-01](../../docs/04_IOS_ARCHITECTURE.md)
 - [BODY-01](../../docs/08_BODY_MAP_2D_3D.md)

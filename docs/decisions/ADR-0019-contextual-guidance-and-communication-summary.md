@@ -43,9 +43,9 @@ AI 默认只使用当前会话已输入的结构化内容。读取运动习惯�
 
 ### 3. 问题选择由确定性 `QuestionPlan` 先行，行动计划只从审核内容库产生
 
-在调用 PydanticAI 前，Application Service 必须使用版本化、可测试的 `QuestionPolicy` 生成至多一个 `QuestionPlan`。它只可引用审核问题目录中的问题 ID、目标事实组、答案类型/选项、“不确定”语义、提问理由、适用情境/覆盖范围和版本。
+在调用 PydanticAI 前，Application Service 必须使用版本化、可测试的 `QuestionPolicy` 生成至多一个普通 `QuestionPlan`。它只可引用审核普通问题目录中的问题 ID、目标事实组、答案类型/选项、“不确定”语义、提问理由、适用情境/覆盖范围和版本。
 
-固定优先级为：安全必答项 → 缺失的基础位置/感觉/强度/时间/功能事实 → 当前 `analysis_subject` 的已选情境事实 → 已明确授权且实际可用的资料 → 审核行动匹配所需的补充事实。已确认且仍新鲜的事实不得重复问；冲突、过期或用户明确修订时必须以可解释原因重新询问。PydanticAI 只能从回答中提取未确认候选并在允许范围内生成自然语言，不能自由决定安全题、问题目录、问题顺序、行动或结束条件。
+安全必答项由 SafetyGate 和审核安全目录的 `required_question_ids` 独占，必须在普通路径前完成；它们不属于普通 QuestionPolicy 或普通 QuestionPlan。只有安全结果为 `complete + supported + R3 + unresolved_safety=false` 时，普通 QuestionPolicy 才可按“缺失共用基础事实 → 当前 `analysis_subject` 的已选情境事实”选择一题。可选资料和审核行动匹配的补充事实不属于首个 P1I 切片，必须在另行批准的 Feature/ADR、资料收据、内容审核和契约完成后才可加入。已确认且仍新鲜的事实不得重复问；冲突、过期或用户明确修订时必须以可解释原因重新询问。PydanticAI 只能从当前计划的回答中提取未确认候选并在允许范围内生成自然语言，不能自由决定安全题、问题目录、问题顺序、行动或结束条件。
 
 ### 4. 行动计划只从审核内容库产生
 
@@ -114,6 +114,7 @@ AI 默认只使用当前会话已输入的结构化内容。读取运动习惯�
 4. 为运动与久坐办公两类用户建立安全、隐私、可用性和真实设备验证证据；
 5. 未满足上述条件前，保持具体动作、营养/补给和真实 Provider 上下文读取能力关闭。
 6. 在正式替代旧 ADR 的 R2/R3 普通 Agent 表述前，按 [CONFLICT-001](CONFLICT-001-r2-ordinary-agent-gate.md) 的更保守临时行为执行：普通 Agent 仅限完整、支持、无未解决安全的 R3；R2 只使用固定专业评估准备。
+7. 在 P1I 实现前，按 [CONFLICT-002](CONFLICT-002-question-selection-authority.md) 的保守临时行为执行：SafetyGate 独占安全题，Application Service 独占普通问题选择；P1I-OPEN-001～006、DATA/API/Schema 和锁定测试未完成时不实现或启用普通 QuestionPlan。
 
 ## 变更记录
 
@@ -122,3 +123,4 @@ AI 默认只使用当前会话已输入的结构化内容。读取运动习惯�
 | 2026-08-09 | 初稿：固定情境化追问、审核行动与沟通摘要的跨域边界 | Codex / 待评审 |
 | 2026-08-09 | 补足 Proposed 编排合同：多情境、分析焦点、QuestionPlan、资料收据状态机与行动预览失效 | Codex / 待评审 |
 | 2026-08-09 | 记录 R2 普通 Agent 语义冲突及保守临时行为 | Codex / 待评审 |
+| 2026-08-09 | 澄清安全题与普通 QuestionPlan 的所有权及 P1I 窄范围 | Codex / 待评审 |
