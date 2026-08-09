@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.5.5-draft |
+| 版本 | 0.5.6-draft |
 | 状态 | Executed locally: HOST-T-001～015 have internal-only Simulator evidence; `31311301360`、`31312416395` 和 `31313515662` 均仅 HOST-T-015 failed（exit 65），测试专用修复 `0ed0563`的 local retry passed / remote retry not yet pushed |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
@@ -43,7 +43,7 @@
 | HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；文字入口、搜索框、无结果状态和选项使用稳定目录 ID（不能使用过滤后的序号或用户输入）；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
 | HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留共享文字列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留同一入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
 | HOST-T-014 | 更多感觉与未知边界 | 从结构化描述页展开具有稳定、非健康内容 identifier `sensation-picker.more-open` 的“更多感觉”，以固定内部中文标签“麻木”选中既有稳定枚举中的扩展项（不依赖用户输入或过滤序号）；它沿用显式位置关联、只形成未确认草稿，不显示 AI 建议、网络、保存成功或医学结论。两个位置时还必须分别呈现“部分位置的感觉说不清”和“这些位置的感觉都说不清”，不能再出现重复的单位置同义入口 | Simulator UI + Core |
-| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路、今天页两张情境提示卡，以及结构化描述页的“确认/未知”和“保存/未知”成对动作均可滚动到且可点击；在该尺寸下，三组并列内容必须暴露稳定的 `.vertical` 容器 identifier 且同名 `.horizontal` 容器不存在，证明运行时选择纵向布局分支；测试不比较滚动后控件的瞬时屏幕坐标。只使用稳定 identifier，不判断位置摘要/回退提示、VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
+| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路、今天页两张情境提示卡，以及结构化描述页的“确认/未知”和“保存/未知”成对动作均可滚动到且可点击。在文字部位 Sheet 的 `body-map.text-picker-done` 完成并关闭后，已有位置时必须直接断言 `body-map.next` 存在、位于底部 safe-area 主操作区且立即可点击；不得用通用滚动循环把不可达动作伪装为通过。在该尺寸下，三组并列内容必须暴露稳定的 `.vertical` 容器 identifier 且同名 `.horizontal` 容器不存在，证明运行时选择纵向布局分支；测试不比较滚动后控件的瞬时屏幕坐标。只使用稳定 identifier，不判断位置摘要/回退提示、VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
 
 ### 3.1 候选 3D probe 的可接受结果
 
@@ -174,3 +174,4 @@ not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗
 | 2026-08-09 | 0.5.3-draft | 归档首次远端 run `31311301360`：iPhone 16 / iOS Simulator 18.5 仅 HOST-T-015 失败（exit 65），后端/契约、Swift 94、SDK build 与 Host 静态边界均通过。`7e64833` 的本地 iPhone 17 Pro / iOS 26.5 完整 Host suite 与单独 HOST-T-015 复测通过；后续远端结果见 0.5.4。 |
 | 2026-08-09 | 0.5.4-draft | 归档 `7e64833` 的第二次远端 run `31312416395`：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped，唯一失败的 HOST-T-015 未找到 `body-map.next` Button（exit 65）；Backend and contracts、Swift 94、SDK build 与 Host 静态边界通过。`e0f1089` 仅将该断言移至文字部位 Sheet 关闭后，本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite 与单独 HOST-T-015 通过；远端 retry pending。 |
 | 2026-08-09 | 0.5.5-draft | 归档 pushed SHA `306f2b91` 的第三次远端 run `31313515662`：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped，唯一失败的 HOST-T-015 未找到静态文案“已添加待确认位置：左膝附近”（exit 65）；Backend and contracts、Swift 94、SDK build 与 Host 静态边界通过。测试专用修复 `0ed0563` 不再依赖该短暂选择反馈，先验证无并存 `MarkEditor`、实际完成/关闭文字部位 Sheet 后再检查 `body-map.next`，并同样加固 `selectBoth`；本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过；远端 retry 尚未推送。 |
+| 2026-08-09 | 0.5.6-draft | 在实现前补充 HOST-T-015 的布局验收：已有位置时，文字部位 Sheet 完成/关闭后 `body-map.next` 必须作为底部 safe-area 主动作立即可达；滚动只用于内容，不得成为主继续动作可达性的替代。该规格变更不新增健康字段、API、网络、持久化、安全或 AI 行为；执行收据待后续实现与验证归档。 |

@@ -25,12 +25,12 @@
 | TEST-BODY-007 | ADR-0018 | Unit | 未批准/blocked/retired manifest | 不加载模型，返回 fallback | 是 |
 | TEST-BODY-008 | ADR-0009 | Static | 禁止 RehabMate 实现/资产扫描 | 无 Web/Three.js/GSAP/body.glb 生产引用 | 是 |
 | TEST-BODY-009 | PRD-F03A | Device | 最低设备 3D 冷启动/旋转/缩放 | 达到 signpost 目标或回退 2D | 待真机 |
-| TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type/对比度 | 无 3D 可通过“文字选择部位”入口搜索、选择 Area、继续；accessibility size 下状态、回退和主要动作不裁切且可分别聚焦；动画可关闭；深色/高对比度下文字不依赖浅色强调色 | Internal Host 结构 smoke + 待真机 |
+| TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type/对比度 | 无 3D 可通过“文字选择部位”入口搜索、选择 Area、继续；accessibility size 下状态、回退和主要动作不裁切且可分别聚焦。已有至少一个未确认位置时，文字部位 Sheet 的 Done 关闭后，`body-map.next` 必须作为底部 safe-area 主动作立即可达，滚动内容不得覆盖它；动画可关闭；深色/高对比度下文字不依赖浅色强调色 | Internal Host 结构 smoke + 待真机 |
 | TEST-BODY-011 | PRD-F01 | Integration | 选位置后进入结构化描述 | 未确认位置保留，未自动填感觉 | 待联调 |
 | TEST-BODY-012 | PRD-F03A | Recovery | 3D loader/命中/内存失败 | 提示原因，保留草稿，2D/列表可继续 | Unit + Device |
 | TEST-BODY-013 | PRD-F03A | Simulator probe | 显式内部候选 Bundle 加载 | 先观察当前 Scene 的 `onLoadAttempted` 运行时确认，再只接受内部候选状态+列表入口，或加载/初始化错误、8 秒超时后的固定 2D 回退+列表入口；不点击网格、不创建位置事实 | 是 / 非真机 |
 | TEST-BODY-014 | PRD-F03A | Unit | 3D attempt 状态权威 | 只有当前 `request3D()` attempt 的 `onLoadAttempted` 后 `onReady` 可以进入 3D ready；初始/2D interactive、跳过确认、切回 2D 后的旧回调或被新请求替代的旧回调均不得改变当前状态 | 是 |
-| TEST-BODY-015 | PRD-F03A、NFR-A11Y-001 | UI | 共享文字入口 | 2D、候选 3D ready 与候选回退均能打开同一可搜索列表；无结果不改变位置草稿，选中后只显示待确认 Area 反馈 | 是 / 非真机 |
+| TEST-BODY-015 | PRD-F03A、NFR-A11Y-001 | UI | 共享文字入口 | 2D、候选 3D ready 与候选回退均能打开同一可搜索列表；无结果不改变位置草稿，选中后只显示待确认 Area 反馈；Done 关闭 Sheet 后，已有位置时稳定 `body-map.next` 立即作为底部 safe-area 继续动作可达，不以通用滚动作为通过条件 | 是 / 非真机 |
 | TEST-BODY-016 | PRD-F03A、ADR-0003 | Unit | Canvas Zone 映射（计划） | Zone 模式在 2D Canvas 命中区域时生成 `body_map_2d` 的 `Area + region_mask_id`，没有持久化 `anchor_2d.point`；文字列表现有 Area/Zone 语义不变 | 计划中 |
 | TEST-BODY-017 | PRD-F03A、ADR-0003 | Unit | Canvas Pin 映射（计划） | Pin 模式的明确 2D Canvas 点选才生成带真实归一化 `anchor_2d.point` 的 Point；不得把 Zone 或文字目录映射为 Point | 计划中 |
 | TEST-BODY-018 | PRD-F03A、NFR-A11Y-001 | Unit/UI | Zone 三元组键与表面共存（计划） | 同 `(region_id, laterality, surface)` 的 Zone 复选仅重新选中并保留 `marker_id`；同区域/侧别而不同 surface 的 Zone 必须共存、可分别选中/高亮且不互相覆盖 | 计划中 |
