@@ -46,6 +46,7 @@ public struct BodyMapScreen: View {
                         }
                         .pickerStyle(.segmented)
                         .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
+                        .accessibilityIdentifier("body-map.mode")
 
                         Picker("标记方式", selection: Binding(
                             get: { model.markingMode },
@@ -74,7 +75,8 @@ public struct BodyMapScreen: View {
                 if model.lastMutation == .rejectedMarkerLimit {
                     BodyMapNotice(
                         text: "已达到 20 个位置上限，请编辑或删除已有标记。",
-                        systemImage: "exclamationmark.circle"
+                        systemImage: "exclamationmark.circle",
+                        identifier: "body-map.limit-notice"
                     ) {
                         model.clearInteractionNotice()
                     }
@@ -83,7 +85,8 @@ public struct BodyMapScreen: View {
                 if model.lastMutation == .rejectedDuplicateLocation {
                     BodyMapNotice(
                         text: "这个位置标记已存在，未重复加入记录。",
-                        systemImage: "exclamationmark.circle"
+                        systemImage: "exclamationmark.circle",
+                        identifier: "body-map.duplicate-notice"
                     ) {
                         model.clearInteractionNotice()
                     }
@@ -92,14 +95,19 @@ public struct BodyMapScreen: View {
                 if model.lastMutation == .rejectedDraftSynchronization {
                     BodyMapNotice(
                         text: "位置未能同步到当前记录，已恢复到上一次有效状态。",
-                        systemImage: "exclamationmark.triangle"
+                        systemImage: "exclamationmark.triangle",
+                        identifier: "body-map.sync-notice"
                     ) {
                         model.clearInteractionNotice()
                     }
                 }
 
                 if case let .fallback2D(reason) = model.loadState {
-                    BodyMapNotice(text: reason, systemImage: "arrow.uturn.backward.circle") {
+                    BodyMapNotice(
+                        text: reason,
+                        systemImage: "arrow.uturn.backward.circle",
+                        identifier: "body-map.fallback-notice"
+                    ) {
                         model.switchTo2D()
                     }
                 }
@@ -127,16 +135,22 @@ public struct BodyMapScreen: View {
                     }
                     .buttonStyle(CompanionPrimaryButtonStyle())
                     .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
+                    .accessibilityIdentifier("body-map.next")
                 }
             }
             .padding(20)
         }
         .navigationTitle("记录这次不适")
         .companionScreenBackground()
+        .accessibilityIdentifier("screen.body-map")
         .sheet(isPresented: $isAccessibleRegionPickerPresented) {
             NavigationStack {
                 ScrollView {
-                    AccessibleRegionPicker(model: model, showsViewPicker: true)
+                    AccessibleRegionPicker(
+                        model: model,
+                        showsViewPicker: true,
+                        identifierPrefix: "body-map.sheet-list"
+                    )
                         .padding(20)
                 }
                 .navigationTitle("从列表选择部位")
@@ -268,7 +282,11 @@ private struct BodyMap2DView: View {
             }
             .frame(maxWidth: .infinity)
 
-            AccessibleRegionPicker(model: model, showsViewPicker: false)
+            AccessibleRegionPicker(
+                model: model,
+                showsViewPicker: false,
+                identifierPrefix: "body-map.2d-list"
+            )
         }
     }
 
@@ -295,6 +313,7 @@ private struct BodyMap2DView: View {
 private struct BodyMapNotice: View {
     let text: String
     let systemImage: String
+    let identifier: String
     let onDismiss: () -> Void
 
     var body: some View {
@@ -312,6 +331,7 @@ private struct BodyMapNotice: View {
         .foregroundStyle(.orange)
         .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(identifier)
     }
 }
 
@@ -477,6 +497,7 @@ private struct BodyRegionHitShape: Shape {
 private struct AccessibleRegionPicker: View {
     let model: BodyMapModel
     let showsViewPicker: Bool
+    let identifierPrefix: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -495,7 +516,7 @@ private struct AccessibleRegionPicker: View {
                 .accessibilityHint("选择前面或后面的部位列表；与 2D 和 3D 使用同一位置契约。")
             }
 
-            ForEach(BodyRegionCatalog.options(for: model.view)) { option in
+            ForEach(Array(BodyRegionCatalog.options(for: model.view).enumerated()), id: \.element.id) { index, option in
                 Button {
                     let selection = BodyRegionSelection(
                         regionID: option.regionID,
@@ -523,6 +544,7 @@ private struct AccessibleRegionPicker: View {
                 .frame(minHeight: 44)
                 .accessibilityLabel("选择\(option.label)")
                 .accessibilityHint("添加一个待确认的位置标记")
+                .accessibilityIdentifier("\(identifierPrefix).option-\(index)")
             }
         }
         .accessibilityElement(children: .contain)
@@ -628,6 +650,12 @@ private struct MarkSummaryPanel: View {
                     }
                 }
                 .navigationTitle("编辑身体标记")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { isEditorPresented = false }
+                            .accessibilityIdentifier("body-map.mark-editor-done")
+                    }
+                }
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)

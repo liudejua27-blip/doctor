@@ -8,15 +8,10 @@ public struct AppShell: View {
     @State private var analysisRouter = RouterPath()
     @State private var profileRouter = RouterPath()
     @State private var intakeModel = SignalIntakeModel()
+    private let runtimeConfiguration: InternalP0RuntimeConfiguration
 
-    public init() {}
-
-    private var prototype3DEnabled: Bool {
-        #if DEBUG
-        return true
-        #else
-        return false
-        #endif
+    public init(runtimeConfiguration: InternalP0RuntimeConfiguration = .safeDefault) {
+        self.runtimeConfiguration = runtimeConfiguration
     }
 
     public var body: some View {
@@ -52,7 +47,7 @@ public struct AppShell: View {
                     case .assessment:
                         BodyMapScreen(
                             model: intakeModel.bodyMapModel,
-                            prototype3DEnabled: prototype3DEnabled,
+                            prototype3DEnabled: runtimeConfiguration.candidate3DEnabled,
                             onLocationsChanged: { locations in intakeModel.setLocations(locations) }
                         )
                     case .intake:
@@ -133,6 +128,7 @@ private struct TodayView: View {
         }
         .navigationTitle("今天")
         .companionScreenBackground()
+        .accessibilityIdentifier("screen.today")
     }
 }
 
@@ -172,6 +168,7 @@ private struct RecordsView: View {
         }
         .navigationTitle("记录")
         .companionScreenBackground()
+        .accessibilityIdentifier("screen.records")
     }
 }
 
@@ -191,6 +188,7 @@ private struct AnalysisView: View {
                 CompanionCard(emphasized: true) {
                     VStack(alignment: .leading, spacing: 14) {
                         CompanionStatusPill("普通对话尚未接入", systemImage: "lock.fill", tint: BodyCompanionTheme.warm)
+                            .accessibilityIdentifier("analysis.standard-chat-unavailable")
                         HStack(alignment: .top, spacing: 14) {
                             Image(systemName: "sparkles")
                                 .font(.title)
@@ -229,6 +227,7 @@ private struct AnalysisView: View {
         }
         .navigationTitle("AI 身体助手")
         .companionScreenBackground()
+        .accessibilityIdentifier("screen.analysis")
     }
 }
 
@@ -245,7 +244,7 @@ private struct IntakeEntryActions: View {
         VStack(alignment: .leading, spacing: 10) {
             if intakeModel.hasResumableDraft {
                 CompanionStatusPill("有一条未确认草稿", systemImage: "pencil.and.list.clipboard", tint: BodyCompanionTheme.warm)
-                Text("已标记 (intakeModel.draft.locations.count) 个位置 · (intakeModel.phase.displayName)")
+                Text("已标记 \(intakeModel.draft.locations.count) 个位置 · \(intakeModel.phase.displayName)")
                     .font(.footnote)
                     .foregroundStyle(BodyCompanionTheme.secondaryInk)
                 Button(action: continueCurrentDraft) {
@@ -253,23 +252,28 @@ private struct IntakeEntryActions: View {
                 }
                 .buttonStyle(CompanionPrimaryButtonStyle())
                 .accessibilityHint("继续当前会话中的未确认草稿，不会新建或保存正式记录")
+                .accessibilityIdentifier("intake-entry.resume-draft")
 
                 Button("新建一条记录", role: .destructive) {
                     showStartOverConfirmation = true
                 }
                 .buttonStyle(CompanionOutlineButtonStyle())
                 .accessibilityHint("需要先确认放弃当前会话中的未确认草稿")
+                .accessibilityIdentifier("intake-entry.start-over")
             } else {
                 Button(action: startFreshDraft) {
                     Label(freshTitle, systemImage: freshSystemImage)
                 }
                 .buttonStyle(CompanionPrimaryButtonStyle())
                 .accessibilityHint("从 2D 或 3D 人体地图选择你感觉不适的位置")
+                .accessibilityIdentifier("intake-entry.start-record")
             }
         }
         .confirmationDialog("新建一条记录？", isPresented: $showStartOverConfirmation, titleVisibility: .visible) {
             Button("放弃当前未确认草稿并新建", role: .destructive, action: startFreshDraft)
+                .accessibilityIdentifier("intake-entry.confirm-discard")
             Button("取消", role: .cancel) {}
+                .accessibilityIdentifier("intake-entry.cancel-discard")
         } message: {
             Text("这会放弃当前会话中的未确认草稿。它尚未成为正式身体记录。")
         }

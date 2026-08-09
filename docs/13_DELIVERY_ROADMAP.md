@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | REL-01 |
-| 版本 | 2.3.0-draft |
+| 版本 | 2.4.0-draft |
 | 状态 | Active roadmap |
 | 负责人 | 交付负责人 + 产品负责人 |
 | 审核角色 | 临床安全、隐私安全、iOS、后端、Agent、QA、运营 |
@@ -27,6 +27,8 @@
 ```
 
 当前正在实施的 `FEAT-BODY-MAP-V1` 与 `FEAT-BODY-MAP-V2` 把全身 2D、列表、内部 prototype 3D 和 RehabMate 行为等价推进到可验证纵向切片；它们不会关闭 GATE-06 的真实资产、解剖、性能、无障碍或生产发布门禁。
+
+[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 是 GATE-02 前唯一允许并行的工程运行时例外：它只为现有 P0 SwiftUI 壳建立内部 Simulator App Host、显式关闭能力集和 UI smoke，不新增领域字段、内存产品层、Agent、Provider、资料读取、行动或正式数据链。它不构成 GATE-02、GATE-06 或任何生产门禁通过。
 
 FEAT-COMP-01 已把后续产品纵向切片重新收拢为“运动/工作不适 → 位置 → 本次情境 → 安全分流 → AI 一次一问 → 事实复核 → 审核行动 → 保存/复查/沟通摘要”。该规格与 ADR-0019 均为 Draft/Proposed，尚未形成 API、Schema 或已实现能力。
 
@@ -71,6 +73,12 @@ FEAT-COMP-01 已把后续产品纵向切片重新收拢为“运动/工作不适
 - 每个未决项必须有负责人、截止门禁和保守行为。
 
 退出条件：责任矩阵和适用地区获书面批准。
+
+### 工程并行例外：内部 iOS P0 App Host
+
+- 允许：在 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 约束下，为既有 Swift Package 创建受版本控制的 iOS Simulator Host、共享 scheme、显式能力开关和黑箱 UI smoke。
+- 禁止：借 Host 新增 `context_lens`、`analysis_subject`、`QuestionPlan`、资料使用收据、Provider、网络、行动、正式写入、持久化、真实健康数据、外测或对外产品声明。
+- 证据边界：即使 Simulator host smoke 通过，仍必须保持 GATE-02 责任/地区审批、GATE-06 真机/资产/无障碍、GATE-07 公开纵向联调和 GATE-08 发布验证为未关闭。
 
 ### GATE-03 临床安全与内容
 
@@ -159,9 +167,10 @@ GATE-03～06 可以并行，但任何一项未通过都不能进入正式纵向�
 
 ## 6. 当前最短下一步
 
-1. 填写并书面批准 [GOV-01](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 的责任矩阵和 G2-DEC-001～008；在此之前不增加新的内存样机层。
-2. 评审 ADR-0019，确认情境透镜、资料使用收据、审核行动和沟通摘要的产品/安全/隐私边界。
-3. 在 GATE-03 内锁定运动/工作情境的内容范围、停止条件和营养边界，并将其映射到 TEST-COMP-01。
-4. 并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
+1. 在不改变产品语义的前提下，完成并留存 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的内部 Simulator Host smoke；它是工程例外，不替代任何 GATE。
+2. 填写并书面批准 [GOV-01](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 的责任矩阵和 G2-DEC-001～008；在此之前不增加新的内存产品样机层。
+3. 评审 ADR-0019，确认情境透镜、资料使用收据、审核行动和沟通摘要的产品/安全/隐私边界。
+4. 在 GATE-03 内锁定运动/工作情境的内容范围、停止条件和营养边界，并将其映射到 TEST-COMP-01。
+5. 并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
 
-在远端基线和 GATE-02 完成前，不继续增加新的内存样机层。
+在远端基线和 GATE-02 完成前，不继续增加新的内存产品样机层；仅可执行本节明确列出的内部 iOS App Host 工程例外。

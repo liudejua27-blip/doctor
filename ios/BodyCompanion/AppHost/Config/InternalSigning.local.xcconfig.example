@@ -1,0 +1,6 @@
+// Copy to InternalSigning.local.xcconfig only when a future, separately
+// approved device-signing workflow exists. Never commit Team IDs, certificates,
+// provisioning profiles, or a real production Bundle ID in this repository.
+//
+// DEVELOPMENT_TEAM = <local-only-team-id>
+// PRODUCT_BUNDLE_IDENTIFIER = <local-only-internal-bundle-id>

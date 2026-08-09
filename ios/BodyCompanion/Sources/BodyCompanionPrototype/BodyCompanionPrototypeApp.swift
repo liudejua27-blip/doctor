@@ -5,7 +5,7 @@ import SwiftUI
 struct BodyCompanionPrototypeApp: App {
     var body: some Scene {
         WindowGroup {
-            AppShell()
+            AppShell(runtimeConfiguration: .internalCandidate3D)
         }
     }
 }

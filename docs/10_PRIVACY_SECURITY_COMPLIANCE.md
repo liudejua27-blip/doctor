@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | PRIV-01 |
-| 版本 | 1.2.0-draft |
+| 版本 | 1.3.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 隐私与安全负责人 |
 | 审核角色 | 产品、临床安全、iOS、后端、AI、QA、法务、安全 |
@@ -437,6 +437,12 @@ P1F 只允许 Application Service 将 `raw_user_text` 作为 SafetyEngine 的短
 P1G 只接收 P1F 已脱敏的 `AssessmentDraft`，由固定 prompt builder 生成数据区；它不接收 P1D `raw_user_text`、安全答案原文、用户身份、token、Provider key 或完整 PydanticAI message history。P1G 工具读取必须通过 P3 `AgentReadContext` 的 scope/owner/expiry/allowlist，并仅留下 source ID、scope、版本和结果类别。普通日志、崩溃和遥测不得记录 prompt、模型响应、工具正文或隐藏推理；真实 Provider、结构化短文本的跨境/留存和 Consent 仍是未决项。
 
 P1H 的 transient ledger 只保存进程内主体绑定、Turn 元数据、canonical request digest 和脱敏 `AgentTurnApplicationResult`；不得保存原始 prompt、PydanticAI messages、用户原话、工具 projection、Safety answers 或完整请求序列化。相同 key 的重放只返回同一已接受 result；来源清理或进程重启后不得恢复旧健康正文。P1H 不接收自由回答、不绕过 P1F 安全，不创建 Approval/Event/Episode/Report；真实多轮持久化、删除 TTL、跨设备 CAS 和 Provider 留存仍需单独隐私评审。
+
+#### 10.1.1 内部 P0 App Host
+
+[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的 `BodyCompanionInternal` 仅是 Simulator 工程 Host，不是可处理生产健康数据的客户端。它必须以固定内部能力集运行：不发起网络/Provider/API 请求，不请求 HealthKit、通知、相机、麦克风、照片、位置或其他系统权限，不使用 Keychain、UserDefaults、文件、数据库、iCloud 或共享容器保存健康草稿，且不引入产品分析、崩溃或第三方 SDK。
+
+Host 的 `Info.plist`、entitlements、源代码和 UI test 必须作为负向证据接受扫描；任何新增权限 usage description、网络域名、Provider key、持久化、遥测或健康正文日志都构成新的隐私数据流，必须先更新本规范、DATA-01/API-01（如适用）、测试计划和相应同意/发布门禁。Simulator screenshot、XCTest attachment 和 accessibility hierarchy 只能使用合成或空白状态，不能变成健康数据外发渠道。
 
 ### 10.2 服务端
 

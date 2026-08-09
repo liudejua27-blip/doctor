@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | QA-01 |
-| 版本 | 1.3.0-draft |
+| 版本 | 1.4.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | QA 负责人 |
 | 审核角色 | 产品、临床安全、iOS、后端、AI、隐私法务、安全、统计 |
@@ -85,6 +85,7 @@
 | P2D confirmation transaction contract | P2B/P2C source/read snapshot、有限 write set、Session/Approval revision 等式、prepare/commit/read-back、全有/全无、幂等、故障回滚、receipt 脱敏 | TEST-P2D + confirmation-transaction receipt Schema + typed fake repository/fault injection |
 | P1A BodyAssetManifest/runtime gate | 未授权/未签名/未知/撤回清单加载、未知嵌套字段、坐标/拓扑/LOD/映射错配、RehabMate 禁止资产进入包 | TEST-P1A-3D-ASSET-MANIFEST-SLICE 13 场景 + Schema + ADR-0018 + Swift/source scan |
 | iOS 未确认草稿/同步队列 | 明文落盘、密钥失效、跨账户恢复、重复同步、冲突覆盖、误称正式事件 | TEST-P4 Swift Core + 真机 Keychain/Data Protection/网络 fault injection |
+| 内部 iOS App Host | Swift Package 被误作可安装 App、候选 3D/网络/权限/持久化被 UI smoke 隐式开启、Simulator 结论被外推 | TEST-IOS-P0-RUNTIME-01 + 受版本控制 Xcode scheme + Simulator UI smoke + source/Info/entitlements 扫描 |
 | iOS UI | R0 行动被遮挡、VoiceOver 不可用、离线失效 | 设备 E2E 与无障碍测试 |
 | SafetyBaseline | 测试与上线版本不一致 | 构件签名、清单和部署验证 |
 
@@ -412,6 +413,12 @@ FEAT-COMP-01 的验证以 TEST-COMP-01 为最低测试计划，且不得用页�
 8. VoiceOver、Dynamic Type、Reduce Motion、2D/列表回退和网络/模型故障路径完成同构任务。
 
 真实用户验证应预登记两类人群的任务完成率、基础记录中位用时、位置/侧别错误、被迫猜测率、AI 候选修正发现率、资料范围理解率、行动/安全理解率和退出原因。30 秒目标只评价符合快捷路径条件的任务；安全澄清和两次确认不被计作失败。
+
+### 7.6 内部 iOS App Host 与 Simulator smoke
+
+[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 只验证现有 P0 壳能在受版本控制的 iOS App Host 中构建、安装和启动；它不新增 Agent、资料读取、正式写入、持久化或健康字段。执行证据必须同时证明：Host 仅依赖本地 `BodyCompanionIOS`、UI smoke 默认关闭候选 3D、网络/Provider/权限/持久化/遥测入口为零，以及 2D/部位列表、草稿继续/明确放弃、普通 AI 关闭和回退路径可达。
+
+该检查只能产生 `Simulator host smoke passed`。它不能证明或关闭 VoiceOver 实操、最大 Dynamic Type、Reduce Motion、真机触控、GPU/热/内存、RealityKit 碰撞、资产许可、签名、临床安全、隐私合规或 GATE-06/07/08；这些仍按 EVIDENCE-DEVICE-01 和相应设备/发布计划另行验证。
 
 ## 8. 内容库测试
 

@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""Static boundary checks for the internal Simulator-only iOS App Host."""
+
+from __future__ import annotations
+
+import plistlib
+import re
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+HOST = ROOT / "ios" / "BodyCompanion" / "AppHost"
+PROJECT = HOST / "BodyCompanionInternal.xcodeproj"
+APP_SOURCE = HOST / "BodyCompanionInternal"
+UI_TEST_SOURCE = HOST / "BodyCompanionInternalUITests" / "BodyCompanionInternalUITests.swift"
+
+
+def fail(message: str) -> None:
+    print(f"internal_ios_host_checks=failed reason={message}")
+    raise SystemExit(1)
+
+
+def require_file(path: Path) -> None:
+    if not path.is_file():
+        fail(f"missing_file:{path.relative_to(ROOT)}")
+
+
+def require_text(path: Path, expected: str) -> str:
+    text = path.read_text(encoding="utf-8")
+    if expected not in text:
+        fail(f"missing_text:{path.relative_to(ROOT)}:{expected}")
+    return text
+
+
+def main() -> int:
+    required_files = [
+        PROJECT / "project.pbxproj",
+        PROJECT / "xcshareddata" / "xcschemes" / "BodyCompanionInternal.xcscheme",
+        APP_SOURCE / "BodyCompanionInternalApp.swift",
+        APP_SOURCE / "InternalHostLaunchOptions.swift",
+        APP_SOURCE / "Info.plist",
+        UI_TEST_SOURCE,
+        HOST / "Config" / "Base.xcconfig",
+        HOST / "Config" / "DebugInternal.xcconfig",
+        HOST / "Config" / "ReleaseInternal.xcconfig",
+        ROOT / "scripts" / "run_internal_ios_host_tests.sh",
+    ]
+    for path in required_files:
+        require_file(path)
+
+    project = require_text(PROJECT / "project.pbxproj", "relativePath = ..;")
+    for expected in (
+        "productName = BodyCompanionIOS;",
+        "BodyCompanionIOS in Frameworks",
+        "com.apple.product-type.application",
+        "com.apple.product-type.bundle.ui-testing",
+        "TEST_TARGET_NAME = BodyCompanionInternal;",
+    ):
+        if expected not in project:
+            fail(f"invalid_project_wiring:{expected}")
+    if "BodyCompanionPrototype" in project:
+        fail("prototype_executable_must_not_be_host_dependency")
+    if "SystemCapabilities" in project or ".entitlements" in project:
+        fail("unexpected_capability_or_entitlements")
+
+    scheme = (PROJECT / "xcshareddata" / "xcschemes" / "BodyCompanionInternal.xcscheme").read_text(encoding="utf-8")
+    for expected in ("BodyCompanionInternalUITests.xctest", "DebugInternal", "BodyCompanionInternal.app"):
+        if expected not in scheme:
+            fail(f"invalid_scheme:{expected}")
+
+    app_entry = require_text(
+        APP_SOURCE / "BodyCompanionInternalApp.swift",
+        "AppShell(runtimeConfiguration: InternalHostLaunchOptions.runtimeConfiguration)",
+    )
+    if "BodyCompanionPrototype" in app_entry:
+        fail("app_entry_must_not_import_prototype")
+
+    launch_options = require_text(
+        APP_SOURCE / "InternalHostLaunchOptions.swift",
+        "candidate3DEnabled: candidateRequested && !isUISmoke",
+    )
+    if "UserDefaults" in launch_options:
+        fail("launch_options_must_not_persist")
+
+    for source in APP_SOURCE.glob("*.swift"):
+        text = source.read_text(encoding="utf-8")
+        for forbidden in (
+            "URLSession",
+            "URLRequest",
+            "UserDefaults",
+            "FileManager",
+            "Keychain",
+            "HKHealthStore",
+            "HealthKit",
+            "AVCapture",
+            "UNUserNotification",
+            "PHPhoto",
+            "CLLocation",
+            "Sentry",
+            "Analytics",
+        ):
+            if forbidden in text:
+                fail(f"forbidden_host_source:{source.name}:{forbidden}")
+
+    ui_test = UI_TEST_SOURCE.read_text(encoding="utf-8")
+    for expected in (
+        '"BODY_COMPANION_UI_SMOKE"',
+        '"body-map.2d-list.option-0"',
+        '"body-map.fallback-notice"',
+        '"screen.records"',
+        '"analysis.standard-chat-unavailable"',
+    ):
+        if expected not in ui_test:
+            fail(f"missing_ui_smoke_assertion:{expected}")
+
+    info = plistlib.loads((APP_SOURCE / "Info.plist").read_bytes())
+    restricted_info_keys = {
+        "NSAppleMusicUsageDescription",
+        "NSBluetoothAlwaysUsageDescription",
+        "NSCameraUsageDescription",
+        "NSHealthClinicalHealthRecordsShareUsageDescription",
+        "NSHealthShareUsageDescription",
+        "NSHealthUpdateUsageDescription",
+        "NSLocationAlwaysAndWhenInUseUsageDescription",
+        "NSLocationWhenInUseUsageDescription",
+        "NSMicrophoneUsageDescription",
+        "NSPhotoLibraryAddUsageDescription",
+        "NSPhotoLibraryUsageDescription",
+    }
+    unexpected_keys = sorted(restricted_info_keys.intersection(info))
+    if unexpected_keys:
+        fail(f"restricted_info_keys:{','.join(unexpected_keys)}")
+
+    entitlements = list(HOST.rglob("*.entitlements"))
+    if entitlements:
+        fail("unexpected_entitlements")
+
+    for config in (HOST / "Config").glob("*.xcconfig"):
+        content = config.read_text(encoding="utf-8")
+        if re.search(r"^[ \t]*DEVELOPMENT_TEAM[ \t]*=[ \t]*[A-Za-z0-9]{5,}[ \t]*$", content, flags=re.MULTILINE):
+            fail(f"committed_development_team:{config.name}")
+        if re.search(r"^[ \t]*PRODUCT_BUNDLE_IDENTIFIER[ \t]*=[ \t]*(?!com\.example\.)\S+", content, flags=re.MULTILINE):
+            fail(f"non_placeholder_bundle_id:{config.name}")
+
+    print("internal_ios_host_checks=passed host_sources=2 ui_smoke_sources=1 entitlements=0")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

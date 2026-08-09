@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.5.0-draft |
+| 版本 | 1.6.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
@@ -150,6 +150,14 @@ flowchart TB
 `BodyAssetManifest` 是本地/发布流水线提供的版本化 metadata 清单；`BodyAssetRuntimeGate` 在 `BodyMapScreen` 请求 RealityKit 前执行。当前实现只解析和校验清单，不读取、下载、哈希或加载模型文件；`candidate/blocked/retired`、未知版本、请求变体不匹配或任何交叉约束失败都返回 2D/列表回退。只有未来的文件签名/哈希流水线、法务/解剖审核、设备性能和无障碍证据全部满足后，才能把 gate decision 接到真正的 loader。
 
 P0 中的 `IntakeEntryPolicy` 仅针对内存中的 `SignalIntakeDraft`：有位置、已经离开 `choosingLocation`，或仍有任一未确认事实/复核状态的草稿可继续；`choosingLocation` 回到 `BodyMapScreen`，其他阶段直达 `SignalIntakeScreen`。任何“新建”必须经过用户可见的放弃确认并调用本地 reset；取消不改变 draft。它不读写文件、不声称恢复成功，也不创建正式资源。`SignalIntakeModel` 是当前会话中位置集合的写入协调点：结构化描述页删除某个 location 时，必须同步移除 `BodyMapModel` 的同 ID 草稿标记；地图后续只能写入 `BodyLocation` 集合，绝不能把已删 Marker、感觉、程度、因素或感觉关联写回 draft。只要位置集合的值发生变化（即使 Marker ID 相同但区域、侧别或表面改变），P0 都立即清除本地 safety 状态、普通 Agent/审批阶段和全局未知感觉答案，并使感觉组回到待复核，退回 `collectingFacts`（无位置则 `choosingLocation`）；生产实现还必须在服务端完整重跑安全规则。
+
+#### 5.1.1 内部 P0 App Host 与 Simulator 边界
+
+[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 允许在不新增健康语义的前提下，为现有 Swift Package 建立受版本控制的 `BodyCompanionInternal` iOS App target 和 UI test target。Host 只链接本地 `BodyCompanionIOS` library，`@main` 只创建 `AppShell`；它不得复制 Sources/资产、调用 `BodyCompanionPrototype`、读取远端 FeatureConfiguration、写入健康数据或把 Swift Package library 当成可安装 App。
+
+Host 由固定的内部能力集启动：2D/部位列表开启，候选 3D 仅显式内部开关，网络/Provider/API、身份/同意/资料读取、正式写入/分享、Keychain/文件持久化和分析/遥测均关闭。UI test 通过稳定的无健康正文 identifier 验证启动、入口、2D/列表、草稿继续/明确放弃、AI 普通对话关闭和 3D 回退；它不模拟真实账户、SafetyTier、Agent 内容、已确认事实或跨进程恢复。
+
+Simulator Host 成功只证明可安装的内部 UI smoke。它不能关闭真机、签名、VoiceOver 实操、最大 Dynamic Type、Reduce Motion、GPU/热/内存、3D 碰撞/资产或 GATE-06/07/08 门禁；详细验收以 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 和 EVIDENCE-DEVICE-01 为准。
 
 ### 5.2 Body Map Feature
 

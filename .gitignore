@@ -10,4 +10,6 @@ ios/BodyCompanion/.build/
 ios/BodyCompanion/.swiftpm/
 DerivedData/
 *.xcresult
+ios/BodyCompanion/AppHost/**/xcuserdata/
+ios/BodyCompanion/AppHost/Config/InternalSigning.local.xcconfig
 .DS_Store

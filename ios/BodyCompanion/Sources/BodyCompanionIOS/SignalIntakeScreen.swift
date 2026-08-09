@@ -44,6 +44,7 @@ public struct SignalIntakeScreen: View {
         .background(BodyCompanionTheme.canvas)
         .tint(BodyCompanionTheme.accent)
         .navigationTitle("描述这次感受")
+        .accessibilityIdentifier("screen.signal-intake")
         .alert("当前步骤无法继续", isPresented: Binding(
             get: { inlineError != nil },
             set: { if !$0 { inlineError = nil } }

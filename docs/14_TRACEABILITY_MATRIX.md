@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 2.6.0-draft |
+| 版本 | 2.7.0-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -33,6 +33,7 @@
 | PRD-F09B HealthKit/文件 | AGENT-01、PRIV-01 | Connector capabilities | 未实现 | Planned P1 | 首发后独立门禁 |
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
 | PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001 | 待 ADR 批准后新增上下文、资料收据、行动引用与报告显示类型契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；TEST-COMP-01 已定义；无情境化 API 或生产实现 | Draft / P0 prototype only | GATE-03/04/07/08 |
+| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | 受版本控制 Xcode Host / Simulator UI smoke 计划；尚未执行 | Planned internal engineering prototype | GATE-02/06/07/08 仍打开 |
 
 ## 3. 安全不变量追踪
 
@@ -64,6 +65,7 @@
 | NFR-PRIV-001 最小数据 | typed scope 与禁日志规范 | 真实 Consent、Provider、遥测审计 |
 | NFR-TRUST-CTX-001 资料范围可见性 | FEAT-COMP-01/ADR-0019 Draft；无生产实现 | 本次实际使用资料收据、拒绝可选资料完成率与真实审计 |
 | NFR-COMP-001 契约兼容 | OpenAPI/16 schemas、Markdown 和禁止引用已有版本化检查器及 CI job | 生成客户端、相邻版本兼容和首次远端 CI 证据 |
+| NFR-RUNTIME-001 内部 Simulator 可运行性 | FEAT-IOS-P0-RUNTIME-01 / TEST-IOS-P0-RUNTIME-01 已定义；尚无 App Host 执行证据 | Xcode project/scheme、Simulator build/install/UI smoke、零网络/权限/持久化扫描；不得外推真机、签名或无障碍通过 |
 
 ## 5. 参考项目采用追踪
 

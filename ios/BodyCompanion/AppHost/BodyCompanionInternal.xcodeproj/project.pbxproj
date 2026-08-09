@@ -1,0 +1,332 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A100000000000000000000001 /* BodyCompanionInternalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000001 /* BodyCompanionInternalApp.swift */; };
+		A100000000000000000000002 /* InternalHostLaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000002 /* InternalHostLaunchOptions.swift */; };
+		A100000000000000000000003 /* BodyCompanionInternalUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000004 /* BodyCompanionInternalUITests.swift */; };
+		A100000000000000000000004 /* BodyCompanionIOS in Frameworks */ = {isa = PBXBuildFile; productRef = K100000000000000000000002 /* BodyCompanionIOS */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C100000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F100000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E100000000000000000000001;
+			remoteInfo = BodyCompanionInternal;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		B100000000000000000000001 /* BodyCompanionInternalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompanionInternalApp.swift; sourceTree = "<group>"; };
+		B100000000000000000000002 /* InternalHostLaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalHostLaunchOptions.swift; sourceTree = "<group>"; };
+		B100000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B100000000000000000000004 /* BodyCompanionInternalUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompanionInternalUITests.swift; sourceTree = "<group>"; };
+		B100000000000000000000005 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		B100000000000000000000006 /* DebugInternal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = DebugInternal.xcconfig; sourceTree = "<group>"; };
+		B100000000000000000000007 /* ReleaseInternal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ReleaseInternal.xcconfig; sourceTree = "<group>"; };
+		B100000000000000000000008 /* InternalSigning.local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = InternalSigning.local.xcconfig.example; sourceTree = "<group>"; };
+		B100000000000000000000009 /* BodyCompanionInternal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyCompanionInternal.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B100000000000000000000010 /* BodyCompanionInternalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BodyCompanionInternalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		G100000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000000000000000000004 /* BodyCompanionIOS in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G100000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D100000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				D100000000000000000000002 /* BodyCompanionInternal */,
+				D100000000000000000000003 /* BodyCompanionInternalUITests */,
+				D100000000000000000000004 /* Config */,
+				D100000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D100000000000000000000002 /* BodyCompanionInternal */ = {
+			isa = PBXGroup;
+			children = (
+				B100000000000000000000001 /* BodyCompanionInternalApp.swift */,
+				B100000000000000000000002 /* InternalHostLaunchOptions.swift */,
+				B100000000000000000000003 /* Info.plist */,
+			);
+			path = BodyCompanionInternal;
+			sourceTree = "<group>";
+		};
+		D100000000000000000000003 /* BodyCompanionInternalUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B100000000000000000000004 /* BodyCompanionInternalUITests.swift */,
+			);
+			path = BodyCompanionInternalUITests;
+			sourceTree = "<group>";
+		};
+		D100000000000000000000004 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				B100000000000000000000005 /* Base.xcconfig */,
+				B100000000000000000000006 /* DebugInternal.xcconfig */,
+				B100000000000000000000007 /* ReleaseInternal.xcconfig */,
+				B100000000000000000000008 /* InternalSigning.local.xcconfig.example */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		D100000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B100000000000000000000009 /* BodyCompanionInternal.app */,
+				B100000000000000000000010 /* BodyCompanionInternalUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E100000000000000000000001 /* BodyCompanionInternal */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = J100000000000000000000002 /* Build configuration list for PBXNativeTarget "BodyCompanionInternal" */;
+			buildPhases = (
+				G100000000000000000000001 /* Sources */,
+				G100000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BodyCompanionInternal;
+			packageProductDependencies = (
+				K100000000000000000000002 /* BodyCompanionIOS */,
+			);
+			productName = BodyCompanionInternal;
+			productReference = B100000000000000000000009 /* BodyCompanionInternal.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E100000000000000000000002 /* BodyCompanionInternalUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = J100000000000000000000003 /* Build configuration list for PBXNativeTarget "BodyCompanionInternalUITests" */;
+			buildPhases = (
+				G100000000000000000000003 /* Sources */,
+				G100000000000000000000004 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				H100000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = BodyCompanionInternalUITests;
+			productName = BodyCompanionInternalUITests;
+			productReference = B100000000000000000000010 /* BodyCompanionInternalUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F100000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					E100000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					E100000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = E100000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = J100000000000000000000001 /* Build configuration list for PBXProject "BodyCompanionInternal" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = D100000000000000000000001;
+			packageReferences = (
+				K100000000000000000000001 /* XCLocalSwiftPackageReference ".." */,
+			);
+			productRefGroup = D100000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E100000000000000000000001 /* BodyCompanionInternal */,
+				E100000000000000000000002 /* BodyCompanionInternalUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		G100000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000000000000000000001 /* BodyCompanionInternalApp.swift in Sources */,
+				A100000000000000000000002 /* InternalHostLaunchOptions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		G100000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000000000000000000003 /* BodyCompanionInternalUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		H100000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E100000000000000000000001 /* BodyCompanionInternal */;
+			targetProxy = C100000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		I100000000000000000000001 /* DebugInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000006 /* DebugInternal.xcconfig */;
+			buildSettings = {
+			};
+			name = DebugInternal;
+		};
+		I100000000000000000000002 /* ReleaseInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000007 /* ReleaseInternal.xcconfig */;
+			buildSettings = {
+			};
+			name = ReleaseInternal;
+		};
+		I100000000000000000000003 /* DebugInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000006 /* DebugInternal.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BodyCompanionInternal/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.bodycompanion.internal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = DebugInternal;
+		};
+		I100000000000000000000004 /* ReleaseInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000007 /* ReleaseInternal.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BodyCompanionInternal/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.bodycompanion.internal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = ReleaseInternal;
+		};
+		I100000000000000000000005 /* DebugInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000006 /* DebugInternal.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.bodycompanion.internal.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_TARGET_NAME = BodyCompanionInternal;
+			};
+			name = DebugInternal;
+		};
+		I100000000000000000000006 /* ReleaseInternal */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B100000000000000000000007 /* ReleaseInternal.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.bodycompanion.internal.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_TARGET_NAME = BodyCompanionInternal;
+			};
+			name = ReleaseInternal;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		J100000000000000000000001 /* Build configuration list for PBXProject "BodyCompanionInternal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				I100000000000000000000001 /* DebugInternal */,
+				I100000000000000000000002 /* ReleaseInternal */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = ReleaseInternal;
+		};
+		J100000000000000000000002 /* Build configuration list for PBXNativeTarget "BodyCompanionInternal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				I100000000000000000000003 /* DebugInternal */,
+				I100000000000000000000004 /* ReleaseInternal */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = ReleaseInternal;
+		};
+		J100000000000000000000003 /* Build configuration list for PBXNativeTarget "BodyCompanionInternalUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				I100000000000000000000005 /* DebugInternal */,
+				I100000000000000000000006 /* ReleaseInternal */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = ReleaseInternal;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		K100000000000000000000001 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		K100000000000000000000002 /* BodyCompanionIOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = K100000000000000000000001 /* XCLocalSwiftPackageReference ".." */;
+			productName = BodyCompanionIOS;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F100000000000000000000001 /* Project object */;
+}

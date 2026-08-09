@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-COMP-01 |
-| 版本 | 0.2.0-draft |
+| 版本 | 0.3.0-draft |
 | 状态 | Draft / P0 明亮中文体验壳已实现；生产能力仍需产品、临床安全、隐私、iOS、Agent、QA 联合评审 |
 | 负责人 | 产品负责人 + 体验负责人 |
 | 变更级别 | B；涉及行动内容、营养或运动建议时受 A 类安全内容门禁约束 |
@@ -216,6 +216,7 @@ P0 的验证要求：
 | COMP-P0-002 | “AI 身体助手”只作为当前会话的引导入口；普通聊天在安全/资料/内容能力未接入时保持关闭并说明原因。 |
 | COMP-P0-003 | 所有主按钮具有中文可见标签和 VoiceOver 等价标签；颜色不是唯一状态通道。 |
 | COMP-P0-004 | P0 不新增 `context_lens`、资料使用收据、ActionPlan、报告显示类型、Provider 调用或正式记录写入。 |
+| COMP-P0-005 | P0 可由 FEAT-IOS-P0-RUNTIME-01 的内部 Simulator Host 启动和验收；默认关闭候选 3D、网络/Provider、资料读取、正式写入、持久化和遥测，且不把 Simulator smoke 外推为真机或上线证明。 |
 
 完成 P0 仅能把 UI 视觉与现有草稿路径标为 prototype evidence；`OPEN-COMP-001`～`OPEN-COMP-004`、ADR-0019、临床/隐私/真实设备门禁仍保持打开。
 
@@ -225,5 +226,6 @@ P0 的验证要求：
 |---|---|---|
 | 2026-08-09 | 新建 FEAT-COMP-01 | 将首发体验明确收拢为“运动/工作不适 → 位置 → 情境化 AI 追问 → 安全行动 → 复查/沟通摘要”，不改变既有非诊断、安全、确认和原生 3D 边界。 |
 | 2026-08-09 | 0.2.0-draft | 补充多情境/多位置焦点、确定性 QuestionPlan、R2 能力抑制与 ActionPlanPreview 失效边界；均待 ADR-0019 和跨域评审后实施。 |
+| 2026-08-09 | 0.3.0-draft | 为现有 P0 体验壳增加受版本控制的内部 iOS Simulator Host 依赖；仅增加运行与验收路径，不新增对话、资料、行动或健康语义。 |
 
 对应测试计划：[TEST-COMP-01](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)。
