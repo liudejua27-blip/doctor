@@ -183,7 +183,7 @@ NONE → PAIN → RELIEF → NONE
 
 目标拆分 Marker 草稿、视觉选中态、SignalEvent 和 Episode；“缓解”新增 Check-in。
 
-2026-08-08 新增 [FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)：原生 iOS 将上游的 Zone/Pin、焦点、摘要编辑和移动端面板行为做等价重写，但把第二层区域状态命名为 `reviewing` 视觉状态，明确禁止把点击解释为“已缓解”；实现与测试见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。
+2026-08-09 更新 [FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)：原生 iOS 保留上游的 Zone/Pin、焦点、位置摘要和移动端面板布局，但不复用任何点击循环或地图内健康事实编辑；重复点选只选中已有草稿，删除必须是显式动作。实现与测试见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。
 
 ### 5.6 疼痛类型与 NRS
 

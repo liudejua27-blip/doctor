@@ -19,6 +19,7 @@ public struct SignalIntakeScreen: View {
     @State private var backgroundText = ""
     @State private var rawUserText = ""
     @State private var otherSensationText = ""
+    @State private var selectedSensationMarkerIDs: Set<UUID> = []
     @State private var inlineError: String?
 
     public init(model: SignalIntakeModel) {
@@ -39,7 +40,10 @@ public struct SignalIntakeScreen: View {
             safetySection
             reviewSection
         }
-        .navigationTitle("结构化描述")
+        .scrollContentBackground(.hidden)
+        .background(BodyCompanionTheme.canvas)
+        .tint(BodyCompanionTheme.accent)
+        .navigationTitle("描述这次感受")
         .alert("当前步骤无法继续", isPresented: Binding(
             get: { inlineError != nil },
             set: { if !$0 { inlineError = nil } }
@@ -66,23 +70,28 @@ public struct SignalIntakeScreen: View {
             }
             rawUserText = model.draft.facts.rawUserText ?? ""
             otherSensationText = model.draft.facts.sensations.first(where: { $0.code == .other })?.userLabel ?? ""
+            synchronizeSensationMarkerSelection()
         }
     }
 
     private var progressSection: some View {
         Section {
+            CompanionStatusPill("第 2 步 / 共 3 步", systemImage: "text.bubble")
+                .accessibilityLabel("第 2 步，共 3 步")
             Label(model.phase.displayName, systemImage: phaseIcon)
+                .font(.headline)
+                .foregroundStyle(BodyCompanionTheme.ink)
                 .accessibilityLabel("当前步骤：\(model.phase.displayName)")
-            Text("草稿版本 \(model.draft.draftRevision)；所有内容在你确认前都只是未确认草稿。")
+            Text("用你自己的语言补充感受。所有内容在你确认前都只是未确认草稿。")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BodyCompanionTheme.secondaryInk)
             if model.unconfirmedCandidateCount > 0 {
                 Label("有 \(model.unconfirmedCandidateCount) 项 AI/资料候选等待确认", systemImage: "questionmark.circle")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(BodyCompanionTheme.warm)
                     .accessibilityLabel("有 \(model.unconfirmedCandidateCount) 项候选等待确认")
             }
         } header: {
-            Text("当前步骤")
+            Text("这次记录")
         }
     }
 
@@ -114,12 +123,36 @@ public struct SignalIntakeScreen: View {
 
     private var sensationSection: some View {
         Section {
+            if requiresExplicitSensationLocationSelection {
+                Text("先选择接下来要添加的感觉对应哪些位置。已存在的感觉可在各自下方单独调整。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                ForEach(model.draft.locations) { location in
+                    Toggle(location.userLabel ?? location.regionID, isOn: Binding(
+                        get: { selectedSensationMarkerIDs.contains(location.id) },
+                        set: { selected in
+                            if selected {
+                                selectedSensationMarkerIDs.insert(location.id)
+                            } else {
+                                selectedSensationMarkerIDs.remove(location.id)
+                            }
+                        }
+                    ))
+                    .frame(minHeight: 44)
+                    .accessibilityHint("选择后，新添加的感觉只会关联到这个位置。")
+                }
+            }
             ForEach(SignalSensationCode.commonCases, id: \.self) { code in
-                Toggle(code.displayName, isOn: Binding(
-                    get: { model.draft.facts.sensations.contains { $0.code == code } },
-                    set: { _ in model.toggleSensation(code) }
-                ))
-                .frame(minHeight: 44)
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(code.displayName, isOn: Binding(
+                        get: { isSensationSelected(code) },
+                        set: { selected in setSensationSelection(code, selected: selected) }
+                    ))
+                    .frame(minHeight: 44)
+                    if isSensationSelected(code), requiresExplicitSensationLocationSelection {
+                        sensationAssociationPicker(for: code)
+                    }
+                }
             }
             if model.draft.unknownGroups.contains(.sensation) {
                 Text("已记录为：说不清/不想回答")
@@ -140,13 +173,95 @@ public struct SignalIntakeScreen: View {
             HStack {
                 Button("确认感觉") { model.markReviewed(.sensation) }
                     .frame(minHeight: 44)
-                Button("说不清/不想回答") { model.markUnknown(.sensation) }
+                Button(unknownSensationButtonTitle) { model.markUnknown(.sensation) }
                     .frame(minHeight: 44)
             }
         } header: {
             Text("感觉")
         } footer: {
-            Text("不预设任何感觉；主动选择的感觉会明确关联到当前已选位置。若不同位置的感觉不同，请拆开记录；“酸胀”等选项只有在你主动选择后才会进入草稿。")
+            Text("不预设任何感觉；每个主动选择的感觉都必须明确关联到一个或多个位置。若不同位置的感觉不同，请分别选择；“这些位置都说不清”只在你主动确认后应用到全部当前位置。")
+        }
+    }
+
+    private var requiresExplicitSensationLocationSelection: Bool {
+        model.draft.locations.count > 1
+    }
+
+    private var unknownSensationButtonTitle: String {
+        requiresExplicitSensationLocationSelection ? "这些位置的感觉都说不清" : "说不清/不想回答"
+    }
+
+    private func isSensationSelected(_ code: SignalSensationCode) -> Bool {
+        model.draft.facts.sensations.contains { $0.code == code }
+    }
+
+    private func selectedMarkerIDsForNewSensation() -> [UUID] {
+        if let onlyLocation = model.draft.locations.first, model.draft.locations.count == 1 {
+            return [onlyLocation.id]
+        }
+        return model.draft.locations.map(\.id).filter { selectedSensationMarkerIDs.contains($0) }
+    }
+
+    private func sensationMarkerIDs(for code: SignalSensationCode) -> Set<UUID> {
+        Set(model.draft.facts.sensations.first(where: { $0.code == code })?.locationMarkerIDs ?? [])
+    }
+
+    @ViewBuilder
+    private func sensationAssociationPicker(for code: SignalSensationCode) -> some View {
+        Text("“\(code.displayName)”对应的位置")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+        ForEach(model.draft.locations) { location in
+            Toggle(location.userLabel ?? location.regionID, isOn: Binding(
+                get: { sensationMarkerIDs(for: code).contains(location.id) },
+                set: { selected in setSensationAssociation(code, markerID: location.id, selected: selected) }
+            ))
+            .font(.footnote)
+            .frame(minHeight: 40)
+            .accessibilityHint("调整“\(code.displayName)”是否关联到这个位置。")
+        }
+    }
+
+    private func setSensationSelection(_ code: SignalSensationCode, selected: Bool) {
+        if selected {
+            let markerIDs = selectedMarkerIDsForNewSensation()
+            guard !markerIDs.isEmpty else {
+                inlineError = "请先选择这个感觉对应的位置。"
+                return
+            }
+            perform {
+                try model.setSensation(code, selected: true, locationMarkerIDs: markerIDs)
+            }
+        } else {
+            perform {
+                try model.setSensation(code, selected: false, locationMarkerIDs: [])
+            }
+        }
+    }
+
+    private func setSensationAssociation(_ code: SignalSensationCode, markerID: UUID, selected: Bool) {
+        var markerIDs = sensationMarkerIDs(for: code)
+        if selected {
+            markerIDs.insert(markerID)
+        } else {
+            guard markerIDs.count > 1 else {
+                inlineError = "每个感觉至少需要关联一个位置；如不再需要该感觉，请关闭感觉本身。"
+                return
+            }
+            markerIDs.remove(markerID)
+        }
+        let orderedMarkerIDs = model.draft.locations.map(\.id).filter { markerIDs.contains($0) }
+        perform {
+            try model.setSensation(code, selected: true, locationMarkerIDs: orderedMarkerIDs)
+        }
+    }
+
+    private func synchronizeSensationMarkerSelection() {
+        let activeMarkerIDs = Set(model.draft.locations.map(\.id))
+        if activeMarkerIDs.count == 1 {
+            selectedSensationMarkerIDs = activeMarkerIDs
+        } else {
+            selectedSensationMarkerIDs.formIntersection(activeMarkerIDs)
         }
     }
 

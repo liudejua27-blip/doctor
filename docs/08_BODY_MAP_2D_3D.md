@@ -381,8 +381,8 @@ provisional → editing → ready_for_review → confirmed
 ```
 
 - `provisional`：刚命中，尚未完成位置确认；
-- `editing`：用户在补充位置、感觉等信息；
-- `ready_for_review`：核心字段齐备，等待最终确认；
+- `editing`：用户在复核/调整位置、侧别、表面或精确点；
+- `ready_for_review`：位置候选齐备，等待进入独立结构化事实复核；
 - `confirmed`：随确认事件写入；
 - `cancelled`：只删除草稿。
 

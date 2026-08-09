@@ -90,13 +90,35 @@ def test_policy_rejects_safety_question_from_agent():
         questions=[
             AgentQuestion(
                 question_id="safety.bad",
-                category="background",
-                prompt="not a safety question",
+                category="safety",
+                prompt="安全题必须来自服务端应用层。",
                 answer_type="boolean",
                 required=True,
             )
         ],
         context_summary="synthetic",
     )
-    # The type itself prevents category=safety; a non-safety question is valid.
-    assert PolicyValidator().validate(candidate, location_marker_ids=[]) == candidate
+    with pytest.raises(PolicyViolation, match="safety"):
+        PolicyValidator().validate(candidate, location_marker_ids=[])
+
+
+def test_safety_question_requires_a_structured_required_answer():
+    from body_companion.domain.types import AgentQuestion
+
+    with pytest.raises(ValueError, match="structured"):
+        AgentQuestion(
+            question_id="safety.invalid",
+            category="safety",
+            prompt="不应接受自由文本安全题。",
+            answer_type="free_text",
+            required=True,
+        )
+
+    with pytest.raises(ValueError, match="required"):
+        AgentQuestion(
+            question_id="safety.optional",
+            category="safety",
+            prompt="不应接受可跳过安全题。",
+            answer_type="boolean",
+            required=False,
+        )

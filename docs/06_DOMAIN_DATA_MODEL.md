@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | DATA-01 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.2.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构与后端领域负责人 |
 | 审核角色 | 产品、iOS、后端、AI、临床安全、隐私法务、安全、QA、人体资产负责人 |
@@ -144,12 +144,13 @@ Profile Domain Validator 还必须保证修订链位于同一 `profile_id/field_
 
 ### 3.4 iOS 未确认草稿（P4）
 
-`DraftEnvelope` 是客户端/同步层的未确认对象，不属于 `BodySignalEvent`、`BodySignalEpisode` 或 `ApprovalIntent` 聚合。其机器契约为 [`ios-draft-envelope.schema.json`](contracts/ios-draft-envelope.schema.json)，允许字段只有用户输入、`BodyLocation` 候选、草稿 revision、`client_operation_id`、同步状态和时间戳。
+`DraftEnvelope` 是客户端/同步层的未确认对象，不属于 `BodySignalEvent`、`BodySignalEpisode` 或 `ApprovalIntent` 聚合。其机器契约为 [`ios-draft-envelope.schema.json`](contracts/ios-draft-envelope.schema.json)，允许字段只有用户输入、`BodyLocation` 候选、草稿 revision、`client_operation_id`、同步状态和时间戳。P4 `schema_version=1.1` 的每个未确认感觉必须保存稳定 code、可选用户标签和明确的 `location_marker_ids`；这些 ID 必须唯一且是本 envelope `locations[].marker_id` 的子集。
 
 - `lifecycle` 只能表达 editing/queued/syncing/conflict/remote_unconfirmed/discarded/expired；没有 confirmed 状态，也不得加入 Event、Approval、Report 或诊断字段；
 - `owner_id` 只做本地账户隔离，服务端接收时仍必须以认证主体覆盖/校验；`draft_revision` 是用户编辑版本，不是 Event 的 `resource_revision`；
 - `sync.state=accepted_unconfirmed` 只表示远端未确认草稿已接受；正式写入仍必须回到本模型 §9 的 ApprovalIntent 两阶段确认和 §5 的 Event 事务；
 - `raw_user_text` 在加密草稿内可选，但不进入普通日志、遥测、Agent context 或同步错误详情。草稿删除必须和密钥/缓存/队列的清理回执关联；
+- 旧 P4 `schema_version=1.0` 只有 `sensation_codes`，无法无损重建感觉—位置关系；当前 prototype 一律拒绝该版本，不自动复制到全部位置或猜测对应关系。未来若存在已持久化 1.0 草稿，必须通过单独迁移/用户复核方案处理；
 - P4 Core 样机只验证 AES-GCM/密文仓/队列状态机，不能作为生产持久化或数据权利完成证据。
 
 ### 3.5 iOS 结构化录入投影（P1D）
@@ -161,7 +162,7 @@ P1D 的 [`SignalIntakeDraft`](contracts/ios-signal-intake.schema.json) 是将 `B
 - `SignalSensationCode`、程度上下文、时间模式、因素、功能影响和背景类别使用稳定代码，并允许显式 `unknown`；空值不能被解释成“没有”；
 - `reviewed_groups` 只是用户看过并接受当前表达，不能把 Agent/Profile 候选隐式升级为 `UserConfirmedFact`；
 - `safety.status=no_rule_triggered` 只表示当前规则集没有命中，不能写成“安全”；`unavailable`/`undetermined` 不允许生成普通 Agent 草稿或 Approval；
-- 映射到 P4 `DraftEnvelope` 时可降维为 `UnconfirmedDraftFacts`，但不得携带 `event_id`、`approval_id`、报告引用、诊断或处方字段；
+- 映射到 P4 `DraftEnvelope` 时可降维为 `UnconfirmedDraftFacts`，但不得丢失每个感觉到 `location_marker_ids` 的明确关系，也不得携带 `event_id`、`approval_id`、报告引用、诊断或处方字段；
 - 只有服务端重新执行安全、授权、revision、Episode 选择和用户确认后，才允许组装正式 `BodySignalEvent`。
 
 P1D 兼容名称、状态机和字段验收已归并到 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)，长期语义由本文件和对应 Schema 管理。
@@ -517,6 +518,8 @@ Event 修订链采用双向引用：新修订的 `supersedes_event_id` 只能出
 | `state` | 架构文档定义的权威状态 |
 | `revision` | 每次成功转换递增 |
 | `episode_id` | 可选，关联现有 Episode |
+| `context_lens` | **ADR-0019 Proposed**：本次训练/工作/日常/未知情境的用户可见、可撤回选择对象；`selected_values` 为非空集合，`unknown` 与其他值互斥。只影响普通追问和内容筛选，不是病因、SafetyTier 或默认长期 Profile 字段。当前 API/Schema 未新增该字段。 |
+| `analysis_subject` | **ADR-0019 Proposed**：本轮追问所聚焦的一组已有 `marker_id + sensation`；多位置会话中由用户选择/确认，防止将一个位置的感觉或情境复制到其他位置。不是长期事实、病因或医学定位。当前 API/Schema 未新增该字段。 |
 | `draft_event` | 最新候选草稿，不是正式事件 |
 | `retained_safety_action` | R0/R1/保守 R2 升级行动快照；post workflow 全程独立置顶，expired 时清除个体快照 |
 | `created_at/updated_at/expires_at` | 生命周期 |
@@ -578,23 +581,34 @@ Approval `revision` 从 1 开始，每一次**已持久化**状态变化严格 `
 
 ## 10. `ActionPlan` 与审核内容
 
+### 10.1 本次实际使用资料收据（ADR-0019 Proposed）
+
+资料使用收据是过程与审计对象，不是用户身体事实、Agent 长期记忆或完整对话存档。获批后的跨端契约至少要能表达：资料类别、脱敏来源引用、时间范围、用途、同意/版本引用、实际使用状态与显示时间；不得复制原始健康正文。收据条目只由 Application Service 追加，其状态至少区分 `requested`、`user_declined`、`policy_denied`、`no_data`、`stale`、`read`、`included_in_model_context`、`tool_failed` 与 `not_used`；“授权”“读取”“进入模型”不可混同。当前 API/Schema 未新增该对象，实施前须完成 ADR-0019 的契约和兼容评审。
+
+`DecisionFactSnapshot` 与 `ActionPlanPreview` 同属 ADR-0019 Proposed 的短生命周期会话对象。前者冻结首次事实复核时的 confirmed fact refs、`analysis_subject`、情境选择、安全结果和资料收据摘要；后者只引用匹配的审核内容，不是正式 Event 行动计划。两者必须绑定 draft digest、Session revision、SafetyBaseline、内容 release 和收据摘要，任一关联事实、位置/感觉关系、情境、授权、规则或内容版本变化即失效。第二次批准与权威 read-back 成功后，才可形成不可变 `ActionPlan`。
+
 ActionPlan 只能引用已发布内容项：
 
 | 字段 | 说明 |
 |---|---|
 | `tier` | 与 SafetyAssessment 一致的 SafetyTier |
-| `content_release_id` | 内容发布版本 |
-| `items` | 内容 ID、显示文本、适用理由、来源 |
-| `check_in_at` | 可选复查时间 |
-| `escalation_conditions` | 审核后的升级条件 |
+| `content_release_id` | 冻结的内容发布版本 |
+| `items` | 内容 ID、内容类别、显示文本、事实依据、适用理由、适用人群/情境、排除条件、停止/升级条件与来源 |
+| `check_in_at` | 可选复查时间；只能来自有效审核内容或用户主动选择 |
+| `escalation_conditions` | 审核后的升级条件，不能由模型补写 |
+| `data_use_receipt_ref` | 本次实际使用资料收据的脱敏引用；用于解释行动是否参考了授权资料，不能指向原始健康正文 |
 
 Agent 可调整语气和组合顺序，但不得创造药物剂量、康复处方、诊断或未审核行动。R0/R1 时 `items` 不得混入普通训练建议。
+
+当 ADR-0019 获批准且跨端契约进入实现时，R3 的内容类别最多可以是：观察、工作/训练负荷调整、已审核的低风险舒适活动、复查和一般恢复支持。一般恢复支持只能使用经临床与营养审核的通用内容；首发不得根据不适推荐具体食物、补剂、药物或剂量。没有完全匹配的内容时，对应项目必须为空并走保守路径，不能由 Agent 填补。
 
 ---
 
 ## 11. `ReportSnapshot`
 
 报告是不可变快照，包含：
+
+- 在 ADR-0019 获批准后，可按用户主动选择的接收者与字段范围呈现为 `self_body_signal_report`（身体信号报告）、`clinical_communication_summary`（就诊沟通摘要）或 `training_communication_summary`（训练沟通摘要）；三者仍是同一 ReportSnapshot 领域对象的受控显示投影，不新建病例/病历对象；
 
 - 特定 Episode 和事件集合；
 - 用户事实；
@@ -656,6 +670,7 @@ Agent 可调整语气和组合顺序，但不得创造药物剂量、康复处�
 | INV-017 | `model_suggested_escalation` 只是候选线索；必须经用户确认并重跑确定性规则，不能直接改变最终 tier |
 | INV-018 | Agent 资料读取必须绑定认证主体、purpose、active ConsentScope、字段 allowlist、来源 revision；缺任一项不得返回资料，且只能记录脱敏读取元数据 |
 | INV-019 | iOS 未确认草稿不得携带正式 Event/Approval/Report 引用；同步接受、冲突或重试不得直接产生正式写入 |
+| INV-020 | 行动计划中的每一条普通行动必须绑定有效审核内容、当前 Tier、已确认事实、适用条件与停止/升级条件；未审核的动作、具体食物、补剂、药物和剂量不得进入计划 |
 
 这些不变量必须同时落实为数据库约束、领域校验或自动化测试；仅写在 Prompt 中不算实现。
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import copy
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 from referencing import Registry, Resource
 from pydantic_ai.models.test import TestModel
 
@@ -81,6 +84,134 @@ def test_normal_agent_question_turn_matches_agent_turn_schema():
     outcome = service.assess(request())
     validate_agent_turn(outcome.agent_turn)
 
+    r2_normal_turn = copy.deepcopy(outcome.agent_turn)
+    r2_normal_turn["deterministic_safety_gate"]["tier"] = "R2"
+    r2_normal_turn["safety_envelope"]["safety"]["tier"] = "R2"
+    with pytest.raises(ValidationError):
+        validate_agent_turn(r2_normal_turn)
+
+
+def test_ios_intake_contracts_reject_r2_ordinary_agent_permission():
+    contracts = ROOT / "docs/contracts"
+
+    client_schema = json.loads((contracts / "ios-signal-intake.schema.json").read_text())
+    client_validator = Draft202012Validator(client_schema["$defs"]["SafetyState"])
+    client_validator.validate({"status": "no_rule_triggered", "ordinary_agent_allowed": True})
+    with pytest.raises(ValidationError):
+        client_validator.validate({"status": "r2", "ordinary_agent_allowed": True})
+
+    body_location_schema = json.loads((contracts / "body-location.schema.json").read_text())
+    client_registry = Registry()
+    client_registry = client_registry.with_resource(client_schema["$id"], Resource.from_contents(client_schema))
+    client_registry = client_registry.with_resource(body_location_schema["$id"], Resource.from_contents(body_location_schema))
+    full_client_validator = Draft202012Validator(client_schema, registry=client_registry)
+    normal_agent_draft = {
+        "schema_version": "1.1",
+        "session_id": str(uuid4()),
+        "draft_revision": 1,
+        "phase": "agent_draft",
+        "locations": [],
+        "facts": {
+            "sensations": [],
+            "aggravating_factors": [],
+            "relieving_factors": [],
+            "functional_impacts": [],
+            "background_facts": [],
+        },
+        "safety": {"status": "no_rule_triggered", "ordinary_agent_allowed": True},
+        "reviewed_groups": [],
+        "unknown_groups": [],
+        "updated_at": "2026-08-09T00:00:00Z",
+    }
+    # This schema test isolates phase/safety coupling. The Swift domain layer
+    # separately rejects an agent phase without a selected BodyLocation.
+    full_client_validator.validate({**normal_agent_draft, "locations": [{
+        "marker_id": str(uuid4()),
+        "region_id": "body.test.region",
+        "ontology_version": "test",
+        "laterality": "left",
+        "surface": "anterior",
+        "depth": "unspecified",
+        "shape": "point",
+        "anchor_2d": {
+            "view": "front",
+            "asset_id": "test",
+            "asset_version": "1",
+            "point": {"x": 0.5, "y": 0.5},
+        },
+        "mapping": {"method": "direct_user_selection", "confidence": 1.0, "reviewed_by_user": False},
+        "source": {"interaction": "body_map_2d"},
+        "created_at": "2026-08-09T00:00:00Z",
+    }]})
+    with pytest.raises(ValidationError):
+        full_client_validator.validate({
+            **normal_agent_draft,
+            "safety": {"status": "r2", "ordinary_agent_allowed": False},
+        })
+
+    p4_schema = json.loads((contracts / "ios-draft-envelope.schema.json").read_text())
+    p4_validator = Draft202012Validator(p4_schema)
+    valid_p4_envelope = {
+        "schema_version": "1.1",
+        "draft_id": str(uuid4()),
+        "owner_id": str(uuid4()),
+        "client_operation_id": str(uuid4()),
+        "draft_revision": 1,
+        "lifecycle": "editing",
+        "locations": [],
+        "facts": {
+            "sensations": [{"code": "sore", "location_marker_ids": [str(uuid4())]}],
+            "aggravating_factors": [],
+            "relieving_factors": [],
+            "functional_impacts": [],
+            "background_facts": [],
+            "time_pattern": "",
+        },
+        "sync": {"state": "not_queued", "attempt_count": 0},
+        "created_at": "2026-08-09T00:00:00Z",
+        "updated_at": "2026-08-09T00:00:00Z",
+    }
+    p4_validator.validate(valid_p4_envelope)
+    with pytest.raises(ValidationError):
+        p4_validator.validate({
+            **valid_p4_envelope,
+            "facts": {
+                **valid_p4_envelope["facts"],
+                "sensations": [{"code": "sore", "location_marker_ids": []}],
+            },
+        })
+
+    handoff_schema = json.loads((contracts / "ios-signal-intake-application-handoff.schema.json").read_text())
+    server_validator = Draft202012Validator(handoff_schema["$defs"]["ServerSafetyProjection"])
+    r3_projection = {
+        "status": "complete",
+        "tier": "R3",
+        "rule_outcome": "no_rule_triggered",
+        "triggered_rule_ids": [],
+        "required_question_ids": [],
+        "rule_set_version": "rules.test",
+        "all_current_rules_executed": True,
+        "scenario_support": "supported",
+        "unresolved_safety": False,
+        "ordinary_agent_allowed": True,
+        "evaluated_at": "2026-08-09T00:00:00Z",
+    }
+    server_validator.validate(r3_projection)
+    r2_projection = {
+        **r3_projection,
+        "tier": "R2",
+        "rule_outcome": "triggered",
+        "triggered_rule_ids": ["test.r2"],
+    }
+    with pytest.raises(ValidationError):
+        server_validator.validate(r2_projection)
+
+    adapter_schema = json.loads((contracts / "ios-signal-intake-adapter-result.schema.json").read_text())
+    ready_rule = Draft202012Validator(adapter_schema["allOf"][0])
+    ready_rule.validate({"status": "ready_for_agent", "assessment_draft": {}, "server_safety_tier": "R3"})
+    with pytest.raises(ValidationError):
+        ready_rule.validate({"status": "ready_for_agent", "assessment_draft": {}, "server_safety_tier": "R2"})
+
 
 def test_r0_escalation_turn_matches_agent_turn_schema():
     rule = RuleDefinition(
@@ -94,6 +225,29 @@ def test_r0_escalation_turn_matches_agent_turn_schema():
     )
     service = AssessmentService(SafetyEngine(RuleCatalog(version="rules.test", rules=(rule,), available=True)))
     outcome = service.assess(request())
+    validate_agent_turn(outcome.agent_turn)
+
+
+def test_application_safety_question_turn_matches_agent_turn_schema():
+    rule = RuleDefinition(
+        rule_id="test.safety.unresolved",
+        required_question_id="safety.synthetic_question",
+        evaluate=lambda _ctx: RuleHit(rule_id="test.safety.unresolved", result="undetermined"),
+        required_action_code="PROTOTYPE_SAFETY_CLARIFICATION",
+        content_id="prototype.safety.clarification",
+        content_release_id="prototype.none",
+        display_message="",
+    )
+    service = AssessmentService(SafetyEngine(RuleCatalog(version="rules.test", rules=(rule,), available=True)))
+    outcome = service.assess(request())
+
+    assert outcome.status == "awaiting_user"
+    assert outcome.agent_turn["output_origin"] == "application"
+    assert outcome.agent_turn["safety_envelope"]["mode"] == "degraded"
+    assert [question["question_id"] for question in outcome.agent_turn["output"]["questions"]] == [
+        "safety.synthetic_question"
+    ]
+    assert {question["category"] for question in outcome.agent_turn["output"]["questions"]} == {"safety"}
     validate_agent_turn(outcome.agent_turn)
 
 

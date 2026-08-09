@@ -4,8 +4,9 @@ import SwiftUI
 public struct BodyMapScreen: View {
     @State private var model: BodyMapModel
     @State private var cameraPreset: BodyCameraPreset = .front
+    @State private var isAccessibleRegionPickerPresented = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    private let onLocationsChanged: ([BodyLocation]) -> Void
+    private let onLocationsChanged: ([BodyLocation]) -> Bool
     private let prototype3DEnabled: Bool
 
     /// `prototype3DEnabled` is intentionally explicit. The current executable
@@ -14,7 +15,7 @@ public struct BodyMapScreen: View {
     public init(
         model: BodyMapModel = BodyMapModel(),
         prototype3DEnabled: Bool = false,
-        onLocationsChanged: @escaping ([BodyLocation]) -> Void = { _ in }
+        onLocationsChanged: @escaping ([BodyLocation]) -> Bool = { _ in true }
     ) {
         _model = State(initialValue: model)
         self.prototype3DEnabled = prototype3DEnabled
@@ -23,51 +24,75 @@ public struct BodyMapScreen: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Picker("身体地图模式", selection: Binding(
-                    get: { model.mode },
-                    set: { newMode in
-                        model.clearInteractionNotice()
-                        if newMode == .threeD { model.request3D() } else { model.switchTo2D() }
-                    }
-                )) {
-                    ForEach(BodyMapMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
+            VStack(alignment: .leading, spacing: 20) {
+                CompanionSectionHeading(
+                    eyebrow: "第 1 步 / 共 3 步",
+                    title: "哪里不舒服？",
+                    detail: "轻点你感觉不适的位置；这只是你的主观位置表达。"
+                )
+
+                CompanionCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Picker("身体地图模式", selection: Binding(
+                            get: { model.mode },
+                            set: { newMode in
+                                model.clearInteractionNotice()
+                                if newMode == .threeD { model.request3D() } else { model.switchTo2D() }
+                            }
+                        )) {
+                            ForEach(BodyMapMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
+
+                        Picker("标记方式", selection: Binding(
+                            get: { model.markingMode },
+                            set: {
+                                model.markingMode = $0
+                                model.clearInteractionNotice()
+                            }
+                        )) {
+                            ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
+
+                        HStack(spacing: 8) {
+                            CompanionStatusPill("位置 \(model.markerCount) / \(BodyMapModel.maximumMarkerCount)", systemImage: "mappin.and.ellipse", tint: model.markerCount >= BodyMapModel.maximumMarkerCount ? BodyCompanionTheme.warm : BodyCompanionTheme.accent)
+                            Text("区域和针点合计最多 20 个；选中已有针点不会重复新增。")
+                                .font(.caption)
+                                .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                        }
+                        .accessibilityLabel("位置标记数量 \(model.markerCount)，区域和针点合计最多 \(BodyMapModel.maximumMarkerCount) 个")
                     }
                 }
-                .pickerStyle(.segmented)
-                .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
 
-                Picker("标记方式", selection: Binding(
-                    get: { model.markingMode },
-                    set: {
-                        model.markingMode = $0
-                        model.clearInteractionNotice()
-                    }
-                )) {
-                    ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
-
-                if model.markingMode == .pin {
-                    HStack(spacing: 4) {
-                        Label("针点", systemImage: "mappin.and.ellipse")
-                        Text(String(model.pinCount))
-                        Text("/")
-                        Text(String(BodyMapModel.maximumPinCount))
-                    }
-                    .font(.caption)
-                    .foregroundStyle(model.pinCount >= BodyMapModel.maximumPinCount ? .orange : .secondary)
-                    .accessibilityLabel("针点数量 " + String(model.pinCount) + "，最多 " + String(BodyMapModel.maximumPinCount) + " 个")
-                }
-
-                if model.lastMutation == .rejectedPinLimit {
+                if model.lastMutation == .rejectedMarkerLimit {
                     BodyMapNotice(
-                        text: "已达到 20 个针点上限，请编辑或删除已有针点。",
+                        text: "已达到 20 个位置上限，请编辑或删除已有标记。",
                         systemImage: "exclamationmark.circle"
+                    ) {
+                        model.clearInteractionNotice()
+                    }
+                }
+
+                if model.lastMutation == .rejectedDuplicateLocation {
+                    BodyMapNotice(
+                        text: "这个位置标记已存在，未重复加入记录。",
+                        systemImage: "exclamationmark.circle"
+                    ) {
+                        model.clearInteractionNotice()
+                    }
+                }
+
+                if model.lastMutation == .rejectedDraftSynchronization {
+                    BodyMapNotice(
+                        text: "位置未能同步到当前记录，已恢复到上一次有效状态。",
+                        systemImage: "exclamationmark.triangle"
                     ) {
                         model.clearInteractionNotice()
                     }
@@ -79,29 +104,59 @@ public struct BodyMapScreen: View {
                     }
                 }
 
-                modeContent
+                CompanionCard {
+                    modeContent
+                }
 
-                Text("标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("位置说明：标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "hand.raised.fill")
+                        .foregroundStyle(BodyCompanionTheme.mint)
+                        .frame(width: 24)
+                    Text("标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
+                        .font(.footnote)
+                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("位置说明：标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
 
                 if !model.marks.isEmpty {
                     MarkSummaryPanel(model: model)
 
                     NavigationLink(value: AppRoute.intake) {
-                        Label("继续填写结构化描述", systemImage: "list.clipboard")
-                            .frame(maxWidth: .infinity, minHeight: 44)
+                        Label("下一步：描述你的感受", systemImage: "arrow.right")
+                    }
+                    .buttonStyle(CompanionPrimaryButtonStyle())
+                    .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
+                }
+            }
+            .padding(20)
+        }
+        .navigationTitle("记录这次不适")
+        .companionScreenBackground()
+        .sheet(isPresented: $isAccessibleRegionPickerPresented) {
+            NavigationStack {
+                ScrollView {
+                    AccessibleRegionPicker(model: model, showsViewPicker: true)
+                        .padding(20)
+                }
+                .navigationTitle("从列表选择部位")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { isAccessibleRegionPickerPresented = false }
                     }
                 }
             }
-            .padding()
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
-        .navigationTitle("记录身体信号")
-        .onChange(of: model.marks) { _, _ in
-            // The parent adapter can project the latest user-edited mark
-            // descriptors into typed intake without treating them as saved.
-            onLocationsChanged(model.markerDrafts)
+        .onChange(of: model.marks) { previousMarks, _ in
+            // The map owns only provisional locations. Typed health facts
+            // remain owned by SignalIntakeScreen and are never projected from
+            // BodyMark state.
+            guard !model.marks.isEmpty || !previousMarks.isEmpty else { return }
+            if !onLocationsChanged(model.markerDrafts) {
+                model.restoreMarks(previousMarks)
+            }
         }
     }
 
@@ -127,9 +182,7 @@ public struct BodyMapScreen: View {
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     if prototype3DEnabled {
-                        Label("内部候选模型 · 未经生产审核", systemImage: "flask")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                        CompanionStatusPill("内部候选模型 · 未经生产审核", systemImage: "flask", tint: BodyCompanionTheme.warm)
                             .accessibilityLabel("内部候选模型，未经生产审核")
                     }
 
@@ -139,6 +192,14 @@ public struct BodyMapScreen: View {
                         }
                     }
                     .pickerStyle(.segmented)
+
+                    Button {
+                        isAccessibleRegionPickerPresented = true
+                    } label: {
+                        Label("从列表选择部位", systemImage: "list.bullet")
+                    }
+                    .buttonStyle(CompanionOutlineButtonStyle())
+                    .accessibilityHint("无需操作 3D 人体，也能选择前面或后面的身体部位")
 
                     if let focusedRegionID = model.focusedRegionID {
                         HStack(spacing: 8) {
@@ -174,7 +235,7 @@ public struct BodyMapScreen: View {
                                       depth: option.depth
                                   ) else { return }
                             let mutation = model.applySelection(location)
-                            if mutation == .rejectedPinLimit {
+                            if mutation == .rejectedMarkerLimit || mutation == .rejectedDuplicateLocation {
                                 return
                             }
                         },
@@ -207,7 +268,7 @@ private struct BodyMap2DView: View {
             }
             .frame(maxWidth: .infinity)
 
-            AccessibleRegionPicker(model: model)
+            AccessibleRegionPicker(model: model, showsViewPicker: false)
         }
     }
 
@@ -264,19 +325,19 @@ private struct BodyMapCanvas: View {
             let canvasSize = CGSize(width: min(proxy.size.width, 360), height: 520)
             ZStack {
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.secondary.opacity(0.08))
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.secondary.opacity(0.25)))
+                    .fill(BodyCompanionTheme.surfaceTinted)
+                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(BodyCompanionTheme.line))
 
                 NeutralBodySilhouette()
-                    .fill(Color.accentColor.opacity(0.13))
-                    .overlay(NeutralBodySilhouette().stroke(Color.accentColor.opacity(0.42), lineWidth: 1.5))
+                    .fill(BodyCompanionTheme.accent.opacity(0.12))
+                    .overlay(NeutralBodySilhouette().stroke(BodyCompanionTheme.accent.opacity(0.42), lineWidth: 1.5))
                     .frame(width: canvasSize.width * 0.78, height: canvasSize.height * 0.86)
 
                 ForEach(BodyRegionCatalog.options(for: view)) { option in
                     if let geometry = option.geometry(for: view) {
                         BodyRegionHitShape(geometry: geometry)
-                            .fill(Color.accentColor.opacity(0.035))
-                            .overlay(BodyRegionHitShape(geometry: geometry).stroke(Color.accentColor.opacity(0.16), lineWidth: 1))
+                            .fill(BodyCompanionTheme.accent.opacity(0.035))
+                            .overlay(BodyRegionHitShape(geometry: geometry).stroke(BodyCompanionTheme.accent.opacity(0.16), lineWidth: 1))
                             .frame(width: canvasSize.width, height: canvasSize.height)
                             .contentShape(BodyRegionHitShape(geometry: geometry))
                             .accessibilityHidden(true)
@@ -287,7 +348,7 @@ private struct BodyMapCanvas: View {
                     if let option = BodyRegionCatalog.option(regionID: mark.location.regionID, laterality: mark.location.laterality),
                        let geometry = option.geometry(for: view) {
                         BodyRegionHitShape(geometry: geometry)
-                            .fill(mark.zoneVisualState == .reviewing ? Color.orange.opacity(0.30) : Color.teal.opacity(0.30))
+                            .fill(BodyCompanionTheme.accent.opacity(0.30))
                             .overlay(BodyRegionHitShape(geometry: geometry).stroke(Color.white.opacity(0.9), lineWidth: 2))
                             .frame(width: canvasSize.width, height: canvasSize.height)
                             .allowsHitTesting(false)
@@ -298,7 +359,7 @@ private struct BodyMapCanvas: View {
                 ForEach(marks.filter(\.isVisible)) { mark in
                     if let anchor = mark.location.anchor2D, anchor.view == view, let point = anchor.point {
                         Circle()
-                            .fill(mark.kind == .zone ? (mark.zoneVisualState == .reviewing ? Color.orange : Color.teal) : pinColor(mark.colorToken))
+                            .fill(markerColor(for: mark))
                             .overlay(Circle().stroke(.white, lineWidth: 2))
                             .frame(width: mark.kind == .zone ? 20 : 16, height: mark.kind == .zone ? 20 : 16)
                             .position(x: point.x * canvasSize.width, y: point.y * canvasSize.height)
@@ -310,13 +371,14 @@ private struct BodyMapCanvas: View {
                     HStack {
                         Label(view == .front ? "前面" : "后面", systemImage: view == .front ? "person" : "person.fill")
                             .font(.caption.weight(.semibold))
+                            .foregroundStyle(BodyCompanionTheme.ink)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(.thinMaterial, in: Capsule())
                         Spacer()
                         Text("轻点标记位置")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
                     }
                     .padding(16)
                     Spacer()
@@ -340,6 +402,10 @@ private struct BodyMapCanvas: View {
     private func pinColor(_ token: Int) -> Color {
         let colors: [Color] = [.red, .blue, .orange, .purple, .green, .pink, .teal, .indigo, .yellow, .cyan, .mint, .brown]
         return colors[abs(token) % colors.count]
+    }
+
+    private func markerColor(for mark: BodyMark) -> Color {
+        mark.kind == .zone ? BodyCompanionTheme.accent : pinColor(mark.colorToken)
     }
 }
 
@@ -410,6 +476,7 @@ private struct BodyRegionHitShape: Shape {
 
 private struct AccessibleRegionPicker: View {
     let model: BodyMapModel
+    let showsViewPicker: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -417,7 +484,16 @@ private struct AccessibleRegionPicker: View {
                 .font(.headline)
             Text("如果触控不方便，可以从列表选择大致位置。")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BodyCompanionTheme.secondaryInk)
+
+            if showsViewPicker {
+                Picker("选择身体表面", selection: Binding(get: { model.view }, set: { model.view = $0 })) {
+                    Text("前面").tag(BodyMapView.front)
+                    Text("后面").tag(BodyMapView.back)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityHint("选择前面或后面的部位列表；与 2D 和 3D 使用同一位置契约。")
+            }
 
             ForEach(BodyRegionCatalog.options(for: model.view)) { option in
                 Button {
@@ -439,7 +515,7 @@ private struct AccessibleRegionPicker: View {
                         Text(option.label)
                         Spacer()
                         Image(systemName: "plus.circle")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(BodyCompanionTheme.accent)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -463,6 +539,7 @@ private struct MarkSummaryPanel: View {
             HStack {
                 Text("待确认标记（\(model.marks.count)）")
                     .font(.headline)
+                    .foregroundStyle(BodyCompanionTheme.ink)
                 Spacer()
                 Button("清空") {
                     model.clearMarkers()
@@ -482,19 +559,20 @@ private struct MarkSummaryPanel: View {
                     } label: {
                         HStack(spacing: 10) {
                         Image(systemName: mark.kind == .zone ? "square.dashed" : "mappin.circle.fill")
-                            .foregroundStyle(mark.kind == .zone ? .teal : pinColor(mark.colorToken))
+                            .foregroundStyle(mark.kind == .zone ? BodyCompanionTheme.accent : pinColor(mark.colorToken))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(mark.displayLabel)
                                 .font(.body.weight(.semibold))
+                                .foregroundStyle(BodyCompanionTheme.ink)
                             Text(summary(for: mark))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(BodyCompanionTheme.secondaryInk)
                                 .lineLimit(2)
                         }
                         Spacer()
                         if mark.id == model.selectedMarkID {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.tint)
+                                .foregroundStyle(BodyCompanionTheme.accent)
                         }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -512,15 +590,23 @@ private struct MarkSummaryPanel: View {
                     .accessibilityLabel("删除\(mark.displayLabel)")
                 }
                 .padding(10)
-                .background(mark.id == model.selectedMarkID ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .background(mark.id == model.selectedMarkID ? BodyCompanionTheme.accentSoft : BodyCompanionTheme.surfaceTinted.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
 
             if let selected = model.selectedMark() {
                 if horizontalSizeClass != .compact {
                     MarkEditor(model: model, mark: selected)
+                        .id(selected.id)
                 }
             }
         }
+        .padding(18)
+        .background(BodyCompanionTheme.surface, in: RoundedRectangle(cornerRadius: BodyCompanionTheme.cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: BodyCompanionTheme.cornerRadius, style: .continuous)
+                .stroke(BodyCompanionTheme.line.opacity(0.72), lineWidth: 1)
+        }
+        .shadow(color: BodyCompanionTheme.shadow, radius: 14, y: 7)
         .onAppear {
             if horizontalSizeClass == .compact, model.selectedMarkID != nil {
                 isEditorPresented = true
@@ -535,6 +621,7 @@ private struct MarkSummaryPanel: View {
                 ScrollView {
                     if let selected = model.selectedMark() {
                         MarkEditor(model: model, mark: selected)
+                            .id(selected.id)
                             .padding()
                     } else {
                         ContentUnavailableView("没有待编辑标记", systemImage: "mappin.slash")
@@ -548,14 +635,11 @@ private struct MarkSummaryPanel: View {
     }
 
     private func summary(for mark: BodyMark) -> String {
-        var parts = [mark.kind.displayName]
-        if mark.kind == .zone { parts.append(mark.zoneVisualState.displayName) }
-        if let sensation = mark.sensation { parts.append(sensation.displayName) }
-        if let intensity = mark.intensity { parts.append("程度 \(intensity)/10") }
-        if !mark.triggers.isEmpty {
-            parts.append(mark.triggers.sorted { $0.rawValue < $1.rawValue }.map(\.displayName).joined(separator: "、"))
-        }
-        return parts.joined(separator: " · ")
+        [
+            mark.kind.displayName,
+            localizedLaterality(mark.location.laterality),
+            localizedSurface(mark.location.surface)
+        ].joined(separator: " · ")
     }
 
     private func pinColor(_ token: Int) -> Color {
@@ -571,77 +655,61 @@ private struct MarkEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("编辑\(mark.kind.displayName)")
+                Text("位置详情")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                if mark.kind == .zone {
-                    Button {
-                        _ = model.toggleZone(mark.location)
-                    } label: {
-                        Label(mark.zoneVisualState.displayName, systemImage: "circle.lefthalf.filled")
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(minHeight: 44)
-                }
             }
 
-            Text("感觉（可选；不填写不会自动猜测）")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 8)], spacing: 8) {
-                ForEach(BodyMarkSensation.allCases, id: \.self) { sensation in
-                    Button {
-                        _ = model.setSensation(mark.sensation == sensation ? nil : sensation, for: mark.id)
-                    } label: {
-                        Text(sensation.displayName)
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(mark.sensation == sensation ? .accentColor : .secondary)
-                    .accessibilityLabel("感觉\(sensation.displayName)")
-                }
-            }
+            LabeledContent("标记方式", value: mark.kind.displayName)
+            LabeledContent("部位", value: mark.displayLabel)
+            LabeledContent("侧别", value: localizedLaterality(mark.location.laterality))
+            LabeledContent("表面", value: localizedSurface(mark.location.surface))
+            LabeledContent("定位方式", value: mark.kind == .pin ? "精确针点" : "大致区域")
+            LabeledContent("位置来源", value: localizedSource(mark.location.source.interaction))
 
-            Text("动作/功能线索（可选）")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 8)], spacing: 8) {
-                ForEach(BodyMarkTrigger.allCases, id: \.self) { trigger in
-                    Button {
-                        _ = model.toggleTrigger(trigger, for: mark.id)
-                    } label: {
-                        Text(trigger.displayName)
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(mark.triggers.contains(trigger) ? .orange : .secondary)
-                }
-            }
+            Text("这里仅记录你指出的位置。感觉、程度和什么动作会加重，请在下一步的结构化描述中填写。")
+                .font(.footnote)
+                .foregroundStyle(BodyCompanionTheme.secondaryInk)
 
-            HStack {
-                Text("当前程度")
-                    .font(.caption.weight(.semibold))
-                Spacer()
-                Text(mark.intensity.map { "\($0)/10" } ?? "未填写")
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
+            Button("删除这个位置", role: .destructive) {
+                model.removeDraft(id: mark.id)
             }
-            Slider(
-                value: Binding(
-                    get: { Double(mark.intensity ?? 0) },
-                    set: { _ = model.setIntensity(Int($0.rounded()), for: mark.id) }
-                ),
-                in: 0...10,
-                step: 1
-            )
-            .accessibilityValue(mark.intensity.map { "\($0)/10" } ?? "未填写")
-            Button("清除程度") {
-                _ = model.setIntensity(nil, for: mark.id)
-            }
-            .buttonStyle(.borderless)
             .frame(minHeight: 44)
         }
         .padding(12)
-        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+        .background(BodyCompanionTheme.surfaceTinted.opacity(0.65), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+private func localizedLaterality(_ laterality: Laterality) -> String {
+    switch laterality {
+    case .left: "左侧"
+    case .right: "右侧"
+    case .midline: "中线"
+    case .bilateral: "双侧"
+    case .unspecified: "未指定"
+    }
+}
+
+private func localizedSurface(_ surface: BodySurface) -> String {
+    switch surface {
+    case .anterior: "前面"
+    case .posterior: "后面"
+    case .medial: "内侧"
+    case .lateral: "外侧"
+    case .superior: "上方"
+    case .inferior: "下方"
+    case .circumferential: "环绕"
+    case .unspecified: "未指定"
+    }
+}
+
+private func localizedSource(_ source: BodyMapSource) -> String {
+    switch source {
+    case .bodyMap2D: "2D 人体图"
+    case .bodyMap3D: "3D 人体图"
+    case .bodyPartSearch: "部位列表"
+    case .documentImport: "导入资料"
+    case .agentNormalization: "待确认的系统整理"
     }
 }

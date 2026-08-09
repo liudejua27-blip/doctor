@@ -4,6 +4,189 @@ import XCTest
 
 @MainActor
 final class SignalIntakeTests: XCTestCase {
+    func testEntryPolicyMakesResumeAndFreshStartExplicit() {
+        let model = SignalIntakeModel()
+        let initialDraftID = model.draft.sessionID
+
+        XCTAssertFalse(model.hasResumableDraft)
+        XCTAssertNil(model.resumeDestination)
+
+        model.setLocations([makeLocation()])
+        XCTAssertTrue(model.hasResumableDraft)
+        XCTAssertEqual(model.resumeDestination, .structuredIntake)
+        XCTAssertEqual(model.draft.sessionID, initialDraftID)
+
+        model.reset()
+        XCTAssertFalse(model.hasResumableDraft)
+        XCTAssertNil(model.resumeDestination)
+        XCTAssertNotEqual(model.draft.sessionID, initialDraftID)
+    }
+
+    func testRemovingTypedLocationAlsoRemovesItsMapDraft() {
+        let location = makeLocation()
+        let map = BodyMapModel()
+        _ = map.addPin(location)
+        let model = SignalIntakeModel(bodyMapModel: map)
+        model.setLocations(map.markerDrafts)
+
+        model.removeLocation(id: location.id)
+
+        XCTAssertTrue(model.draft.locations.isEmpty)
+        XCTAssertTrue(map.marks.isEmpty)
+    }
+
+    func testSetLocationsRejectsOverLimitCollectionWithoutTruncatingDraft() {
+        let model = SignalIntakeModel()
+        let existing = makeLocation()
+        XCTAssertTrue(model.setLocations([existing]))
+        let overLimit = (0...BodyMapModel.maximumMarkerCount).map { index in
+            makeLocation(regionID: "body.test.region.\(index)")
+        }
+
+        XCTAssertFalse(model.setLocations(overLimit))
+        XCTAssertEqual(model.draft.locations.map(\.id), [existing.id])
+
+        XCTAssertFalse(model.setLocations([existing, existing]))
+        XCTAssertEqual(model.draft.locations.map(\.id), [existing.id])
+    }
+
+    func testMapLocationSyncPreservesTypedFactsAndExplicitRelations() throws {
+        let first = makeLocation()
+        let second = makeLocation()
+        let map = BodyMapModel()
+        _ = map.addPin(first)
+        let model = SignalIntakeModel(bodyMapModel: map)
+        model.setLocations(map.markerDrafts)
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
+        XCTAssertTrue(model.markReviewed(.sensation))
+        try model.setIntensity(context: .current, value: 4)
+        XCTAssertTrue(model.markReviewed(.intensity))
+        try model.addFactor(label: "跑步", effect: .worse)
+
+        _ = map.addPin(second)
+        model.setLocations(map.markerDrafts)
+
+        XCTAssertEqual(model.draft.locations.map(\.id), [first.id, second.id])
+        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
+        XCTAssertEqual(model.draft.facts.intensity?.value, 4)
+        XCTAssertEqual(model.draft.facts.aggravatingFactors.map(\.label), ["跑步"])
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertTrue(model.draft.reviewedGroups.contains(.intensity))
+    }
+
+    func testRemovingLastSensationLocationDropsInvalidRelationAndRequiresReview() throws {
+        let first = makeLocation()
+        let second = makeLocation()
+        let model = SignalIntakeModel()
+        model.setLocations([first, second])
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
+        XCTAssertTrue(model.markReviewed(.sensation))
+
+        model.removeLocation(id: first.id)
+
+        XCTAssertEqual(model.draft.locations.map(\.id), [second.id])
+        XCTAssertTrue(model.draft.facts.sensations.isEmpty)
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
+        XCTAssertNoThrow(try model.draft.validate())
+    }
+
+    func testAddingLocationInvalidatesGlobalUnknownSensationAnswer() {
+        let first = makeLocation()
+        let second = makeLocation()
+        let model = SignalIntakeModel()
+        model.setLocations([first])
+        model.markUnknown(.sensation)
+        XCTAssertTrue(model.draft.unknownGroups.contains(.sensation))
+
+        model.setLocations([first, second])
+
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
+    }
+
+    func testSameMarkerIDLocationReplacementRequiresSensationReviewAgain() throws {
+        let first = makeLocation()
+        let replacement = makeLocation(
+            regionID: "body.shoulder.general",
+            laterality: .right,
+            markerID: first.id
+        )
+        let model = SignalIntakeModel()
+        XCTAssertTrue(model.setLocations([first]))
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
+        XCTAssertTrue(model.markReviewed(.sensation))
+
+        XCTAssertTrue(model.setLocations([replacement]))
+
+        XCTAssertEqual(model.draft.locations.first?.regionID, "body.shoulder.general")
+        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
+    }
+
+    func testDecodedOrRestoredAgentDraftMustCarryNormalAgentSafety() throws {
+        let malformed = SignalIntakeDraft(
+            phase: .agentDraft,
+            locations: [makeLocation()],
+            safety: SignalSafetyState(status: .r2, ordinaryAgentAllowed: false)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        XCTAssertThrowsError(try decoder.decode(SignalIntakeDraft.self, from: encoder.encode(malformed))) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .ordinaryAgentSuppressed)
+        }
+        XCTAssertThrowsError(try SignalIntakeModel(restoring: malformed)) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .ordinaryAgentSuppressed)
+        }
+    }
+
+    func testRestorationRequiresMapProjectionToMatchValidatedLocations() throws {
+        let location = makeLocation()
+        let draft = SignalIntakeDraft(locations: [location])
+
+        XCTAssertThrowsError(try SignalIntakeModel(restoring: draft, bodyMapModel: BodyMapModel())) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .invalidValue)
+        }
+
+        let restored = try SignalIntakeModel(restoring: draft)
+        XCTAssertEqual(restored.draft.locations, [location])
+        XCTAssertEqual(restored.bodyMapModel.markerDrafts, [location])
+    }
+
+    func testLocationChangeInvalidatesSafetyAndDownstreamAgentPhase() throws {
+        let model = readyForSafety()
+        try model.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        XCTAssertEqual(model.phase, .agentDraft)
+        XCTAssertTrue(model.safety.ordinaryAgentAllowed)
+
+        model.setLocations([model.draft.locations[0], makeLocation()])
+
+        XCTAssertEqual(model.phase, .collectingFacts)
+        XCTAssertEqual(model.safety.status, .notRun)
+        XCTAssertFalse(model.safety.ordinaryAgentAllowed)
+        XCTAssertThrowsError(try model.finishAgentDraft()) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .wrongPhase)
+        }
+    }
+
+    func testRemovingLastLocationKeepsOtherUnconfirmedFactsVisibleAsResumableDraft() throws {
+        let location = makeLocation()
+        let model = SignalIntakeModel()
+        model.setLocations([location])
+        try model.setIntensity(context: .current, value: 4)
+
+        model.removeLocation(id: location.id)
+
+        XCTAssertEqual(model.phase, .choosingLocation)
+        XCTAssertTrue(model.hasResumableDraft)
+        XCTAssertEqual(model.resumeDestination, .bodyMap)
+        XCTAssertEqual(model.draft.facts.intensity?.value, 4)
+    }
+
     func testCannotLeaveLocationStepWithoutLocation() {
         let model = SignalIntakeModel()
 
@@ -54,6 +237,25 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertEqual(model.phase, .reviewFacts)
         try model.saveOfflineDraft()
         XCTAssertEqual(model.phase, .offlineDraft)
+    }
+
+    func testR2UsesProfessionalPreparationWithoutEnteringOrdinaryAgent() throws {
+        XCTAssertThrowsError(
+            try SignalSafetyState(status: .r2, ordinaryAgentAllowed: true).validate()
+        )
+
+        let model = readyForSafety()
+        try model.applySafety(SignalSafetyState(status: .r2, ordinaryAgentAllowed: false))
+
+        XCTAssertEqual(model.phase, .safetyAction)
+        XCTAssertThrowsError(try model.finishAgentDraft()) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .wrongPhase)
+        }
+
+        try model.acknowledgeSafetyAction()
+        XCTAssertEqual(model.phase, .reviewFacts)
+        try model.requestApproval()
+        XCTAssertEqual(model.phase, .awaitingApproval)
     }
 
     func testNoRuleTriggeredCanPrepareApprovalButIsNotSafetyClaim() throws {
@@ -137,18 +339,38 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertGreaterThan(model.draft.draftRevision, initial)
     }
 
-    func testSensationKeepsExplicitLocationMarkerRelation() {
+    func testSensationRequiresExplicitMultiLocationRelationAndDoesNotCopyOnLocationChange() throws {
         let model = SignalIntakeModel()
         let first = makeLocation()
         let second = makeLocation()
         model.setLocations([first, second])
-        model.toggleSensation(.stiffness)
+        XCTAssertFalse(model.toggleSensation(.stiffness))
+        XCTAssertTrue(model.draft.facts.sensations.isEmpty)
 
-        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id, second.id])
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
+        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
 
-        model.removeLocation(id: second.id)
+        let third = makeLocation()
+        model.setLocations([first, second, third])
+        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
+
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id, third.id])
+        XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id, third.id])
+
+        model.removeLocation(id: third.id)
         XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
         XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+    }
+
+    func testSensationRejectsEmptyDuplicateAndUnknownMarkerRelations() {
+        let model = SignalIntakeModel()
+        let location = makeLocation()
+        model.setLocations([location])
+
+        XCTAssertThrowsError(try model.setSensation(.stiffness, selected: true, locationMarkerIDs: []))
+        XCTAssertThrowsError(try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [location.id, location.id]))
+        XCTAssertThrowsError(try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [UUID()]))
+        XCTAssertTrue(model.draft.facts.sensations.isEmpty)
     }
 
     func testDraftDecoderRejectsUnknownTopLevelField() throws {
@@ -174,17 +396,22 @@ final class SignalIntakeTests: XCTestCase {
         return model
     }
 
-    private func makeLocation() -> BodyLocation {
+    private func makeLocation(
+        regionID: String = "body.knee.general",
+        laterality: Laterality = .left,
+        markerID: UUID = UUID()
+    ) -> BodyLocation {
         BodyLocationMapper.from2D(
             BodyRegionSelection(
-                regionID: "body.knee.general",
-                laterality: .left,
+                regionID: regionID,
+                laterality: laterality,
                 surface: .anterior,
                 source: .bodyMap2D,
                 view: .front,
                 point: Point2D(x: 0.42, y: 0.64),
                 userLabel: "左膝附近"
-            )
+            ),
+            markerID: markerID
         )
     }
 }

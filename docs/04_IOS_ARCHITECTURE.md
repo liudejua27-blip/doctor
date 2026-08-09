@@ -3,13 +3,13 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.5.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
 | 变更级别 | B；涉及安全、隐私或身体位置语义时为 A |
 | 适用范围 | AI Body Companion iOS 客户端 |
-| 依赖 | DOC-00、TERM-01、PROD-01、ARCH-01、DATA-01、BODY-01、FRAME-01 |
+| 依赖 | DOC-00、TERM-01、PROD-01、UX-01、ARCH-01、DATA-01、BODY-01、SAFE-01、PRIV-01、FRAME-01、ADR-0019 |
 | 关联决策 | [ADR-0003](decisions/ADR-0003-canonical-body-location.md)、[ADR-0004](decisions/ADR-0004-ios-3d-rendering-boundary.md)、[ADR-0006](decisions/ADR-0006-ios-offline-draft-encryption-boundary.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md) |
 | 机器契约 | [BodyLocation JSON Schema](contracts/body-location.schema.json)、[BodyAssetManifest JSON Schema](contracts/body-asset-manifest.schema.json) |
 
@@ -139,7 +139,8 @@ flowchart TB
 
 | 模块 | 职责 | 不得承担 |
 |---|---|---|
-| `AppNavigation` | 今天、记录、AI 分析、我的四个主标签；每个标签独立 NavigationStack，统一深链和恢复 | Agent 推断、坐标映射 |
+| `AppNavigation` | 今天、记录、AI 身体助手、我的四个主标签；每个标签独立 NavigationStack，统一深链和恢复 | Agent 推断、坐标映射 |
+| `IntakeEntryPolicy` | 判断当前进程内未确认 `SignalIntakeDraft` 是新建、回到地图还是继续结构化描述；新建前请求用户明确放弃草稿 | 伪造已持久化、替用户丢弃草稿、创建正式 Session/Event |
 | `SessionCoordinator` | 登录态、锁定态、账户删除入口 | 保存模型密钥 |
 | `FeatureConfiguration` | 服务端能力开关、资产版本、最低内容版本 | 绕过本地安全回退 |
 | `PrivacyCenter` | 授权、来源、导出、撤回、删除 | 隐藏长期记忆或第三方处理 |
@@ -147,6 +148,8 @@ flowchart TB
 `FeatureConfiguration` 启动时读取 `GET /v1/app-config/ios`，按 API-01 的 RFC 8785 + SHA-256 + Ed25519 流程，用 App 内 current/next 公钥验证 key ID、config digest、签名、有效期、API/Schema、最低 build、资产/本体和公共安全内容版本后原子发布快照。签名或 key 不认识、配置过期或拉取失败时只能复用未过期且已验证快照；否则进入 fail-closed 能力集：2D 与部位列表、公共安全入口、兼容的手动/本地未确认草稿、数据权利和升级提示。客户端默认值不得把 professional 3D、Agent、报告链接或任何新安全枚举置为 enabled。
 
 `BodyAssetManifest` 是本地/发布流水线提供的版本化 metadata 清单；`BodyAssetRuntimeGate` 在 `BodyMapScreen` 请求 RealityKit 前执行。当前实现只解析和校验清单，不读取、下载、哈希或加载模型文件；`candidate/blocked/retired`、未知版本、请求变体不匹配或任何交叉约束失败都返回 2D/列表回退。只有未来的文件签名/哈希流水线、法务/解剖审核、设备性能和无障碍证据全部满足后，才能把 gate decision 接到真正的 loader。
+
+P0 中的 `IntakeEntryPolicy` 仅针对内存中的 `SignalIntakeDraft`：有位置、已经离开 `choosingLocation`，或仍有任一未确认事实/复核状态的草稿可继续；`choosingLocation` 回到 `BodyMapScreen`，其他阶段直达 `SignalIntakeScreen`。任何“新建”必须经过用户可见的放弃确认并调用本地 reset；取消不改变 draft。它不读写文件、不声称恢复成功，也不创建正式资源。`SignalIntakeModel` 是当前会话中位置集合的写入协调点：结构化描述页删除某个 location 时，必须同步移除 `BodyMapModel` 的同 ID 草稿标记；地图后续只能写入 `BodyLocation` 集合，绝不能把已删 Marker、感觉、程度、因素或感觉关联写回 draft。只要位置集合的值发生变化（即使 Marker ID 相同但区域、侧别或表面改变），P0 都立即清除本地 safety 状态、普通 Agent/审批阶段和全局未知感觉答案，并使感觉组回到待复核，退回 `collectingFacts`（无位置则 `choosingLocation`）；生产实现还必须在服务端完整重跑安全规则。
 
 ### 5.2 Body Map Feature
 
@@ -160,7 +163,7 @@ flowchart TB
 | `BodySurfaceAnchorResolver` | 命中结果、资产 Manifest | 规范 3D 锚点候选 |
 | `BodyAssetManifest.validate()` / `BodyAssetRuntimeGate` | `BodyAssetManifest`、请求变体、能力配置 | metadata eligibility 或可访问 2D/列表回退；不得做文件 I/O |
 | `BodyLocationMapper` | 2D/3D 锚点、区域图、对应表 | 规范 `BodyLocation` 与置信度 |
-| `MarkerDraftStore` | 用户创建/编辑/撤销 | 草稿 Marker；不产生正式事件 |
+| `MarkerDraftStore` | 用户创建/选择/删除位置草稿 | 仅 `BodyLocation` 候选；Zone 与 Pin 合计严格最多 20 个，超限拒绝而非截断；不产生正式事件或其他身体事实 |
 | `MarkerRenderer` | Marker + 当前资产 | 纯视觉 Entity / Overlay |
 | `RegionHighlightRenderer` | `region_id`、选中态 | 纯视觉区域高亮 |
 | `CameraPresetController` | front/back/left/right/focus | 可取消的相机变换 |
@@ -173,9 +176,13 @@ flowchart TB
 | `SignalIntakeDraft` | 保存未确认的位置、感觉、程度、时间、诱因、影响和用户原话；对应 P1D 客户端投影，不是正式 Event |
 | `SignalIntakeModel` | 维护 `SignalIntakePhase`、事实来源/状态、revision 和 fail-closed 转换 |
 | `IntakeCoordinator` | 控制快速记录、Agent 追问、安全问答、复核与确认 |
+| `SessionContextSheet` | 在位置后收集本次训练/工作/日常/未知情境与逐来源资料范围；默认仅使用本次记录，不把情境写成病因或永久档案 |
+| `BodyAssistantScreen` | 将 3D/2D 位置、情境、待确认事实与单条 AI 问题组合为同一流程；普通聊天只能在服务端安全门允许时显示 |
 | `AgentConversationClient` | 发送最少必要上下文，接收结构化草稿和显示文本 |
+| `DataUseReceiptPresenter` | 显示本次实际使用资料的类别、范围、用途、结果与脱敏版本引用；不读取或展示原始健康正文 |
 | `SafetyQuestionPresenter` | 展示已版本化的明确问题；模型失败时仍可用 |
 | `ConfirmationReview` | 分开显示用户事实、设备信息和可选 AI 候选；逐项可改；提交后只创建 Intent |
+| `ActionPlanPresenter` | 仅显示服务端已验证的审核行动、适用理由与停止/升级条件；不在客户端推导动作、食物、补剂、药物或剂量 |
 | `TypedDraftEditor` | 将八个事实组更改发送到 assessment/post 专用 PATCH；禁止以自由文本猜测回写 |
 | `ApprovalReview` | 展示服务端动作、范围、摘要、revision、digest 和期限；单独批准/拒绝 |
 | `RetainedSafetyPresenter` | 将 Session.retained_safety_action 固定在 R0/R1/R2 升级流程最高层，不被 Turn 状态替换 |
@@ -183,14 +190,17 @@ flowchart TB
 
 Agent 不得直接操作 RealityKit Entity，不得直接将模型输出写入权威档案，也不得以内部工具状态替代用户可见确认。
 
+上述 SessionContextSheet、BodyAssistantScreen、DataUseReceiptPresenter 与 ActionPlanPresenter 是 FEAT-COMP-01 的目标模块边界，不代表当前 Swift Package 已实现。context_lens、资料使用收据和报告显示类型需要先按 ADR-0019 完成 API/Schema 兼容评审；在此之前，客户端只能保留既有结构化草稿、2D/3D 回退和安全入口，不能伪造这些能力已上线。
+
 P1D 的当前原生实现入口是 `ios/BodyCompanion/Sources/BodyCompanionCore/SignalIntake.swift` 与 `BodyCompanionIOS/SignalIntakeScreen.swift`：
 
 - `SignalIntakeScreen` 使用 SwiftUI `Form` 分区展示位置、感觉、程度、时间、因素、功能影响、背景和安全状态；
-- `SignalIntakeModel` 只允许从位置 → 事实 → 安全复核 → 安全行动/候选 → 事实复核 → 审批准备或离线草稿的明确转换；
+- `SignalIntakeModel` 只允许从位置 → 事实 → 安全复核 → 安全行动/候选 → 事实复核 → 审批准备或离线草稿的明确转换；其中 R0/R1/R2 进入 `safetyAction`，只有 R3/`noRuleTriggered` 可进入普通 `agentDraft`；任一位置集合变更都会使安全与 Agent/审批阶段失效并退回事实收集；
 - `SignalFactSource`、`SignalFactStatus` 分开保存来源和用户确认状态；Agent/资料候选永远不会被 UI 自动升级为 `confirmed`；
 - iOS 端没有安全规则或 Provider 的本地默认结果。样机的“运行服务端安全检查”在无网络实现下明确进入 `unavailable → offlineDraft`，而不是伪造 `NoRuleTriggered`；
-- `SignalIntakeDraft` 通过 [`ios-signal-intake.schema.json`](contracts/ios-signal-intake.schema.json) 作为客户端投影，并在映射到 P4 `DraftEnvelope` 时只降维为 `UnconfirmedDraftFacts`；
-- 每个 `SignalSensation` 必须保存用户当前关联的 `location_marker_ids`；位置变化会使感觉组重新进入待复核，避免服务端猜测空间关系；当前契约版本为 `1.1`；
+- `SignalIntakeDraft` 通过 [`ios-signal-intake.schema.json`](contracts/ios-signal-intake.schema.json) 作为客户端投影；映射到 P4 `DraftEnvelope` 时可降维为 `UnconfirmedDraftFacts`，但必须保留每个感觉的 code、可选用户标签和 `location_marker_ids`，不得把关系压成无归属字符串数组；P4 当前契约为 `1.1`，旧 `1.0` 因缺少关系而不自动迁移；
+- `BodyMapModel` 只维护 Zone/Pin 选择、位置候选和纯视觉状态；地图不能保存或投影感觉、程度、诱发因素、缓解因素、功能影响、背景或安全答案。以上事实只能由 `SignalIntakeScreen` 的显式结构化控件写入；
+- 每个 `SignalSensation` 必须保存用户当前关联的 `location_marker_ids`；当有多个位置时，新增感觉必须由用户显式选定一个或多个 Marker，既有感觉可逐个调整关联；新增位置不得复制既有感觉，位置变化会使感觉组重新进入待复核，避免服务端猜测空间关系。反序列化或恢复的草稿必须先验证位置 ID 唯一、感觉关联完整和 phase—safety 组合；`agent_draft` 只接受 `no_rule_triggered + ordinary_agent_allowed=true`；当前契约版本为 `1.1`；
 - P1D `saveOfflineDraft()` 只切换到未确认离线状态；持久化必须由 P4 的加密适配器在应用层显式调用，当前页面不宣称已完成文件写入/杀进程恢复；
 - `awaitingApproval` 仅表示准备服务端审批，不产生 Event、Episode、Report 或长期档案引用。
 
@@ -375,7 +385,7 @@ stateDiagram-v2
 P4 的可执行规格是 [FEAT-P4-IOS-OFFLINE-DRAFT-SYNC-SLICE](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)，机器契约是
 [`ios-draft-envelope.schema.json`](contracts/ios-draft-envelope.schema.json)。它把“本机保存”“远端未确认草稿”和“正式身体事件”分成三个不可混淆的状态：
 
-- `DraftEnvelope` 只包含用户未确认的输入、位置候选、revision、`client_operation_id` 和同步状态；不得出现 `confirmed_event_id`、`approval_id`、报告引用或诊断字段；
+- `DraftEnvelope` 只包含用户未确认的输入、位置候选、revision、`client_operation_id` 和同步状态；每个降维后的感觉仍保留其 `location_marker_ids`，所有 ID 必须唯一且属于该 envelope 的位置集合；不得出现 `confirmed_event_id`、`approval_id`、报告引用或诊断字段；
 - 加密适配器使用 `DraftKeyProvider` 端口。样机使用内存密钥和进程内密文仓，仅证明 AES-GCM/所有者隔离/篡改失败边界；生产必须换成 Keychain + Data Protection + 原子持久化并通过 REL-01 GATE-06；
 - 同步队列把相同 `client_operation_id` 映射到同一个 HTTP `Idempotency-Key`。`accepted_unconfirmed` 只能表示服务端收到了未确认草稿，不能显示“已保存 Event”；
 - `conflict`、权限失效、Schema 版本未知、密钥不可用都保留本地草稿并要求用户处理或重新手动记录；不得最后写入覆盖，也不得把离线状态降级成安全结论；
@@ -417,7 +427,7 @@ P4 的可执行规格是 [FEAT-P4-IOS-OFFLINE-DRAFT-SYNC-SLICE](18_IMPLEMENTED_P
 
 ### 11.1 必须支持
 
-- VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；
+- VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；该列表入口在 2D 和 3D 均直接可达，3D 通过 SwiftUI Sheet 暴露前/后部位目录，不能要求用户先操作 RealityKit；
 - Dynamic Type，包括编辑 Sheet 和报告；
 - Reduce Motion，关闭相机飞行动画、扫描和持续旋转；
 - Increase Contrast / Differentiate Without Color；

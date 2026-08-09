@@ -2196,7 +2196,7 @@
         },
         "ordinary_agent_allowed": {
           "type": "boolean",
-          "description": "只有 complete + 所有规则已执行 + R2/R3 + supported + 无 unresolved safety 时才能为 true。"
+          "description": "只有 complete + 所有规则已执行 + R3 + supported + 无 unresolved safety 时才能为 true；R2 仅可进入专业评估准备，不得进入普通 Agent。"
         },
         "evaluated_at": {
           "type": "string",
@@ -2244,7 +2244,7 @@
           "then": {
             "properties": {
               "status": {"const": "complete"},
-              "tier": {"enum": ["R2", "R3"]},
+              "tier": {"const": "R3"},
               "all_current_rules_executed": {"const": true},
               "scenario_support": {"const": "supported"},
               "unresolved_safety": {"const": false}
@@ -2252,7 +2252,7 @@
           }
         },
         {
-          "if": {"properties": {"tier": {"enum": ["R0", "R1", "undetermined"]}}, "required": ["tier"]},
+          "if": {"properties": {"tier": {"enum": ["R0", "R1", "R2", "undetermined"]}}, "required": ["tier"]},
           "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
         },
         {
@@ -2473,7 +2473,7 @@
             "properties": {
               "safety": {
                 "type": "object",
-                "properties": {"tier": {"enum": ["R2", "R3"]}},
+                "properties": {"tier": {"const": "R3"}},
                 "required": ["tier"]
               }
             }

@@ -23,8 +23,38 @@ public enum DraftSyncStatus: String, Codable, CaseIterable, Sendable {
     case blocked
 }
 
+/// The P4 envelope intentionally omits full typed-fact provenance, but it
+/// must retain the explicit user association between a sensation and the
+/// selected body locations. Losing that link would make a multi-location
+/// draft unsafe to restore or hand off.
+public struct UnconfirmedDraftSensation: Codable, Equatable, Hashable, Sendable {
+    public var code: String
+    public var userLabel: String?
+    public var locationMarkerIDs: [UUID]
+
+    public init(code: String, userLabel: String? = nil, locationMarkerIDs: [UUID]) {
+        self.code = code
+        self.userLabel = userLabel
+        self.locationMarkerIDs = locationMarkerIDs
+    }
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case code
+        case userLabel = "user_label"
+        case locationMarkerIDs = "location_marker_ids"
+    }
+
+    public init(from decoder: Decoder) throws {
+        try rejectUnknownKeys(decoder, allowed: CodingKeys.allCases)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        code = try container.decode(String.self, forKey: .code)
+        userLabel = try container.decodeIfPresent(String.self, forKey: .userLabel)
+        locationMarkerIDs = try container.decode([UUID].self, forKey: .locationMarkerIDs)
+    }
+}
+
 public struct UnconfirmedDraftFacts: Codable, Equatable, Sendable {
-    public var sensationCodes: [String]
+    public var sensations: [UnconfirmedDraftSensation]
     public var intensity: Int?
     public var timePattern: String
     public var aggravatingFactors: [String]
@@ -34,7 +64,7 @@ public struct UnconfirmedDraftFacts: Codable, Equatable, Sendable {
     public var rawUserText: String?
 
     public init(
-        sensationCodes: [String] = [],
+        sensations: [UnconfirmedDraftSensation] = [],
         intensity: Int? = nil,
         timePattern: String = "",
         aggravatingFactors: [String] = [],
@@ -43,7 +73,7 @@ public struct UnconfirmedDraftFacts: Codable, Equatable, Sendable {
         backgroundFacts: [String] = [],
         rawUserText: String? = nil
     ) {
-        self.sensationCodes = sensationCodes
+        self.sensations = sensations
         self.intensity = intensity
         self.timePattern = timePattern
         self.aggravatingFactors = aggravatingFactors
@@ -53,8 +83,14 @@ public struct UnconfirmedDraftFacts: Codable, Equatable, Sendable {
         self.rawUserText = rawUserText
     }
 
+    /// Compatibility read model for non-restoration UI such as a compact
+    /// summary. New writes must use `sensations`, never a code-only array.
+    public var sensationCodes: [String] {
+        sensations.map(\.code)
+    }
+
     private enum CodingKeys: String, CodingKey, CaseIterable {
-        case sensationCodes = "sensation_codes"
+        case sensations
         case intensity
         case timePattern = "time_pattern"
         case aggravatingFactors = "aggravating_factors"
@@ -67,7 +103,7 @@ public struct UnconfirmedDraftFacts: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         try rejectUnknownKeys(decoder, allowed: CodingKeys.allCases)
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        sensationCodes = try container.decode([String].self, forKey: .sensationCodes)
+        sensations = try container.decode([UnconfirmedDraftSensation].self, forKey: .sensations)
         intensity = try container.decodeIfPresent(Int.self, forKey: .intensity)
         timePattern = try container.decode(String.self, forKey: .timePattern)
         aggravatingFactors = try container.decode([String].self, forKey: .aggravatingFactors)
@@ -117,7 +153,7 @@ public struct DraftSyncMetadata: Codable, Equatable, Sendable {
 /// envelope rather than a BodySignalEvent: a draft cannot carry an approval,
 /// event, report, or diagnostic conclusion.
 public struct DraftEnvelope: Codable, Equatable, Sendable, Identifiable {
-    public static let currentSchemaVersion = "1.0"
+    public static let currentSchemaVersion = "1.1"
 
     public let schemaVersion: String
     public let draftID: UUID
@@ -199,7 +235,8 @@ public struct DraftEnvelope: Codable, Equatable, Sendable, Identifiable {
         guard schemaVersion == Self.currentSchemaVersion,
               draftRevision >= 1,
               locations.count <= 20,
-              facts.sensationCodes.count <= 20,
+              Set(locations.map(\.id)).count == locations.count,
+              facts.sensations.count <= 20,
               facts.aggravatingFactors.count <= 30,
               facts.relievingFactors.count <= 30,
               facts.functionalImpacts.count <= 30,
@@ -213,7 +250,14 @@ public struct DraftEnvelope: Codable, Equatable, Sendable, Identifiable {
         if let intensity = facts.intensity, !(0...10).contains(intensity) {
             throw DraftStoreError.invalidEnvelope
         }
-        if facts.sensationCodes.contains(where: { $0.isEmpty || $0.count > 64 }) ||
+        let locationIDs = Set(locations.map(\.id))
+        if facts.sensations.contains(where: {
+            $0.code.isEmpty || $0.code.count > 64 ||
+                ($0.userLabel?.count ?? 0) > 200 ||
+                $0.locationMarkerIDs.isEmpty ||
+                Set($0.locationMarkerIDs).count != $0.locationMarkerIDs.count ||
+                !Set($0.locationMarkerIDs).isSubset(of: locationIDs)
+        }) ||
             facts.aggravatingFactors.contains(where: { $0.isEmpty || $0.count > 128 }) ||
             facts.relievingFactors.contains(where: { $0.isEmpty || $0.count > 128 }) ||
             facts.functionalImpacts.contains(where: { $0.isEmpty || $0.count > 128 }) ||

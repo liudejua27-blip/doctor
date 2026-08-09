@@ -3,11 +3,11 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | ARCH-01 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.2.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 系统架构负责人 |
 | 审核角色 | iOS、后端、Agent 平台、安全隐私、SRE、QA |
-| 依赖 | PROD-01、TERM-01、SAFE-01、PRIV-01、FRAME-01、ADR-0001、ADR-0005、ADR-0018 |
+| 依赖 | PROD-01、TERM-01、SAFE-01、PRIV-01、FRAME-01、ADR-0001、ADR-0005、ADR-0018、ADR-0019 |
 | 核心决策 | iOS 原生客户端 + 服务端领域/API + PydanticAI 单 Agent + 确定性安全内核 + 版本化人体资产 |
 
 ## 1. 架构目标
@@ -19,6 +19,7 @@
 - 把 LLM 放在可替换、可验证、权限受限的边界内；
 - 确定性执行红旗规则、权限、幂等、正式写入和审计；
 - 让 2D、默认 3D、专业 3D 与后端共享同一位置语义；
+- 让训练/工作/日常情境只用于本次追问排序和审核内容筛选，并让用户看见实际使用的资料范围；
 - 让每次结果可重建其规则、内容、模型、Prompt、数据来源和确认版本；
 - 模型、网络、3D 或单个依赖失败时仍保留安全与基本记录能力。
 
@@ -321,6 +322,7 @@ R0/R1 的首个 `escalated` Turn 只把经过审核的紧急/专业行动放在�
 P4 在 iOS Core 中把这条边界具体化为 [`DraftEnvelope`](contracts/ios-draft-envelope.schema.json) 和 `DraftSyncQueue`：
 
 - 只保存未确认草稿；`accepted_unconfirmed` 只能表示远端收到了一个未确认版本，永远不能映射成 `BodySignalEvent`、`ApprovalIntent` 或报告；
+- P4 `schema_version=1.1` 即使降维也保留每个感觉的 code、可选用户标签和明确 `location_marker_ids`；位置 ID 必须唯一，关联不得悬空。旧 `1.0` 缺少该关系，不自动迁移或复制；
 - 本地样机用 CryptoKit AES-GCM 和进程内密文仓证明密文/所有者/篡改失败边界；真实 Keychain、Data Protection、文件原子写、后台任务、服务端草稿 API 和删除传播仍由 REL-01 GATE-06 阻断；
 - 同一 `client_operation_id` 必须绑定同一草稿 revision/digest；版本冲突保留本地值并要求用户处理，禁止最后写入覆盖；
 - 日志和任务切换器只显示通用状态、错误类别和脱敏 ID，不显示原话、位置、感觉、强度、坐标或密文。
@@ -333,7 +335,7 @@ P1D 将“用户身体信号录入”作为独立 Feature State，而不是把 S
 2. 感觉、程度、时间、诱因/缓解、功能影响和背景分别使用 typed code，未知必须由用户明确选择；
 3. 每项事实同时携带 `SignalFactSource` 与 `SignalFactStatus`，候选、用户输入和复核状态不可互相覆盖；
 4. `SignalIntakePhase` 只做客户端非法状态防护，服务端仍需重新执行安全规则、授权、revision 和所有权校验；
-5. 安全结果为 R0/R1/undetermined 时保留安全行动入口并抑制普通 Agent；规则不可用时只能进入 `offlineDraft`/可重试错误；
+5. 安全结果为 R0/R1/R2/undetermined 时保留安全行动入口并抑制普通 Agent；R2 只允许服务端固定的专业评估准备，规则不可用时只能进入 `offlineDraft`/可重试错误；
 6. 事实复核只产生待服务端创建的审批准备状态，任何成功 Event 都必须来自服务端两阶段确认事务。
 
 机器契约为 [`ios-signal-intake.schema.json`](contracts/ios-signal-intake.schema.json)，详细验收与未决项见 [FEAT-P1D](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)。
@@ -374,6 +376,7 @@ P2D 在 P2C 与正式 repository 接线之间固定确认事务的写集和提�
 - 输入是服务端构造的最小类型化快照；
 - 工具分为只读资料、审核知识读取和“只写未确认草稿”；
 - 输出是 `AssessmentDraft`/下一问题，不含诊断、处方字段；
+- 本次训练/工作/日常情境只作为受控会话透镜；默认仅使用当前会话，任何额外资料读取必须形成可见的实际使用收据；
 - 输出后由独立 PolicyValidator 检查字段、事实来源、安全等级、内容 ID 和禁止表达；
 - 正式确认、分享和长期档案更新由应用服务执行；
 - 模型/provider 可替换，业务数据和安全规则不绑定其 message 格式。
@@ -395,6 +398,7 @@ P3 `AgentReadContext` 是 Agent 资料读取的唯一样机入口：Application 
 
 - 只返回当前地区、tier、模式、适用条件匹配且未过期的 `content_id`。
 - R0/R1 固定内容不可被 Agent 改写。
+- R3 的运动/工作调整、低风险舒适活动和一般恢复支持必须逐项匹配确认事实、情境、人群、停止/升级条件与审核版本；首发不返回具体食物、补剂、药物、剂量或模型自创动作。
 - 内容更新独立版本化，并进入 SafetyBaseline 和回归测试。
 
 ## 14. 身体资产架构

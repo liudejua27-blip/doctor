@@ -3,9 +3,9 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-DEVICE-01 |
-| 版本 | 1.0.0 |
-| 状态 | Attempted / blocked pending authorized physical iPhone and signed app target |
-| 执行日期 | 2026-08-08 |
+| 版本 | 1.3.0 |
+| 状态 | Device attempt blocked; 2026-08-09 static boundary audit and V2.4 Core evidence added |
+| 执行日期 | 2026-08-08（设备尝试）；2026-08-09（本地静态边界更新） |
 | 对应 Git | `d7853a7932e0109d5563cfc80e44cd0e485c8fac`（默认分支快照） |
 | 适用测试计划 | [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md) |
 | 资产记录 | [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md) |
@@ -32,7 +32,7 @@
 | `xcrun simctl list devices available` | iOS 26.5 模拟器全部 `Shutdown` | 未运行 Simulator 测试 |
 | Swift iPhoneOS build | `BodyCompanionIOS` target 成功 | 只证明 iOS SDK 编译 |
 | Swift iPhoneSimulator build | `BodyCompanionIOS` target 成功 | 只证明 Simulator SDK 编译 |
-| Swift Core tests | `64 tests, 0 failures` | 只证明状态/契约，不证明 UI/设备 |
+| Swift Core tests | 2026-08-09 本地未提交工作区：`80 tests, 0 failures` | 只证明状态/契约，不证明 UI/设备 |
 
 运行时前置条件缺失时，不能使用临时 `swift run`、macOS prototype 或无签名的 library 产物替代 iOS App 安装测试。
 
@@ -40,9 +40,9 @@
 
 | 维度 | 结果 | 已有静态/代码证据 | 真机关闭条件 |
 |---|---|---|---|
-| Sheet | **Blocked** | 紧凑宽度通过系统 `.sheet`、`.medium/.large` detents、drag indicator 和 `ScrollView` 承载编辑器；删除后状态会由模型清理 | 在 iPhone 上验证首次选择、再次选择、切换标记、删除、旋转和系统返回；确认 Sheet 不遮挡继续入口、焦点不丢失 |
-| VoiceOver | **Blocked** | 2D 有部位列表等价路径；主要按钮有 label/hint；3D 仅提供整体语义说明并保留 2D/列表回退 | 开启 VoiceOver，从 Today → 记录 → 2D/列表 → Sheet 编辑 → 删除 → 继续全程完成；验证提示、计数、Slider、回退公告和导航顺序 |
-| Dynamic Type | **Blocked** | 使用 `.body/.headline/.caption/.footnote` 等语义字体，编辑器放入 `ScrollView` | 最大可访问字号和横屏下不截断标题、标记摘要、提示、Slider 和按钮；确认 Sheet 可滚动且关键操作仍可达 |
+| Sheet | **Blocked** | 紧凑宽度通过系统 `.sheet`、`.medium/.large` detents、drag indicator 和 `ScrollView` 承载**位置 Inspector**；删除后状态会由模型清理 | 在 iPhone 上验证首次选择、再次选择、切换标记、删除、旋转和系统返回；确认 Sheet 不遮挡继续入口、焦点不丢失 |
+| VoiceOver | **Blocked** | 2D 有部位列表等价路径；主要按钮有 label/hint；3D 仅提供整体语义说明并保留 2D/列表回退 | 开启 VoiceOver，从 Today → 记录 → 2D/列表 → 位置 Inspector → 结构化描述 → 删除 → 继续全程完成；验证提示、计数、结构化程度控件、回退公告和导航顺序 |
+| Dynamic Type | **Blocked** | 使用 `.body/.headline/.caption/.footnote` 等语义字体，位置 Inspector 和结构化描述均放入 `ScrollView` | 最大可访问字号和横屏下不截断标题、位置摘要、提示、结构化程度控件和按钮；确认 Sheet 可滚动且关键操作仍可达 |
 | Reduce Motion | **Blocked** | 未发现 `withAnimation`、`.animation` 或持续旋转；视角切换代码是直接 `look(at:from:)` | 开启 Reduce Motion，重复 front/back/left/right/top、焦点和 Sheet 展开；确认无不必要动画、闪烁或自动旋转，手势仍可用 |
 | 3D 性能 | **Blocked** | USDZ 约 606 KB、manifest LOD 三角面 22,804；代码在加载时同步 `ModelEntity.loadModel` 和 `generateCollisionShapes(recursive:)` | 最低支持 iPhone 冷启动、首次交互、连续旋转/缩放 5 分钟；采集冷启动、P95 命中、FPS、内存、热状态和崩溃 |
 | 碰撞命中 | **Blocked** | 使用 `hitTest(.nearest, mask: .all)`；先识别 `marker_`，再向父链解析 `body_`；保存 root-local position/normal | 真机逐区域黄金点、边界点、遮挡点和已有 Marker 重叠点；验证命中延迟、误落点、Marker 优先级和 2D 回退 |
@@ -60,7 +60,7 @@
 | DEVICE-FINDING-004 | P1 | 候选 USDZ 没有 `body_lower_back` 实体；解析器会把躯干实体映射为 `body.torso.general`，不能证明下背区域命中 | 在资产 region map 中补齐或明确“躯干宽泛候选”，完成解剖/视觉审核和边界黄金集；禁止静默声称下背命中 |
 | DEVICE-FINDING-005 | P1 | USD 根层包含 `xformOp:rotateXYZ = (-90, 0, 0)`，而 manifest `canonical_transform` 为 identity | 由资产负责人核对导出变换、根原点、前后/左右方向并更新不可变 manifest/迁移证据；真机命中前不得批准 |
 | DEVICE-FINDING-006 | P1 | manifest `performance.status=pending` 且冷启动/P95/FPS/内存均为 0；代码没有 FPS/内存/signpost 采集 | 在目标 iPhone 上建立不含健康正文的性能采集和阈值评审；未测量不能改为 passed |
-| DEVICE-FINDING-007 | P2 | `MarkEditor` 的 Slider 只有 accessibility value，没有明确的稳定 label；固定 520pt 2D 画布、两行摘要限制在大字号下有截断风险 | 真机 VoiceOver/Dynamic Type 验证；必要时补 label、取消摘要硬截断并保留部位列表等价路径 |
+| DEVICE-FINDING-007 | P2 | 2026-08-09 已从 `MarkEditor` 移除程度 Slider；结构化 `SignalIntakeScreen` 的程度控件虽有可见“程度”标签与 accessibility value，仍未经过真机 VoiceOver/最大 Dynamic Type 验证。固定 520pt 2D 画布和两行位置摘要在大字号下仍可能截断。 | 真机 VoiceOver/Dynamic Type 验证结构化程度控件；必要时取消摘要硬截断，并保留部位列表等价路径。 |
 
 ## 5. 候选资产审核读回
 

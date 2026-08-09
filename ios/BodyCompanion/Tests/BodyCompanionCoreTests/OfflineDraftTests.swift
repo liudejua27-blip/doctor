@@ -97,6 +97,52 @@ final class OfflineDraftTests: XCTestCase {
         }
     }
 
+    func testOfflineFactsPreserveExplicitSensationLocationRelations() {
+        let first = makeLocation(regionID: "body.knee.general", laterality: .left)
+        let second = makeLocation(regionID: "body.shoulder.general", laterality: .right)
+        let offline = SignalIntakeFacts(
+            sensations: [
+                SignalSensation(code: .sharpPain, locationMarkerIDs: [first.id]),
+                SignalSensation(code: .stiffness, locationMarkerIDs: [second.id])
+            ]
+        ).asOfflineFacts
+
+        XCTAssertEqual(offline.sensations.map(\.code), ["sharp_pain", "stiffness"])
+        XCTAssertEqual(offline.sensations.map(\.locationMarkerIDs), [[first.id], [second.id]])
+    }
+
+    func testEnvelopeRejectsDuplicateLocationsAndOrphanedSensationRelations() throws {
+        let draft = makeDraft(ownerID: UUID())
+        var duplicateLocations = draft
+        duplicateLocations.locations.append(draft.locations[0])
+        XCTAssertThrowsError(try duplicateLocations.validate()) { error in
+            XCTAssertEqual(error as? DraftStoreError, .invalidEnvelope)
+        }
+
+        var orphanedRelation = draft
+        orphanedRelation.facts.sensations = [
+            UnconfirmedDraftSensation(code: "sore", locationMarkerIDs: [UUID()])
+        ]
+        XCTAssertThrowsError(try orphanedRelation.validate()) { error in
+            XCTAssertEqual(error as? DraftStoreError, .invalidEnvelope)
+        }
+    }
+
+    func testSchemaVersionOneDoesNotAutoMigrateCodeOnlySensations() throws {
+        let draft = makeDraft(ownerID: UUID())
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(draft)) as? [String: Any])
+        object["schema_version"] = "1.0"
+        let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        XCTAssertThrowsError(try decoder.decode(DraftEnvelope.self, from: data)) { error in
+            XCTAssertEqual(error as? DraftStoreError, .schemaMismatch)
+        }
+    }
+
     func testDeleteIsIdempotentAndDoesNotRestoreDraft() async throws {
         let ownerID = UUID()
         let draft = makeDraft(ownerID: ownerID)
@@ -238,7 +284,12 @@ final class OfflineDraftTests: XCTestCase {
             lifecycle: lifecycle,
             locations: [location],
             facts: UnconfirmedDraftFacts(
-                sensationCodes: ["sore"],
+                sensations: [
+                    UnconfirmedDraftSensation(
+                        code: "sore",
+                        locationMarkerIDs: [location.id]
+                    )
+                ],
                 intensity: 4,
                 timePattern: "after synthetic exercise",
                 aggravatingFactors: ["stairs"],
@@ -246,6 +297,19 @@ final class OfflineDraftTests: XCTestCase {
                 functionalImpacts: ["slower running"],
                 backgroundFacts: ["synthetic test context"],
                 rawUserText: rawUserText
+            )
+        )
+    }
+
+    private func makeLocation(regionID: String, laterality: Laterality) -> BodyLocation {
+        BodyLocationMapper.from2D(
+            BodyRegionSelection(
+                regionID: regionID,
+                laterality: laterality,
+                surface: .anterior,
+                source: .bodyMap2D,
+                view: .front,
+                point: Point2D(x: 0.42, y: 0.64)
             )
         )
     }

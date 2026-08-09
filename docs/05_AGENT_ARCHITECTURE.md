@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | AGENT-01 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.3.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | AI 工程负责人 |
 | 审核角色 | 产品、后端、临床安全、隐私法务、安全、QA |
 | 批准角色 | 产品负责人、工程负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、SAFE-01、PRIV-01、FRAME-01、BASELINE-01、ADR-0002、ADR-0018 |
+| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、SAFE-01、PRIV-01、FRAME-01、BASELINE-01、ADR-0002、ADR-0018、ADR-0019 |
 | Agent 框架 | `pydantic-ai-slim==2.23.0` |
 | 生效条件 | 责任角色完成评审并形成批准记录；当前状态不代表已批准实施或发布 |
 
@@ -28,7 +28,8 @@ Agent 子系统负责把用户关于身体不适的自然语言、人体标记�
 2. 下一条最有信息价值的问题；
 3. 事实、推断和未知项明确分离的解释草稿；
 4. 供确定性安全规则和应用服务处理的强类型结果；
-5. 用户可见、可修改、可拒绝的报告草稿。
+5. 用户可见、可修改、可拒绝的事实、行动和报告草稿；
+6. 围绕本次运动、工作或日常情境补足信息，而不把情境误作病因或长期记忆。
 
 ### 1.2 非目标
 
@@ -109,8 +110,9 @@ flowchart LR
     APP --> PRE["EarlySafetyScan\n确定性前置规则"]
     PRE --> QUESTIONS["不可跳过安全问题"]
     QUESTIONS --> SAFE["确定性安全规则引擎\n输出最高 SafetyTier"]
-    SAFE -->|"R0/R1、Unresolved 或场景未审核"| FIXED["固定升级/降级响应\n不调用普通 Agent"]
-    SAFE -->|"R2/R3 且场景已审核"| AGENT["PydanticAI AssessmentAgent\n不可信候选输出"]
+    SAFE -->|"R0/R1/R2、Unresolved 或场景未审核"| FIXED["固定升级/受限专业准备/降级响应\n不调用普通 Agent"]
+    SAFE -->|"R3 且场景已审核"| PLAN["Application QuestionPolicy\n至多一个 QuestionPlan"]
+    PLAN --> AGENT["PydanticAI AssessmentAgent\n不可信候选输出"]
     AGENT --> POST["Schema + PolicyValidator"]
     POST --> CONTENT["审核内容解析器"]
     POST -->|"发现候选 SafetySignal"| RECHECK["要求用户确认该事实"]
@@ -198,9 +200,9 @@ P1D 的 iOS Core 测试只验证状态机和映射边界，不能代替 Pydantic
 
 P1E 的 `body_companion.domain.ios_signal_intake` 是一个内部纯适配模块，不是公开写入端点。它严格解析 `ios-signal-intake.schema.json` `1.1`，检查 session/revision、位置 marker 关系和事实组完整性，再按 `SignalFactSource` 生成后端 `AssessmentDraft`。每个感觉必须带显式 `location_marker_ids`；服务端不得把缺失的空间关系复制到全部位置。
 
-适配器的结果只能是 `needs_safety_precheck`、`ready_for_agent`、`safety_action_required`、`offline_only` 或 `rejected`。客户端 `ordinary_agent_allowed`、`phase` 和安全文案不具备授权作用；只有 Application Service 传入本次重新运行、完整且支持场景的 R2/R3 `SafetyEvaluation` 时才可以产生 Agent 可用草稿。P1E 不读取客户端未声明的 Profile、HealthKit 或文件，不创建 Event/Approval/Episode/Report，也不把 `raw_user_text` 放入结果或日志。具体字段和测试见 [FEAT-P1E](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)。
+适配器的结果只能是 `needs_safety_precheck`、`ready_for_agent`、`safety_action_required`、`offline_only` 或 `rejected`。客户端 `ordinary_agent_allowed`、`phase` 和安全文案不具备授权作用；只有 Application Service 传入本次重新运行、完整、支持场景且 tier=R3 的 `SafetyEvaluation` 时，才可以产生 Agent 可用草稿。R2 只能返回固定的专业评估准备路径，不能以内部 DTO 名称绕过普通 Agent 抑制。P1E 不读取客户端未声明的 Profile、HealthKit 或文件，不创建 Event/Approval/Episode/Report，也不把 `raw_user_text` 放入结果或日志。具体字段和测试见 [FEAT-P1E](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)。
 
-P1F 将 P1E 放入 Application Service 的固定顺序，但暂不调用 Agent：`P1E(structural)` → 当前 SafetyEngine → `P1E(server_safety)` → 脱敏 handoff。只有 handoff 的 `ready_for_agent` 才能成为后续 Agent use case 的输入；R0/R1/incomplete/unsupported/unavailable 永远不能携带 `AssessmentDraft`。P1F 的结果、隐私和无副作用边界见 [FEAT-P1F](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)、[ADR-0010](decisions/ADR-0010-p1f-application-handoff-boundary.md)；它不是公开 API，也不改变现有 P1B `AssessmentService.assess()`。
+P1F 将 P1E 放入 Application Service 的固定顺序，但暂不调用 Agent：`P1E(structural)` → 当前 SafetyEngine → `P1E(server_safety)` → 脱敏 handoff。只有 tier=R3 的 `ready_for_agent` 才能成为后续 Agent use case 的输入；R0/R1/R2/incomplete/unsupported/unavailable 永远不能携带 `AssessmentDraft` 进入普通 Agent。R2 的固定专业评估准备可以保留事实复核或沟通准备，但不能复用该 handoff。P1F 的结果、隐私和无副作用边界见 [FEAT-P1F](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)、[ADR-0010](decisions/ADR-0010-p1f-application-handoff-boundary.md)；它不是公开 API，也不改变现有 P1B `AssessmentService.assess()`。
 
 ### 4.4.2 P1G P1F → PydanticAI Agent 内部交接
 
@@ -231,7 +233,7 @@ P1-C 也不属于 Agent：`P1CResearchRecorder` 只记录内部研究元数据�
 安全层是独立、确定性、版本化的规则系统：
 
 - 普通模型调用前执行原始输入预扫描、场景必答检查和当前全部可用的确定性规则；
-- 只有规则结果为 R2/R3、场景已经审核且安全输入已解决时，才允许进入普通 Agent 分析；
+- 只有规则结果为 R3、场景已经审核且安全输入已解决时，才允许进入普通 Agent 分析；R2 只允许 Application Service 的固定专业评估准备；
 - 模型发现的额外 SafetySignal 只能触发用户确认和规则复跑，复跑完成前不得展示普通 Agent 草稿；
 - 任何下游组件只能维持或上调 SafetyTier，不能产生最终降级；
 - 安全信息缺失、含糊或规则服务不可用时采用 fail-closed；
@@ -255,6 +257,7 @@ PostgreSQL 中的已确认 `BodySignalEvent`、Episode、Approval、ReportSnapsh
 |---|---|---|
 | `request_id` | UUID | 全链路追踪，不含用户信息 |
 | `session_id` | UUID | 必须已通过资源授权 |
+| `session_context` | 本次情境透镜与分析焦点 | 仅由 Application Service 从用户确认的非空情境集合及 `analysis_subject` 构造；`unknown` 与其他情境互斥，只影响普通问题排序和内容筛选，不是病因、SafetyTier 或长期档案字段 |
 | `authenticated_user_id` | UUID | 只由服务端 token 解析产生 |
 | `locale` / `timezone` | 字符串 | 服务端校验后的值 |
 | `agent_context` | `AgentReadContext` | 服务端绑定主体、purpose、ConsentScope、字段 allowlist 和来源 revision；模型只通过只读工具获得投影 |
@@ -266,21 +269,20 @@ PostgreSQL 中的已确认 `BodySignalEvent`、Episode、Approval、ReportSnapsh
 | `safety_service` | 确定性服务 | 结果不可被模型覆盖 |
 | `knowledge_service` | 审核内容检索 | 每个结果返回来源和版本 |
 | `tool_policy` | 本轮工具许可 | 根据会话状态和用户授权计算 |
+| `data_use_receipt` | Application-owned 实际资料使用收据 | 初始为空；只有 Application Service 可按 requested/declined/denied/no_data/stale/read/included/failed/not_used 追加最小来源元数据，供最终响应和审计显示，禁止存放原始健康正文或由 Agent 写入 |
 
 不得把访问令牌、Provider API Key、数据库密码或跨租户管理员接口放入可被模型序列化的上下文。
 
-### 5.2 `AssessmentAgentOutput`
+### 5.2 `AssessmentAgentCandidate` 与 `PublicTurnOutput`
 
-输出必须是以下带判别字段的联合类型之一，并与 `agent-turn.schema.json` 对齐：
+PydanticAI 只能产生以下不可信 `AssessmentAgentCandidate` 联合类型；它们与 `agent-turn.schema.json` 中的候选结构对齐，但不是公开 Turn 的权威状态：
 
-| `kind` | 用途 | 后续动作 |
+| Agent `kind` | 用途 | 后续动作 |
 |---|---|---|
-| `ask_question` | 请求一条普通澄清或一组不可跳过安全题 | 等待用户回答 |
-| `draft_ready` | 候选事件已足够完整 | 服务端安全规则和用户复核 |
-| `escalation` | 发现需立即/尽快升级的线索 | 安全引擎确认；停止普通建议 |
-| `approval_required` | 请求执行需要用户确认的动作 | 服务端创建审批记录 |
-| `completed` | 本轮无进一步问题 | 返回已完成的只读摘要 |
-| `safe_failure` | 模型或结构化输出无法可靠使用 | 保留记录能力并走保守回退 |
+| `ask_question` | 对 Application Service 已下发的单个普通 `QuestionPlan` 做受限自然表达或候选字段提取 | Application Service 重新验证 question ID、类别、选项、答案类型和顺序；不能包含 `category=safety` |
+| `draft_ready` | 候选事件已足够完整 | 服务端安全规则、事实复核与后续内容匹配 |
+
+`escalation`、安全题、`approval_required`、`completed`、`safe_failure`、`ActionPlanPreview` 和最终安全信封都是 `PublicTurnOutput` / Application Service 的输出，不是模型联合分支。模型发现额外安全线索时，只能提出待确认候选；确认后必须回到同一确定性安全规则集，不能直接升级或写安全行动。
 
 `draft_ready.event_draft` 必须使用独立的 `AssessmentDraft` DTO，只包含位置、感觉、时间、趋势、诱发/缓解因素、功能影响和背景候选。它禁止包含 `user_id`、正式 `event_id`、生命周期/revision、原始输入、安全评估、行动计划、provenance、confirmation 或 SafetyBaseline。Application Service 从服务端持久化的 Turn、原始输入、确定性规则、审核内容和用户确认中组装完整 `BodySignalEvent`；不得让 Agent 或客户端提交一个看似完整的正式事件。
 
@@ -291,7 +293,7 @@ PostgreSQL 中的已确认 `BodySignalEvent`、Episode、Approval、ReportSnapsh
 ```text
 当时全部可用输入
 → 全部当前可执行确定性规则
-→ 仅 complete + all rules + R2/R3 + supported + 无 UnresolvedSafety 时调用普通 Agent
+→ 仅 complete + all rules + R3 + supported + 无 UnresolvedSafety 时调用普通 Agent
 → Provider 原始响应
 → Pydantic 强类型解析
 → 枚举、长度、版本和引用完整性校验
@@ -320,7 +322,7 @@ PostgreSQL 中的已确认 `BodySignalEvent`、Episode、Approval、ReportSnapsh
 
 `undetermined`、未知 mode、`UnresolvedSafety`、规则未完整执行或场景未审核均不得映射为 `normal`。最终信封由应用服务拥有，Agent 无权写入规则 ID、最终 Tier、内容批准状态或 SafetyBaseline。公开 iOS Turn 响应只要求 `safetyBaselineId`，不强制下发包含 Provider/构建清单的完整对象；完整 canonical SafetyBaseline 保存在服务端发布 manifest 和审计系统中。如内部接口同时传 ID 与对象，ID 必须是该 canonical 对象规范化序列化的不可变哈希或由同一 manifest 事务生成并做一致性校验。
 
-等待用户或终态的 Turn 必须同时返回 `deterministic_safety_gate` 和 `safety_envelope`。只有 gate 满足 `status=complete`、`all_current_rules_executed=true`、`tier=R2/R3`、`scenario_support=supported`、`unresolved_safety=false`、`ordinary_agent_allowed=true` 时，`output_origin=agent` 才合法；其他输出必须来自 Application Service 的安全澄清、升级或降级固定路径。`rule_outcome` 统一使用 `triggered/no_rule_triggered/unresolved/unavailable`，其中 `no_rule_triggered` 仅在规则完整执行且无命中 ID 时成立，不得显示成“安全”。
+等待用户或终态的 Turn 必须同时返回 `deterministic_safety_gate` 和 `safety_envelope`。只有 gate 满足 `status=complete`、`all_current_rules_executed=true`、`tier=R3`、`scenario_support=supported`、`unresolved_safety=false`、`ordinary_agent_allowed=true` 时，`output_origin=agent` 才合法；R2 只能走 Application Service 的受限专业准备，其他输出必须来自安全澄清、升级或降级固定路径。`rule_outcome` 统一使用 `triggered/no_rule_triggered/unresolved/unavailable`，其中 `no_rule_triggered` 仅在规则完整执行且无命中 ID 时成立，不得显示成“安全”。
 
 `output_origin=agent` 还必须同时满足 `safety_envelope.mode=normal`，且只能承载普通问题或草稿候选；普通 assessment 的 UserTurnInput 在 normal `awaiting_user/draft_ready` 下也必须反向标为 Agent origin，不能伪装成 Application 可信输出。`manual/unsupported` 由 Application Service 以固定表单生成事实草稿，在完整确定性安全检查后仍可走两阶段确认，但禁止 AI 解释和普通建议；`degraded` 只能保存未确认草稿。`approval_required` 中的服务端 `approval_id/approval_revision/intent_digest`、`completed` 中的真实 `result_refs`、`escalated`、所有非 normal 信封和所有 `SafeFailureOutput` 一律由 Application Service 产生并标记 `output_origin=application`。安全问题与未解决 gate 双向绑定：出现 `category=safety` 时必须是 `status=incomplete + unresolved_safety=true + degraded/application`；outcome 可以是 `unresolved`（tier=`undetermined`），也可以是“已有 R2/R3 matched、另有规则未解决”的 `triggered`（保留已匹配最高 tier），反向的 incomplete awaiting_user 输出只能含审核过、必答且可结构化持久化的安全题；assessment 一旦已有 R0/R1 matched 则直接升级，不等待低优先级补问。普通 `workflow=assessment` 的 `failed` 必须至少包含结构化错误且信封为 `degraded`。post 安全重检不可用时，latest Turn 如实为 `undetermined/degraded`，但 Session 独立保留并置顶原 `retained_safety_action` 及 R0/R1 CTA；这不是降低原风险，而是区分“本次重检状态”和“先前已确定的安全行动”。Turn `status` 与 Session `state` 使用固定映射：`queued→collecting`、`running→safety_review`、`executing→persisting`、`awaiting_user→awaiting_user`、`draft_ready→awaiting_confirmation`、`approval_required→awaiting_approval`、`escalated→escalated`、`completed→completed`、`failed→failed`。`queued` 不得提前携带 tool/provider/model/prompt；`queued/running/executing` 不得提前携带终态 output/信封/错误/完成时间，且只能轮询。所有 escalated Turn，以及 `confirmation_created/approval_execution_started/approval_decided` Application lifecycle Turn，均禁止携带本轮 tool/provider/model/prompt 运行字段；若 Agent 先发现候选 SafetySignal，其运行证据保留在前一个 awaiting_user Turn，用户回答后的新 Turn 再确定性重跑和升级。
 
@@ -343,6 +345,19 @@ Turn 顶层 `workflow` 固定为 `assessment | post_escalation_record`。R0/R1 �
 同一 Turn 的 gate 与最终 envelope 必须具有相同的 `tier`、`rule_outcome` 和 `triggered_rule_ids` 去重集合；`mode=emergency` 只能对应 R0，`mode=urgent` 只能对应 R1。Schema 约束可表达的 tier/mode/outcome 组合，PolicyValidator 做跨对象 ID 集合精确相等校验；任何不一致按 `TierDowngrade` 或安全信封无效处理，不返回普通 Agent 输出。
 
 ---
+
+### 5.5 情境化追问、资料收据与行动边界
+
+本节落实 ADR-0019 的产品主闭环，但不在本次文档更新中声称 API 或 Schema 已经改变。
+
+1. **情境只影响排序。**Application Service 可以把用户确认的训练/运动、久坐/工作、日常活动或未知的非空集合，以及用户确认的 `analysis_subject` 投影给 QuestionPolicy；Agent 只能据此整理已下发问题的候选回答。它不得把情境表达为病因、受损组织、诊断、恢复期限或长期 Profile 更新，也不得把一个 Marker 的感觉复制给其他 Marker。
+2. **问题不是模型自由选择。**QuestionPolicy 固定执行“安全 → 基础事实 → 当前焦点情境 → 已授权资料 → 行动匹配补充”的优先级、单题限制、未知出口、完成门槛、重复抑制与确定性 tie-break。它输出一个版本化 `QuestionPlan`；没有有效计划时，普通 Agent 不运行。
+3. **安全永远优先。**安全必答项、位置/感觉/程度/时间/功能的高价值缺失项优先于普通情境追问；R0/R1、R2、未解决安全、未覆盖场景、手动和降级路径没有普通 Agent 对话。R2 只允许为专业评估准备的固定事实澄清与沟通摘要，不能显示普通自我管理、训练调整、营养或舒适活动。
+4. **实际资料使用必须可见。**默认模型只接收本次会话的最小结构化事实。每一个额外资料工具调用都要让 Application Service 记录类别、来源、时间范围、用途、许可/版本引用和 requested/declined/denied/no-data/stale/read/included/failed/not-used 状态；最终页面显示的是本次实际使用收据，不是“已了解全部身体情况”的笼统描述。
+5. **行动不是模型输出。**Agent 可以解释被选中的审核内容，但 `ActionPlanPreview` 和正式 ActionPlan 只能由 Application Service 在安全结果、用户确认事实、场景、人群、地区和有效内容版本均匹配后组合。模型不得自由生成动作、拉伸、食物、补剂、药物、剂量、治疗方案、疗效承诺或复出许可。
+6. **无匹配即保守。**没有完全匹配的审核内容时，关闭相应行动类别，转入记录、复查、专业帮助或 Degraded/Unsupported 路径；不得为了完成聊天而补写建议。
+
+具体内容类别、停止条件和营养边界仍须由 SAFE-01 的临床/营养审核及 FEAT-COMP-01 的未决项关闭。跨端字段、JSON Schema 和公开 API 只能在 ADR-0019 获批后新增。
 
 ## 6. 工具与最小权限
 

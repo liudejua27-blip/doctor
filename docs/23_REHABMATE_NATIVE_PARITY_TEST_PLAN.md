@@ -1,9 +1,9 @@
-# TEST-BODY-MAP-V2：RehabMate 原生行为等价测试计划
+# TEST-BODY-MAP-V2：原生 iOS 身体地图交互测试计划
 
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / V2.1 automated slice implemented / device run blocked |
+| 状态 | Active implementation spec / V2.4 Core automated slice implemented / device run blocked |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -14,8 +14,9 @@
 证明原生 iOS 具备 RehabMate 用户期待的交互闭环，同时不把上游实现、资产或危险语义带入生产：
 
 - Zone/Pin 双模式可共存且互不丢失；
-- 三层视觉状态只影响 UI，不创建“已缓解”等健康事实；
-- Pin 数量、颜色、选择优先级、摘要编辑和删除规则稳定；
+- Zone 重复选择只重新选中已有草稿，删除必须是显式动作；不创建“已缓解”等健康事实；
+- Pin 数量、颜色、选择优先级、位置摘要和删除规则稳定；
+- Body Map 只产生 `BodyLocation`，不能写入或覆盖结构化感觉、程度、因素或感觉—位置关系；
 - 旋转、缩放、四视角、焦点和回退可恢复；
 - 位置仍是版本化 `BodyLocation`，无世界坐标持久化；
 - 2D/列表/VoiceOver 与 3D 等价；
@@ -26,13 +27,13 @@
 | 测试 ID | 层级 | 场景 | 期望 |
 |---|---|---|---|
 | TEST-BODY-V2-001 | Unit | Zone 首次选择 | 创建一个 `zone` mark，状态为 `marked`，选中并聚焦区域 |
-| TEST-BODY-V2-002 | Unit | 同一区域重复选择 | 状态按 `marked → reviewing → 删除` 变化，marker ID 保持或明确删除；不产生 Check-in |
+| TEST-BODY-V2-002 | Unit | 同一区域重复选择 | 保持同一个 `marked` marker，重新选中并聚焦，不循环到另一视觉状态、不删除、不产生 Check-in |
 | TEST-BODY-V2-003 | Unit | Zone/Pin 切换 | 两种 mark 均保留，切换不重置摘要或选中事实 |
 | TEST-BODY-V2-004 | Unit | Pin 新增 | 创建局部锚点绑定的 Pin，颜色 token 只用于视觉 |
 | TEST-BODY-V2-005 | Unit | Pin 命中优先 | 选择已有 Pin，不追加重复 Pin |
-| TEST-BODY-V2-006 | Unit | Pin 上限 | 第 21 个 Pin 被拒绝，已有 20 个不变 |
-| TEST-BODY-V2-007 | Unit | 摘要编辑 | 感觉、动作线索、0–10 程度写入未确认 mark；空感觉不自动填值 |
-| TEST-BODY-V2-008 | Unit | 强度边界 | 允许 0 和 10，拒绝/钳制越界值；`nil` 与 0 可区分 |
+| TEST-BODY-V2-006 | Unit | 位置总上限 | 第 21 个 Zone 或 Pin 被拒绝，已有 Zone + Pin 合计 20 个不变，typed draft 不发生截断 |
+| TEST-BODY-V2-007 | Unit | 位置摘要边界 | 位置摘要只读/删除 Zone 或 Pin、区域、侧别、表面与来源；不存在感觉、动作线索或程度字段 |
+| TEST-BODY-V2-008 | Integration | 结构化程度边界 | `SignalIntakeScreen` 中允许用户主动选择 0 和 10；未填写与 0 可区分，地图不能写入程度 |
 | TEST-BODY-V2-009 | Unit | 删除/清空 | 只删除当前草稿，选中和焦点状态同步清理 |
 | TEST-BODY-V2-010 | Unit | Scene 重建 | 从 `BodyMapModel.marks` 重建同样的 Pin/Zone 视觉，不依赖 Scene 内存 |
 | TEST-BODY-V2-011 | Contract | 3D 命中证据 | 缺法线、三角/重心不成对或资产版本缺失时拒绝映射并回退 |
@@ -41,8 +42,8 @@
 | TEST-BODY-V2-014 | Unit | 3D gate 失败 | `BodyMapModel` 进入 2D fallback，已有 marks 保留 |
 | TEST-BODY-V2-015 | UI | 视角与焦点 | front/back/left/right 及返回全身按钮可操作且不删除草稿 |
 | TEST-BODY-V2-016 | UI | 窄屏编辑器 | 选中 mark 自动打开系统 Sheet；中/大屏保持可访问的内联编辑；删除后安全关闭 |
-| TEST-BODY-V2-017 | UI | 上限/回退反馈 | 第 21 个 Pin、3D gate 失败和无稳定命中都有固定文本/VoiceOver 反馈；已有 marks 保留 |
-| TEST-BODY-V2-018 | Unit | 单次草稿投影 | 一次 mark 变化只触发一次 typed draft revision；感觉与位置关系不重复 |
+| TEST-BODY-V2-017 | UI | 上限/回退反馈 | 第 21 个 Zone 或 Pin、3D gate 失败和无稳定命中都有固定文本/VoiceOver 反馈；已有 marks 保留 |
+| TEST-BODY-V2-018 | Unit | 单次位置同步 | 一次 mark 变化只触发一次 typed draft revision；地图只同步位置，不能重写感觉与位置关系 |
 
 ## 3. 真机与无障碍矩阵
 
@@ -57,7 +58,8 @@
 
 ## 4. 安全、隐私和供应链门槛
 
-- Zone 视觉状态不能被序列化为“已缓解”、趋势或安全等级；
+- Zone 重复点击不能改变/删除草稿；删除只能由显式动作触发，且视觉状态不能被序列化为“已缓解”、趋势或安全等级；
+- 任何 Map 状态不得含有感觉、程度、动作线索、因素、功能影响或安全答案；这些字段只由 typed Signal Intake 显式产生；
 - 未确认 mark 不能调用正式 Event 写接口；
 - 普通日志/遥测不含用户原始健康文本；
 - candidate、blocked、retired 或未知版本资产不得由 RealityKit loader 读取；
@@ -66,7 +68,7 @@
 
 ## 5. 停止规则
 
-任一以下失败立即阻止外部测试或发布：左右侧错误、3D 失败导致 2D 不可用、未批准资产加载、Pin 超过 20、已有 Pin 被误复制、空感觉被默认填充、视觉状态被当作健康事实、VoiceOver 无等价路径、原始健康文本进入日志。
+任一以下失败立即阻止外部测试或发布：左右侧错误、3D 失败导致 2D 不可用、未批准资产加载、Zone + Pin 合计超过 20 或被 typed draft 静默截断、已有 Pin 被误复制、空感觉被默认填充、视觉状态被当作健康事实、VoiceOver 无等价路径、原始健康文本进入日志。
 
 ## 6. 结果记录模板
 

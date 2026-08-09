@@ -5,9 +5,10 @@ iOS Swift Package 是原生 Core/界面样机，不是可发布 App。当前包�
 - 规范 `BodyLocation` 与 2D/3D 状态；
 - SwiftUI 全身 2D 前/后地图、稳定区域目录和可访问部位列表；
 - RealityKit 原生候选模型 loader（仅 Debug prototype flag），旋转/缩放/预设视角和局部命中证据；
-- RehabMate 行为等价的原生 Zone/Pin 双模式、区域视觉状态、最多 20 个针点、摘要编辑、感觉/动作线索/0–10 程度候选和焦点视角；
-- 窄屏选中 mark 的系统 Sheet/Detent 编辑、Pin 上限和 3D 回退提示；
+- 原生 Zone/Pin 双模式、Zone + Pin 合计最多 20 个位置、位置摘要/Inspector 和焦点视角；地图只产生 `BodyLocation`，感觉/动作线索/0–10 程度只在后续结构化录入中填写；重复 Zone 点击只选中已有草稿，删除必须显式完成；
+- 窄屏选中 mark 的系统 Sheet/Detent 编辑、位置总上限和 3D 回退提示；
 - SwiftUI 结构化身体信号录入；
+- 明亮中文的今天页、AI 身体助手入口、身体地图和结构化描述 P0 体验壳；AI 对话、资料读取和行动建议仍关闭；
 - metadata-only `BodyAssetManifest` 运行时门禁；
 - 默认关闭的研究元数据记录器；
 - CryptoKit 密文草稿与同步状态机。
@@ -23,7 +24,7 @@ swift build --sdk "$(xcrun --sdk iphoneos --show-sdk-path)" \
   --triple arm64-apple-ios17.0 --target BodyCompanionIOS
 ```
 
-当前 Swift Core 为 64 tests、0 failures；iOS SDK target 可编译，但这不证明真实设备或生产资产。详细边界见：
+当前 Swift Core 为 80 tests、0 failures；iOS SDK target 可编译，但这不证明真实设备或生产资产。详细边界见：
 
 - [IOS-01](../../docs/04_IOS_ARCHITECTURE.md)
 - [BODY-01](../../docs/08_BODY_MAP_2D_3D.md)

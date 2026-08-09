@@ -22,8 +22,8 @@ FIXED_TIME = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
 def evaluation(
     *,
     status: str = "complete",
-    tier: str = "R2",
-    rule_outcome: str = "triggered",
+    tier: str = "R3",
+    rule_outcome: str | None = None,
     ordinary: bool = True,
     supported: bool = True,
     unavailable: bool = False,
@@ -45,13 +45,15 @@ def evaluation(
         all_executed = False
         unresolved = True
         triggered = []
-    elif rule_outcome == "no_rule_triggered":
+    elif rule_outcome == "no_rule_triggered" or (rule_outcome is None and tier == "R3"):
         tier = "R3"
+        rule_outcome = "no_rule_triggered"
         required_questions = []
         all_executed = True
         unresolved = False
         triggered = []
     else:
+        rule_outcome = rule_outcome or "triggered"
         required_questions = []
         all_executed = True
         unresolved = False

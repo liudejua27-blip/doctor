@@ -208,7 +208,7 @@ class AssessmentService:
         questions = [
             AgentQuestion(
                 question_id=question_id,
-                category="background",
+                category="safety",
                 prompt="请回答已配置的安全核对问题（样机占位，不代表临床问法）。",
                 answer_type="boolean",
                 required=True,

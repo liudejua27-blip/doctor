@@ -416,7 +416,7 @@ class QuestionChoice(StrictModel):
 
 class AgentQuestion(StrictModel):
     question_id: str = Field(pattern=r"^[A-Za-z0-9._-]{1,120}$")
-    category: Literal["location", "sensation", "intensity", "time", "trigger", "impact", "background", "episode"]
+    category: Literal["safety", "location", "sensation", "intensity", "time", "trigger", "impact", "background", "episode"]
     prompt: str = Field(min_length=1, max_length=500)
     answer_type: Literal["boolean", "single_choice", "multiple_choice", "integer_scale", "free_text"]
     required: bool
@@ -429,6 +429,11 @@ class AgentQuestion(StrictModel):
             raise ValueError("choice question requires choices")
         if self.answer_type not in {"single_choice", "multiple_choice"} and self.choices is not None:
             raise ValueError("non-choice question cannot carry choices")
+        if self.category == "safety":
+            if not self.required:
+                raise ValueError("safety question must be required")
+            if self.answer_type not in {"boolean", "single_choice", "multiple_choice"}:
+                raise ValueError("safety question must use a structured answer type")
         return self
 
 
@@ -503,13 +508,13 @@ class SafetyEvaluation(StrictModel):
                 raise ValueError("unavailable gate cannot claim executed rules or require rule questions")
         if self.ordinary_agent_allowed and not (
             self.status == "complete"
-            and self.tier in {"R2", "R3"}
+            and self.tier == "R3"
             and self.scenario_support == "supported"
             and not self.unresolved_safety
         ):
-            raise ValueError("ordinary Agent is allowed only for a complete supported R2/R3 gate")
-        if self.tier in {"R0", "R1", "undetermined"} and self.ordinary_agent_allowed:
-            raise ValueError("ordinary Agent cannot run for R0/R1/undetermined")
+            raise ValueError("ordinary Agent is allowed only for a complete supported R3 gate")
+        if self.tier in {"R0", "R1", "R2", "undetermined"} and self.ordinary_agent_allowed:
+            raise ValueError("ordinary Agent cannot run for R0/R1/R2/undetermined")
         if self.rule_outcome == "no_rule_triggered" and (
             self.tier != "R3" or self.triggered_rule_ids or not self.all_current_rules_executed
         ):

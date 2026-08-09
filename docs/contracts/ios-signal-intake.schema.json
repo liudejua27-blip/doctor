@@ -39,6 +39,32 @@
     "last_error_code": {"type": "string", "maxLength": 120},
     "updated_at": {"type": "string", "format": "date-time"}
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"phase": {"const": "agent_draft"}},
+        "required": ["phase"]
+      },
+      "then": {
+        "properties": {
+          "locations": {"minItems": 1},
+          "safety": {
+            "allOf": [
+              {"$ref": "#/$defs/SafetyState"},
+              {
+                "type": "object",
+                "required": ["status", "ordinary_agent_allowed"],
+                "properties": {
+                  "status": {"const": "no_rule_triggered"},
+                  "ordinary_agent_allowed": {"const": true}
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "FactGroup": {
       "type": "string",
@@ -155,7 +181,17 @@
         "ordinary_agent_allowed": {"type": "boolean"},
         "rule_set_version": {"type": "string", "maxLength": 64},
         "display_message": {"type": "string", "maxLength": 500}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "no_rule_triggered"}}, "required": ["status"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": true}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["not_run", "r0", "r1", "r2", "undetermined", "unavailable"]}}, "required": ["status"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        }
+      ]
     }
   }
 }

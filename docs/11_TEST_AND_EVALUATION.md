@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | QA-01 |
-| 版本 | 1.1.0-draft |
+| 版本 | 1.3.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | QA 负责人 |
 | 审核角色 | 产品、临床安全、iOS、后端、AI、隐私法务、安全、统计 |
 | 批准角色 | QA 负责人、临床安全负责人、隐私法务负责人、工程负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、PROD-01、SAFE-01、PRIV-01、AGENT-01、FRAME-01、ADR-0002、ADR-0006、ADR-0018 |
+| 依赖 | DOC-00、TERM-01、PROD-01、SAFE-01、PRIV-01、AGENT-01、FRAME-01、ADR-0002、ADR-0006、ADR-0018、ADR-0019 |
 | 生效条件 | 责任角色批准；医学金标准只在对应规则临床批准后生效 |
 | 下次复审 | 首个代码脚手架创建前；之后每个 SafetyBaseline、严重事件或测试范围变化时复审 |
 
@@ -64,6 +64,7 @@
 | 确定性规则引擎 | 漏检、误降级、未知状态错误 | 规则单元与组合测试 |
 | Agent 提取 | 虚构事实、主体/时间/否定错误 | 结构提取黄金集 |
 | Agent 编排 | 绕过规则、错误工具权限、顺序错误 | 状态机与故障注入 |
+| 情境化恢复决策闭环 | 运动/工作情境被误作病因、资料范围不透明、行动越过内容审核 | TEST-COMP-01、场景矩阵、资料收据与行动抑制测试 |
 | 内容检索 | 返回不适用、过期或未审核内容 | 内容选择矩阵 |
 | 输出策略验证器 | 诊断/处方漏拦、Tier 不一致 | 对抗和变异测试 |
 | ManualMode | 伪装 AI、普通建议、Provider/工具调用痕迹或无法正式确认事实 | 无 AI 正反例与两阶段写入测试 |
@@ -102,7 +103,7 @@
 
 P1-A AssetManifest 当前完成 13 个 Swift Core metadata gate 场景，覆盖 candidate/approved/blocked/retired、权利/签名/审核/性能交叉约束、坐标/拓扑/LOD/映射、嵌套 unknown-field、2D fallback 和禁止 `.glb` 格式；Schema 的 candidate/approved/blocked synthetic fixture 也通过 Draft 2020-12 校验。这些只证明清单和运行时门的 fail-closed 边界，不证明真实文件签名/哈希、许可证、解剖准确度、真机性能或视觉质量。
 
-P1-C 当前完成 10 个 Swift Core 记录器契约/隐私场景，覆盖默认关闭、固定枚举/计数、停止关系、删除、未知字段/版本/flag 拒绝和 Schema 禁止字段扫描；这些只证明 metadata-only 工程边界，不能替代真实参与者研究、伦理/隐私审批、临床规则、真实 iOS UI 或安全理解结论。P1D 当前完成 11 个 Swift Core 状态机/来源/未知/安全回退/感觉位置关系测试，并与 P1A 的 18 个（5 个身体地图 + 13 个 AssetManifest）、P4 的 12 个测试一起由同一 Swift Package 回归；P1E 当前完成 18 个 Python 适配器测试，覆盖服务端安全门禁、revision、来源、marker 关系、未知映射和无副作用。它们可证明类型和非法转换边界，但不能替代临床规则、真实 iOS UI、公开认证 API 或生产数据库。P4 当前只完成 Core 层的 12 个合成测试（CryptoKit/进程内密文仓/状态机），可证明边界但不能替代真机、系统锁定、文件 durability、后台同步、服务器草稿 API 或数据删除演练。生产门禁必须把 P1D/P1E/P4 测试计划扩展到真实设备和认证网络，且仍不得把 `accepted_unconfirmed` 当作正式 Event。
+P1-C 当前完成 10 个 Swift Core 记录器契约/隐私场景，覆盖默认关闭、固定枚举/计数、停止关系、删除、未知字段/版本/flag 拒绝和 Schema 禁止字段扫描；这些只证明 metadata-only 工程边界，不能替代真实参与者研究、伦理/隐私审批、临床规则、真实 iOS UI 或安全理解结论。当前同一 Swift Package 共 80 个测试：AssetManifest 13、`BodyLocation` 5、Zone/Pin 位置状态 8、区域目录 5、P1D typed intake 24、P1-C 10、P4 离线草稿 15。P1D 覆盖状态机、来源/未知、安全回退、显式感觉—位置关系、地图仅同步位置、位置变更使安全/普通 Agent 失效、超过 20 个位置时明确拒绝而不截断，以及删除最后关联位置不留下非法感觉；同一 Marker ID 的位置语义替换也会要求重新复核感觉；恢复时还要求地图投影与已验证的位置集合一致。P4 覆盖加密/篡改/所有者/队列边界，以及 P4 1.1 感觉—位置关系保留、重复位置/悬空关联拒绝和 code-only 1.0 不自动迁移。P1E 当前完成 18 个 Python 适配器测试，覆盖服务端安全门禁、revision、来源、marker 关系、未知映射和无副作用。它们可证明类型和非法转换边界，但不能替代临床规则、真实 iOS UI、公开认证 API 或生产数据库。生产门禁必须把 P1D/P1E/P4 测试计划扩展到真实设备和认证网络，且仍不得把 `accepted_unconfirmed` 当作正式 Event。
 
 P2B 的 23 个聚焦用例覆盖合法 R2/R3、非 draft 状态、八组 reviewed fields、model-constructed 请求复验、turn/revision/digest、Session 过期、R0 代表性高风险/incomplete/unavailable/unsupported（R1 复用同一阻断谓词）、三种 EpisodeSelection、owner/交叉 Session、同键重放/冲突、结果 JSON Schema/隐私扫描、EventStore 零写入、禁用和存储失败。它们只证明 typed Application boundary 和 prototype store 的 fail-closed 行为；不证明真实认证、Consent、数据库事务、跨实例锁、真实客户端恢复、临床规则或公开 `requestDraftConfirmation`。
 
@@ -397,6 +398,21 @@ final_tier_priority <= deterministic_tier_priority
 
 ---
 
+### 7.5 情境化身体不适决策闭环
+
+FEAT-COMP-01 的验证以 TEST-COMP-01 为最低测试计划，且不得用页面完成率或聊天满意度掩盖安全、确认和资料最小化问题。每个候选 SafetyBaseline 至少证明：
+
+1. 跑步/健身/球类用户和久坐办公用户都能从同一“记录这次不适”入口完成位置、情境、事实、复核和保存路径；
+2. 本次训练/工作/日常情境仅改变普通问题排序和审核内容筛选，绝不成为病因、受损组织、风险等级或未确认 Profile 写入；
+3. “仅使用本次记录”仍可完成记录与安全分流；任何可选资料读取均有同意、字段范围和本次实际使用收据；
+4. R0/R1/R2、未解决安全、未覆盖场景、手动和降级路径正确抑制普通 PydanticAI 聊天、普通行动、营养和动作内容；R2 只能使用 Application Service 固定的专业评估准备事实澄清与沟通摘要；
+5. R3 的每条行动均能追溯到有效内容 ID、内容发布版本、确认事实、情境/人群适用条件、停止条件与升级条件；
+6. 未审核的动作、具体食物、补剂、药物、剂量和疗效/复出承诺在所有自然语言、结构化字段、翻译和渲染路径中均被拦截；
+7. 用户能在事实复核中发现错误候选，且保存、复查、就诊沟通摘要和训练沟通摘要不声称病例、病历或诊断；
+8. VoiceOver、Dynamic Type、Reduce Motion、2D/列表回退和网络/模型故障路径完成同构任务。
+
+真实用户验证应预登记两类人群的任务完成率、基础记录中位用时、位置/侧别错误、被迫猜测率、AI 候选修正发现率、资料范围理解率、行动/安全理解率和退出原因。30 秒目标只评价符合快捷路径条件的任务；安全澄清和两次确认不被计作失败。
+
 ## 8. 内容库测试
 
 ### 8.1 静态完整性
@@ -427,6 +443,8 @@ final_tier_priority <= deterministic_tier_priority
 - 内容下线后新请求不再使用；
 - 缓存内容与 SafetyBaseline 不一致时 fail closed；
 - LLM 只能填入允许槽位且值来自确认事实。
+- 运动/工作调整、低风险舒适活动和一般恢复支持必须分别匹配已批准的情境、人群、事实、停止条件与地区；任何一项缺失都不返回该内容；
+- 具体食物、补剂、药物、剂量、未审核动作、疗效保证和复出许可必须在模型、模板、结构字段与渲染层全部拒绝。
 
 ### 8.3 文案理解与显著性
 

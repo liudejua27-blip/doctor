@@ -20,65 +20,15 @@ public enum BodyMarkingMode: String, CaseIterable, Codable, Hashable, Sendable {
 public enum BodyZoneVisualState: String, CaseIterable, Codable, Hashable, Sendable {
     case none
     case marked
-    case reviewing
 
     public var displayName: String {
         switch self {
         case .none: "未标记"
         case .marked: "已标记"
-        case .reviewing: "待复核"
         }
     }
 
     public var isVisible: Bool { self != .none }
-}
-
-/// A deliberately small first-pass vocabulary for the map editor. The typed
-/// Signal Intake ontology remains authoritative when the user continues.
-public enum BodyMarkSensation: String, CaseIterable, Codable, Hashable, Sendable {
-    case sharp = "sharp"
-    case sore = "sore"
-    case tender = "tender"
-    case itchy = "itchy"
-    case dull = "dull"
-
-    public var displayName: String {
-        switch self {
-        case .sharp: "刺痛"
-        case .sore: "酸胀"
-        case .tender: "压痛"
-        case .itchy: "发痒"
-        case .dull: "隐隐不适"
-        }
-    }
-
-    public var signalCode: SignalSensationCode {
-        switch self {
-        case .sharp: .sharpPain
-        case .sore: .aching
-        case .tender: .tenderness
-        case .itchy: .itching
-        case .dull: .dullPain
-        }
-    }
-}
-
-/// Movement/function cues stay separate from sensation. They are candidates
-/// for later typed aggravating-factor or functional-impact fields.
-public enum BodyMarkTrigger: String, CaseIterable, Codable, Hashable, Sendable {
-    case walking = "walking"
-    case raisingArm = "raising_arm"
-    case rotating = "rotating"
-    case extending = "extending"
-
-    public var displayName: String {
-        switch self {
-        case .walking: "走路"
-        case .raisingArm: "举手"
-        case .rotating: "转动"
-        case .extending: "伸直"
-        }
-    }
 }
 
 public enum BodyMarkKind: String, Codable, Hashable, Sendable {
@@ -101,9 +51,6 @@ public struct BodyMark: Codable, Equatable, Hashable, Identifiable, Sendable {
     public var kind: BodyMarkKind
     public var location: BodyLocation
     public var zoneVisualState: BodyZoneVisualState
-    public var sensation: BodyMarkSensation?
-    public var triggers: Set<BodyMarkTrigger>
-    public var intensity: Int?
     /// Pure visual differentiation. It has no business meaning.
     public var colorToken: Int
 
@@ -112,18 +59,12 @@ public struct BodyMark: Codable, Equatable, Hashable, Identifiable, Sendable {
         kind: BodyMarkKind,
         location: BodyLocation,
         zoneVisualState: BodyZoneVisualState? = nil,
-        sensation: BodyMarkSensation? = nil,
-        triggers: Set<BodyMarkTrigger> = [],
-        intensity: Int? = nil,
         colorToken: Int = 0
     ) {
         self.id = id ?? location.id
         self.kind = kind
         self.location = location
         self.zoneVisualState = zoneVisualState ?? (kind == .zone ? .marked : .none)
-        self.sensation = sensation
-        self.triggers = triggers
-        self.intensity = intensity.map { min(max($0, 0), 10) }
         self.colorToken = max(0, colorToken)
     }
 
@@ -140,6 +81,7 @@ public enum BodyMarkMutation: Equatable, Sendable {
     case added(UUID)
     case updated(UUID)
     case removed(UUID)
-    case rejectedPinLimit
-    case rejectedInvalidIntensity
+    case rejectedMarkerLimit
+    case rejectedDuplicateLocation
+    case rejectedDraftSynchronization
 }

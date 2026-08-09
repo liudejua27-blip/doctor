@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | API-01 |
-| 版本 | 1.1.0-draft |
+| 版本 | 1.3.0-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 后端/API 负责人 |
 | 审核角色 | 产品、iOS、后端、AI、临床安全、隐私法务、安全、QA |
 | 批准角色 | 产品负责人、工程负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、AGENT-01、SAFE-01、PRIV-01、FRAME-01、ADR-0018 |
+| 依赖 | DOC-00、TERM-01、ARCH-01、DATA-01、AGENT-01、SAFE-01、PRIV-01、FRAME-01、ADR-0018、ADR-0019 |
 | Base path | `/v1` |
 | OpenAPI | [`contracts/openapi-v1.yaml`](contracts/openapi-v1.yaml) |
 | 数据 Schema | [`contracts/`](contracts/) |
@@ -48,11 +48,25 @@ P1D 的 [`ios-signal-intake.schema.json`](contracts/ios-signal-intake.schema.jso
 - P2D 的 [`confirmation-transaction-receipt.schema.json`](contracts/confirmation-transaction-receipt.schema.json) 只描述正式 repository 的内部 prepare/commit/read-back metadata contract；它固定 Session/Approval/source revision、有限 write set、全有/全无语义和提交后 read-back，不新增公开 operation、不修改 P2A/P2B/P2C、不执行数据库或正式 Event。canonical receipt 在重放时保持字节稳定，`replayed=true` 属于应用响应外层；receipt 丢失、commit 超时或 read-back 不一致时，客户端必须复用原 key 并回到 P4 未确认草稿/安全入口，不能自行显示 completed；正式 `decideApproval` 必须在 REL-01 GATE-04/05/07 关闭后建立；
 - P1-C 的 [`p1c-ux-research-record.schema.json`](contracts/p1c-ux-research-record.schema.json) 是 iOS Core 内部研究元数据契约，不是 API 请求/响应、用户档案或遥测事件。它只允许固定任务/入口/版本/错误/停止规则/理解结果等脱敏字段；记录器默认关闭、进程内且可幂等删除，不新增 operation、不接收身体正文/原话/身份/音视频，也不得进入 PydanticAI 或正式写入。真实研究前必须完成 REL-01 GATE-08；
 - P1-A 的 [`body-asset-manifest.schema.json`](contracts/body-asset-manifest.schema.json) 是资产流水线/iOS loader 的内部 metadata 契约，不是用户健康 API，也不是客户端可提交的授权事实。它固定来源、权利、哈希/签名状态、RealityKit 坐标、拓扑、artifact/LOD、区域映射、审核、性能和 2D 回退；`BodyAssetRuntimeGate` 当前只做本地强类型校验，不读取或下载文件。未知/撤回/未批准清单必须在客户端保留 2D/列表；真实资产接入前仍需 ADR-0018 的法务、解剖、签名和设备门禁；
-- 公开 API 最终字段映射须在 REL-01 GATE-07 关闭前更新 OpenAPI、兼容矩阵和 Swift/Python 契约测试；当前 iOS 草稿契约已提升为 `schema_version=1.1`，旧 `1.0` 不自动迁移。
+- 公开 API 最终字段映射须在 REL-01 GATE-07 关闭前更新 OpenAPI、兼容矩阵和 Swift/Python 契约测试；当前 P1D 与 P4 iOS 草稿契约均为 `schema_version=1.1`。P4 旧 `1.0` 无感觉—位置关系，当前 prototype 不自动迁移或猜测关联。
 
 `IOSAppConfiguration.supported_schema_versions` 必须显式声明客户端可用的草稿/领域契约版本；在 P1D 1.1 适配切片中同时保留已有 `1.0` 和新增 `1.1` 枚举。配置未声明某版本时，iOS 必须关闭对应提交路径并保留本地未确认草稿，不能把未知版本降级解释为 1.0。
 
 ---
+
+### 1.2 FEAT-COMP-01 契约冻结说明
+
+PRD-F11 与 ADR-0019 定义了后续的情境化对话主闭环，但当前公开 OpenAPI 和 JSON Schema **尚未**新增会话情境、资料使用收据、行动内容引用或报告显示类型字段。实现不得把 UI 私有字段、客户端枚举或自由文本偷偷塞入现有 client_context/AgentTurn/Report 字段以绕开兼容评审。
+
+在 ADR-0019 获批准后，必须先完成以下文档化变更，才能修改服务端或 iOS：
+
+1. DATA-01 定义字段所有权、生命周期、确认状态、脱敏和保留；
+2. PRIV-01 定义逐来源同意、实际使用收据和撤回/删除语义；
+3. SAFE-01 定义行动内容类别、适用条件、停止/升级条件与禁止输出；
+4. OpenAPI、JSON Schema 和兼容矩阵定义可选字段、未知值回退、迁移和错误码；
+5. TEST-COMP-01 建立契约、安全、隐私、无障碍和真实设备证据。
+
+在此之前，现有公开 API 只能继续按既有 Session/Turn、确认和报告契约工作；不得对外宣称运动/工作情境、资料收据或沟通摘要显示类型已可用。
 
 ## 2. 认证与授权
 
@@ -196,9 +210,9 @@ sequenceDiagram
     I->>A: POST /sessions/{id}/turns + Idempotency-Key
     A-->>I: 202 + turn_id
     A->>S: 对全部当前可用输入执行完整确定性规则
-    alt R0/R1、Unresolved 或场景未审核
+    alt R0/R1/R2、Unresolved 或场景未审核
         A->>A: 保存固定 emergency/urgent/unsupported/degraded 信封
-    else R2/R3 且场景已审核
+    else R3 且场景已审核
         A->>G: 强类型运行
         G-->>A: 不可信候选 AgentTurn.output
         alt Agent 发现新的候选 SafetySignal
@@ -252,7 +266,7 @@ iOS 只缓存仍在有效期且签名/digest/Schema 可识别的响应；网络�
 - `immediate_action`：审核 `content_id/content_release_id`、解析文案、行动代码和普通建议抑制位；
 - `safetyBaselineId`；完整 canonical `SafetyBaseline` 留在服务端发布 manifest/审计系统，不强制下发给 iOS。
 
-只有 `complete + all_current_rules_executed=true + tier=R2/R3 + scenario_support=supported + unresolved_safety=false` 才允许普通 Agent 调用。`incomplete/unavailable` 必须序列化为 false 并进入安全澄清或保守模式，不得假装规则已经执行完成。
+只有 `complete + all_current_rules_executed=true + tier=R3 + scenario_support=supported + unresolved_safety=false` 才允许普通 Agent 调用。R2 必须进入应用服务固定的专业评估准备，不得调用普通 PydanticAI 或下发普通行动。`incomplete/unavailable` 必须序列化为 false 并进入安全澄清或保守模式，不得假装规则已经执行完成。
 
 `required_questions[].question_id` 必须与 gate 的 `required_question_ids` 去重集合完全相同；R0/R1 时 `ordinary_advice_suppressed=true`。集合相等和 `content_id` 对当前 SafetyBaseline 的有效性由 Application Service / PolicyValidator 强制，并由 `T-CONTRACT-SAFETY-*`、`T-SAFE-SUPPRESS-*` 验证；客户端不得自行生成问题或紧急文案。
 
@@ -542,6 +556,8 @@ Event 修订返回必须遵循机器 Schema：`supersedes_event_id` 仅用于 co
 - `DELETE /v1/agent/sessions/{session_id}` 只丢弃未确认草稿并使 Session 失效；若 Session 在 `awaiting_approval`，必须在同一事务把该 Session 的所有 pending/approved-but-not-executing Intent 标为 invalidated 并保留最小审计。旧 `approval_id` 的任何后续决定必须无副作用地拒绝。已确认 Event、已执行审批审计和依法必须保留的最小记录不受影响。
 
 P4 的 iOS [`DraftEnvelope`](contracts/ios-draft-envelope.schema.json) 与 `DraftSyncQueue` 目前只是一项客户端 Core 样机：它们不新增公开 API，也不允许客户端提交完整 `BodySignalEvent`。后续如增加“同步远端未确认草稿”端点，必须另建 operationId、OpenAPI 请求/响应、认证/同意/保留期/ETag/幂等语义和对应 Feature Spec；服务端响应只能是未确认草稿或冲突/拒绝，不能返回执行 Event 的暗示性状态。当前 P4 `accepted_unconfirmed` 不是 API-01 的 `completed`，也不是 `ApprovalIntent` 的 `approved/executed`。
+
+即使作为 P4 降维表示，每个 sensation 也必须带非空、去重且属于同一 `locations[].marker_id` 集合的 `location_marker_ids`；客户端和未来服务端不得用数组顺序或“全部位置”补全。`schema_version=1.0` 缺此字段，不能由恢复逻辑自动升级。
 
 两者都必须可重试、带幂等键并检查来源 Event 的 `resource_revision`。对已 superseded/voided 或不属于当前用户的来源，服务端必须拒绝或返回当前有效资源，不能建立分叉修订链。
 

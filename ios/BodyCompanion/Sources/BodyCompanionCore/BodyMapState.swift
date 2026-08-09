@@ -32,11 +32,17 @@ public final class BodyMapModel {
         marks.map(\.location)
     }
 
-    public var pinCount: Int {
-        marks.filter { $0.kind == .pin }.count
-    }
+    public var markerCount: Int { marks.count }
 
     public init(markerDrafts: [BodyLocation] = []) {
+        guard markerDrafts.count <= Self.maximumMarkerCount else {
+            lastMutation = .rejectedMarkerLimit
+            return
+        }
+        guard Set(markerDrafts.map(\.id)).count == markerDrafts.count else {
+            lastMutation = .rejectedDuplicateLocation
+            return
+        }
         marks = markerDrafts.enumerated().map { index, location in
             BodyMark(kind: .pin, location: location, colorToken: index)
         }
@@ -61,29 +67,23 @@ public final class BodyMapModel {
 
     @discardableResult
     public func toggleZone(_ location: BodyLocation) -> BodyMarkMutation {
-        if let index = marks.firstIndex(where: {
+        if marks.contains(where: { $0.location.id == location.id }) {
+            return .rejectedDuplicateLocation
+        }
+        if let mark = marks.first(where: {
             $0.kind == .zone && $0.location.regionID == location.regionID &&
                 $0.location.laterality == location.laterality
         }) {
-            let mark = marks[index]
-            switch mark.zoneVisualState {
-            case .none:
-                marks[index].zoneVisualState = .marked
-                selectedMarkID = mark.id
-                focusedRegionID = location.regionID
-                return .updated(mark.id)
-            case .marked:
-                marks[index].zoneVisualState = .reviewing
-                selectedMarkID = mark.id
-                focusedRegionID = location.regionID
-                return .updated(mark.id)
-            case .reviewing:
-                let id = mark.id
-                marks.remove(at: index)
-                if selectedMarkID == id { selectedMarkID = nil }
-                if focusedRegionID == location.regionID { focusedRegionID = nil }
-                return .removed(id)
-            }
+            // A repeated tap is selection, not a health-state or deletion
+            // shortcut. The user must use an explicit delete action for a
+            // provisional zone draft.
+            selectedMarkID = mark.id
+            focusedRegionID = location.regionID
+            return .updated(mark.id)
+        }
+
+        guard marks.count < Self.maximumMarkerCount else {
+            return .rejectedMarkerLimit
         }
 
         let mark = BodyMark(kind: .zone, location: location, colorToken: 0)
@@ -95,8 +95,11 @@ public final class BodyMapModel {
 
     @discardableResult
     public func addPin(_ location: BodyLocation) -> BodyMarkMutation {
-        guard marks.filter({ $0.kind == .pin }).count < Self.maximumPinCount else {
-            return .rejectedPinLimit
+        guard !marks.contains(where: { $0.location.id == location.id }) else {
+            return .rejectedDuplicateLocation
+        }
+        guard marks.count < Self.maximumMarkerCount else {
+            return .rejectedMarkerLimit
         }
         let mark = BodyMark(
             kind: .pin,
@@ -147,40 +150,30 @@ public final class BodyMapModel {
         lastMutation = nil
     }
 
-    @discardableResult
-    public func setSensation(_ sensation: BodyMarkSensation?, for id: UUID? = nil) -> Bool {
-        guard let index = index(for: id) else { return false }
-        marks[index].sensation = sensation
-        lastMutation = nil
-        return true
-    }
-
-    @discardableResult
-    public func toggleTrigger(_ trigger: BodyMarkTrigger, for id: UUID? = nil) -> Bool {
-        guard let index = index(for: id) else { return false }
-        if marks[index].triggers.contains(trigger) {
-            marks[index].triggers.remove(trigger)
-        } else {
-            marks[index].triggers.insert(trigger)
-        }
-        lastMutation = nil
-        return true
-    }
-
-    @discardableResult
-    public func setIntensity(_ intensity: Int?, for id: UUID? = nil) -> BodyMarkMutation {
-        guard let index = index(for: id) else { return .rejectedInvalidIntensity }
-        guard intensity == nil || (0...10).contains(intensity!) else { return .rejectedInvalidIntensity }
-        marks[index].intensity = intensity
-        lastMutation = nil
-        return .updated(marks[index].id)
-    }
-
     public func clearMarkers() {
         marks.removeAll()
         selectedMarkID = nil
         focusedRegionID = nil
         lastMutation = nil
+    }
+
+    /// Restores the last known-good visual projection if the canonical typed
+    /// draft rejects a map change. This prevents the map from showing a
+    /// location that the structured record, safety review, and later handoff
+    /// do not contain. Only a previously owned collection may be restored.
+    public func restoreMarks(_ restored: [BodyMark]) {
+        guard restored.count <= Self.maximumMarkerCount else {
+            lastMutation = .rejectedMarkerLimit
+            return
+        }
+        guard Set(restored.map(\.location.id)).count == restored.count else {
+            lastMutation = .rejectedDuplicateLocation
+            return
+        }
+        marks = restored
+        selectedMarkID = nil
+        focusedRegionID = nil
+        lastMutation = .rejectedDraftSynchronization
     }
 
     public func removeDraft(id: UUID) {
@@ -198,13 +191,10 @@ public final class BodyMapModel {
         return marks.first { $0.id == selectedMarkID }
     }
 
-    public static let maximumPinCount = 20
-
-    private func index(for id: UUID?) -> Int? {
-        let resolvedID = id ?? selectedMarkID
-        guard let resolvedID else { return nil }
-        return marks.firstIndex { $0.id == resolvedID }
-    }
+    /// Matches `ios-signal-intake.locations.maxItems`. Both Zone and Pin
+    /// consume one canonical BodyLocation, so the UI must never accept a
+    /// collection that the typed draft cannot represent.
+    public static let maximumMarkerCount = 20
 
     public func switchTo2D(reason: String? = nil) {
         mode = .twoD

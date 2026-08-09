@@ -27,7 +27,10 @@
   "allOf": [
     {
       "if": {"properties": {"status": {"const": "ready_for_agent"}}, "required": ["status"]},
-      "then": {"required": ["assessment_draft", "server_safety_tier"]}
+      "then": {
+        "required": ["assessment_draft", "server_safety_tier"],
+        "properties": {"server_safety_tier": {"const": "R3"}}
+      }
     },
     {
       "if": {"properties": {"status": {"const": "rejected"}}, "required": ["status"]},

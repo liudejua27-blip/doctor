@@ -20,21 +20,24 @@ final class BodyMarkingTests: XCTestCase {
         )
     }
 
-    func testZoneSelectionIsVisualOnlyAndCyclesWithoutCreatingCheckIn() {
+    func testRepeatedZoneSelectionOnlySelectsExistingDraftWithoutCreatingCheckIn() {
         let model = BodyMapModel()
         model.markingMode = .zone
 
         let first = model.applySelection(location())
         XCTAssertEqual(model.marks.count, 1)
         XCTAssertEqual(model.marks[0].zoneVisualState, .marked)
-        XCTAssertEqual(model.marks[0].sensation, nil)
-        XCTAssertEqual(model.marks[0].intensity, nil)
 
         let markerID = model.marks[0].id
         XCTAssertEqual(first, .added(markerID))
         XCTAssertEqual(model.applySelection(location()), .updated(markerID))
-        XCTAssertEqual(model.marks[0].zoneVisualState, .reviewing)
-        XCTAssertEqual(model.applySelection(location()), .removed(markerID))
+        XCTAssertEqual(model.marks.count, 1)
+        XCTAssertEqual(model.marks[0].id, markerID)
+        XCTAssertEqual(model.marks[0].zoneVisualState, .marked)
+        XCTAssertEqual(model.selectedMarkID, markerID)
+        XCTAssertEqual(model.focusedRegionID, "body.knee.general")
+
+        model.removeDraft(id: markerID)
         XCTAssertTrue(model.marks.isEmpty)
     }
 
@@ -52,24 +55,47 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(model.marks.filter { $0.kind == .pin }.count, 1)
     }
 
-    func testPinLimitIsTwentyAndDoesNotDiscardExistingMarks() {
+    func testTotalMarkerLimitIsTwentyAcrossZoneAndPinWithoutDiscardingMarks() {
         let model = BodyMapModel()
-        model.markingMode = .pin
 
-        for index in 0..<BodyMapModel.maximumPinCount {
+        for index in 0..<BodyMapModel.maximumMarkerCount {
             let side: Laterality = index.isMultiple(of: 2) ? .left : .right
-            XCTAssertEqual(model.applySelection(location("body.knee.general", laterality: side)).isAdded, true)
+            model.markingMode = index.isMultiple(of: 2) ? .zone : .pin
+            XCTAssertEqual(
+                model.applySelection(location("body.test.region.\(index)", laterality: side)).isAdded,
+                true
+            )
         }
 
-        XCTAssertEqual(model.marks.filter { $0.kind == .pin }.count, BodyMapModel.maximumPinCount)
-        XCTAssertEqual(model.applySelection(location("body.head.general", laterality: .midline)), .rejectedPinLimit)
-        XCTAssertEqual(model.marks.count, BodyMapModel.maximumPinCount)
-        XCTAssertEqual(model.lastMutation, .rejectedPinLimit)
+        XCTAssertEqual(model.marks.count, BodyMapModel.maximumMarkerCount)
+        XCTAssertEqual(model.marks.filter { $0.kind == .zone }.count, 10)
+        XCTAssertEqual(model.marks.filter { $0.kind == .pin }.count, 10)
+        model.markingMode = .zone
+        XCTAssertEqual(model.applySelection(location("body.test.extra.zone", laterality: .midline)), .rejectedMarkerLimit)
+        model.markingMode = .pin
+        XCTAssertEqual(model.applySelection(location("body.test.extra.pin", laterality: .midline)), .rejectedMarkerLimit)
+        XCTAssertEqual(model.marks.count, BodyMapModel.maximumMarkerCount)
+        XCTAssertEqual(model.lastMutation, .rejectedMarkerLimit)
         model.clearInteractionNotice()
         XCTAssertNil(model.lastMutation)
     }
 
-    func testExistingPinCanBeSelectedAndEdited() {
+    func testDuplicateLocationIDIsRejectedBeforeMapAndDraftCanFork() {
+        let firstLocation = location()
+        let model = BodyMapModel()
+        model.markingMode = .pin
+
+        XCTAssertTrue(model.applySelection(firstLocation).isAdded)
+        XCTAssertEqual(model.applySelection(firstLocation), .rejectedDuplicateLocation)
+        XCTAssertEqual(model.marks.map(\.location.id), [firstLocation.id])
+        XCTAssertEqual(model.lastMutation, .rejectedDuplicateLocation)
+
+        let malformedRestore = BodyMapModel(markerDrafts: [firstLocation, firstLocation])
+        XCTAssertTrue(malformedRestore.marks.isEmpty)
+        XCTAssertEqual(malformedRestore.lastMutation, .rejectedDuplicateLocation)
+    }
+
+    func testExistingPinCanBeSelectedWithoutChangingItsLocation() {
         let model = BodyMapModel()
         model.markingMode = .pin
         _ = model.applySelection(location("body.knee.general"))
@@ -77,15 +103,10 @@ final class BodyMarkingTests: XCTestCase {
             return XCTFail("new pin should be selected")
         }
 
-        XCTAssertTrue(model.setSensation(.sharp, for: id))
-        XCTAssertTrue(model.toggleTrigger(.walking, for: id))
-        XCTAssertEqual(model.setIntensity(0, for: id), .updated(id))
-        XCTAssertEqual(model.selectedMark()?.sensation, .sharp)
-        XCTAssertEqual(model.selectedMark()?.triggers, [.walking])
-        XCTAssertEqual(model.selectedMark()?.intensity, 0)
-        XCTAssertEqual(model.setIntensity(10, for: id), .updated(id))
-        XCTAssertEqual(model.setIntensity(11, for: id), .rejectedInvalidIntensity)
-        XCTAssertEqual(model.selectedMark()?.intensity, 10)
+        let originalLocation = model.selectedMark()?.location
+        model.selectMark(id: id)
+        XCTAssertEqual(model.selectedMarkID, id)
+        XCTAssertEqual(model.selectedMark()?.location, originalLocation)
     }
 
     func testExistingTwoDPinIsSelectedBeforeAddingAnother() {
@@ -108,8 +129,6 @@ final class BodyMarkingTests: XCTestCase {
         _ = model.applySelection(location("body.knee.general", laterality: .right))
 
         XCTAssertEqual(model.marks.map(\.colorToken), [0, 1])
-        XCTAssertNil(model.marks.first?.sensation)
-        XCTAssertNil(model.marks.last?.intensity)
     }
 
     func testRemovingFocusedMarkClearsFocusButLeavesOtherRegion() {
@@ -127,28 +146,6 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertNil(model.focusedRegionID)
     }
 
-    func testBodyMarksProjectToTypedDraftWithoutConfirmingFacts() {
-        let bodyMap = BodyMapModel()
-        bodyMap.markingMode = .pin
-        _ = bodyMap.applySelection(location())
-        guard let id = bodyMap.selectedMarkID else { return XCTFail("pin should be selected") }
-        _ = bodyMap.setSensation(.itchy, for: id)
-        _ = bodyMap.toggleTrigger(.walking, for: id)
-        _ = bodyMap.setIntensity(4, for: id)
-
-        let intake = SignalIntakeModel(bodyMapModel: bodyMap)
-        let initialRevision = intake.draft.draftRevision
-        intake.applyBodyMarks(bodyMap.marks)
-
-        XCTAssertEqual(intake.draft.draftRevision, initialRevision + 1)
-        XCTAssertEqual(intake.draft.locations.map(\.id), [bodyMap.marks[0].location.id])
-        XCTAssertEqual(intake.draft.facts.sensations.first?.code, .itching)
-        XCTAssertEqual(intake.draft.facts.sensations.first?.locationMarkerIDs, [bodyMap.marks[0].location.id])
-        XCTAssertEqual(intake.draft.facts.intensity?.value, 4)
-        XCTAssertEqual(intake.draft.facts.aggravatingFactors.first?.label, "走路")
-        XCTAssertFalse(intake.draft.reviewedGroups.contains(.sensation))
-        XCTAssertFalse(intake.draft.reviewedGroups.contains(.intensity))
-    }
 }
 
 private extension BodyMarkMutation {

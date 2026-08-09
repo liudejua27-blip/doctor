@@ -54,7 +54,81 @@
         "content_id": {"type": "string", "maxLength": 160},
         "content_release_id": {"type": "string", "maxLength": 64},
         "evaluated_at": {"type": "string", "format": "date-time"}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "complete"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "required_question_ids": {"type": "array", "maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "incomplete"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "required_question_ids": {"type": "array", "minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "unavailable"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "all_current_rules_executed": {"const": false},
+              "unresolved_safety": {"const": true},
+              "ordinary_agent_allowed": {"const": false},
+              "required_question_ids": {"type": "array", "maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"ordinary_agent_allowed": {"const": true}}, "required": ["ordinary_agent_allowed"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"const": "R3"},
+              "all_current_rules_executed": {"const": true},
+              "scenario_support": {"const": "supported"},
+              "unresolved_safety": {"const": false}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"tier": {"enum": ["R0", "R1", "R2", "undetermined"]}}, "required": ["tier"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"scenario_support": {"const": "unsupported"}}, "required": ["scenario_support"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"unresolved_safety": {"const": true}}, "required": ["unresolved_safety"]},
+          "then": {"properties": {"ordinary_agent_allowed": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "no_rule_triggered"}}, "required": ["rule_outcome"]},
+          "then": {
+            "properties": {
+              "status": {"const": "complete"},
+              "tier": {"const": "R3"},
+              "all_current_rules_executed": {"const": true},
+              "unresolved_safety": {"const": false},
+              "triggered_rule_ids": {"type": "array", "maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"rule_outcome": {"const": "unavailable"}}, "required": ["rule_outcome"]},
+          "then": {"properties": {"status": {"const": "unavailable"}}}
+        }
+      ]
     }
   },
   "allOf": [
@@ -63,7 +137,7 @@
       "then": {
         "required": ["server_safety", "assessment_draft"],
         "properties": {
-          "server_safety": {"properties": {"status": {"const": "complete"}, "tier": {"enum": ["R2", "R3"]}, "ordinary_agent_allowed": {"const": true}, "unresolved_safety": {"const": false}}}
+          "server_safety": {"properties": {"status": {"const": "complete"}, "tier": {"const": "R3"}, "ordinary_agent_allowed": {"const": true}, "unresolved_safety": {"const": false}}}
         }
       }
     },

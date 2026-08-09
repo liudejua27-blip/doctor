@@ -29,6 +29,14 @@ public enum SignalIntakePhase: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Where a user can resume an existing, unconfirmed in-memory draft. This is
+/// navigation intent only; it does not imply durable recovery or a formal
+/// record has been created.
+public enum SignalIntakeResumeDestination: Equatable, Sendable {
+    case bodyMap
+    case structuredIntake
+}
+
 public enum SignalFactGroup: String, Codable, CaseIterable, Hashable, Sendable {
     case location
     case sensation
@@ -273,7 +281,7 @@ public enum SignalSafetyStatus: String, Codable, CaseIterable, Sendable {
     }
 
     public var ordinaryAgentAllowed: Bool {
-        self == .r2 || self == .noRuleTriggered
+        self == .noRuleTriggered
     }
 }
 
@@ -516,7 +524,13 @@ public struct SignalIntakeFacts: Codable, Equatable, Sendable {
 
     public var asOfflineFacts: UnconfirmedDraftFacts {
         UnconfirmedDraftFacts(
-            sensationCodes: sensations.map { $0.code.rawValue },
+            sensations: sensations.map {
+                UnconfirmedDraftSensation(
+                    code: $0.code.rawValue,
+                    userLabel: $0.userLabel,
+                    locationMarkerIDs: $0.locationMarkerIDs
+                )
+            },
             intensity: intensity?.value,
             timePattern: [temporal?.onsetMode.displayName, temporal?.course.displayName, temporal?.userText]
                 .compactMap { $0 }
@@ -690,6 +704,7 @@ public struct SignalIntakeDraft: Codable, Equatable, Sendable {
         unknownGroups = try container.decode(Set<SignalFactGroup>.self, forKey: .unknownGroups)
         lastErrorCode = try container.decodeIfPresent(String.self, forKey: .lastErrorCode)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        try validate()
     }
 }
 
@@ -699,14 +714,49 @@ public final class SignalIntakeModel {
     public private(set) var draft: SignalIntakeDraft
     public let bodyMapModel: BodyMapModel
 
-    public init(draft: SignalIntakeDraft = .init(), bodyMapModel: BodyMapModel = BodyMapModel()) {
-        self.draft = draft
+    public init(bodyMapModel: BodyMapModel = BodyMapModel()) {
+        self.draft = SignalIntakeDraft()
         self.bodyMapModel = bodyMapModel
+    }
+
+    /// The only restoration entry point. A decoded or injected draft may not
+    /// be rendered until its position IDs, sensation relations, and
+    /// phase/safety combination have passed the same validation used before a
+    /// state transition. The map projection must represent exactly that
+    /// validated location collection.
+    public init(
+        restoring draft: SignalIntakeDraft,
+        bodyMapModel: BodyMapModel? = nil
+    ) throws {
+        try draft.validate()
+        let resolvedBodyMapModel = bodyMapModel ?? BodyMapModel(markerDrafts: draft.locations)
+        guard resolvedBodyMapModel.markerDrafts == draft.locations else {
+            throw SignalIntakeTransitionError.invalidValue
+        }
+        self.draft = draft
+        self.bodyMapModel = resolvedBodyMapModel
     }
 
     public var phase: SignalIntakePhase { draft.phase }
     public var safety: SignalSafetyState { draft.safety }
     public var hasLocations: Bool { !draft.locations.isEmpty }
+    /// P0 only keeps drafts in memory. A non-initial draft can be explicitly
+    /// continued, but must never be presented as a persisted record.
+    public var hasResumableDraft: Bool {
+        !draft.locations.isEmpty ||
+            draft.phase != .choosingLocation ||
+            draft.facts != SignalIntakeFacts() ||
+            !draft.reviewedGroups.isEmpty ||
+            !draft.unknownGroups.isEmpty
+    }
+
+    /// The initial location step returns to the map; every later state resumes
+    /// its structured form without resetting the draft UUID or facts.
+    public var resumeDestination: SignalIntakeResumeDestination? {
+        guard hasResumableDraft else { return nil }
+        return draft.phase == .choosingLocation ? .bodyMap : .structuredIntake
+    }
+
     public var unconfirmedCandidateCount: Int {
         draft.facts.sensations.filter { $0.status == .candidate }.count +
             draft.facts.aggravatingFactors.filter { $0.status == .candidate }.count +
@@ -714,89 +764,118 @@ public final class SignalIntakeModel {
             draft.facts.backgroundFacts.filter { $0.status == .candidate }.count
     }
 
-    public func setLocations(_ locations: [BodyLocation]) {
-        setLocations(locations, incrementRevision: true)
-    }
+    /// Replaces the full canonical location set only when it already conforms
+    /// to the shared map/schema maximum. Invalid collections are rejected;
+    /// they must never be silently truncated because that would fork the map
+    /// from the facts used for safety and structured review.
+    @discardableResult
+    public func setLocations(_ locations: [BodyLocation]) -> Bool {
+        guard locations.count <= BodyMapModel.maximumMarkerCount,
+              Set(locations.map(\.id)).count == locations.count
+        else { return false }
+        guard locations != draft.locations else { return true }
 
-    private func setLocations(_ locations: [BodyLocation], incrementRevision: Bool) {
-        var seen = Set<UUID>()
-        draft.locations = Array(locations.prefix(20)).filter { seen.insert($0.id).inserted }
-        let markerIDs = draft.locations.map(\.id)
-        for index in draft.facts.sensations.indices {
-            draft.facts.sensations[index].locationMarkerIDs = markerIDs
-        }
-        if !draft.facts.sensations.isEmpty {
-            draft.reviewedGroups.remove(.sensation)
-        }
-        if !draft.locations.isEmpty && draft.phase == .choosingLocation {
-            draft.phase = .collectingFacts
-        }
-        touch(incrementRevision: incrementRevision)
-    }
-
-    /// Projects explicit map-editor choices into the typed intake draft. This
-    /// remains unreviewed until the user completes the normal fact review; it
-    /// does not create an Event or approval.
-    public func applyBodyMarks(_ marks: [BodyMark]) {
-        setLocations(marks.map(\.location), incrementRevision: false)
-
-        var sensationLocations: [SignalSensationCode: [UUID]] = [:]
-        for mark in marks {
-            guard let sensation = mark.sensation else { continue }
-            sensationLocations[sensation.signalCode, default: []].append(mark.location.id)
-        }
-        draft.facts.sensations = sensationLocations
-            .sorted { $0.key.rawValue < $1.key.rawValue }
-            .map { code, markerIDs in
-                SignalSensation(code: code, locationMarkerIDs: markerIDs)
-            }
-        draft.reviewedGroups.remove(.sensation)
-        draft.unknownGroups.remove(.sensation)
-
-        if let intensity = marks.compactMap(\.intensity).first,
-           let typedIntensity = try? SignalIntensity(context: .current, value: intensity) {
-            draft.facts.intensity = typedIntensity
-        } else {
-            draft.facts.intensity = nil
-        }
-        draft.reviewedGroups.remove(.intensity)
-        draft.unknownGroups.remove(.intensity)
-
-        draft.facts.aggravatingFactors = marks
-            .flatMap { mark in
-                mark.triggers.map { trigger in
-                    SignalFactor(label: trigger.displayName, effect: .worse)
-                }
-            }
-        draft.reviewedGroups.remove(.aggravatingFactors)
-        draft.unknownGroups.remove(.aggravatingFactors)
+        draft.locations = locations
+        reconcileSensationsAfterLocationChange(activeMarkerIDs: Set(locations.map(\.id)))
+        invalidateSafetyAndDependentFlowAfterLocationChange()
         touch()
+        return true
     }
 
     public func removeLocation(id: UUID) {
-        draft.locations.removeAll { $0.id == id }
-        let markerIDs = Set(draft.locations.map(\.id))
-        for index in draft.facts.sensations.indices {
-            draft.facts.sensations[index].locationMarkerIDs.removeAll { !markerIDs.contains($0) }
+        let remainingLocations = draft.locations.filter { $0.id != id }
+        guard remainingLocations.count != draft.locations.count else { return }
+        // The map is an editor projection for this same in-memory draft. A
+        // location removed from the structured form must not reappear when
+        // the user returns to the map and edits another marker.
+        bodyMapModel.removeDraft(id: id)
+        _ = setLocations(remainingLocations)
+    }
+
+    /// Adds, removes, or changes a sensation only with an explicit location
+    /// relation. A new sensation never inherits every selected body marker.
+    public func setSensation(
+        _ code: SignalSensationCode,
+        selected: Bool,
+        locationMarkerIDs: [UUID]
+    ) throws {
+        if !selected {
+            guard let index = draft.facts.sensations.firstIndex(where: { $0.code == code }) else { return }
+            draft.facts.sensations.remove(at: index)
+            invalidateSensationReview()
+            touch()
+            return
         }
-        if !draft.facts.sensations.isEmpty {
-            draft.reviewedGroups.remove(.sensation)
+
+        let explicitMarkerIDs = try validatedSensationMarkerIDs(locationMarkerIDs)
+        if let index = draft.facts.sensations.firstIndex(where: { $0.code == code }) {
+            guard draft.facts.sensations[index].locationMarkerIDs != explicitMarkerIDs else { return }
+            draft.facts.sensations[index].locationMarkerIDs = explicitMarkerIDs
+        } else {
+            draft.facts.sensations.append(
+                SignalSensation(code: code, locationMarkerIDs: explicitMarkerIDs)
+            )
         }
-        if draft.locations.isEmpty { draft.phase = .choosingLocation }
+        invalidateSensationReview()
         touch()
     }
 
-    public func toggleSensation(_ code: SignalSensationCode) {
-        if let index = draft.facts.sensations.firstIndex(where: { $0.code == code }) {
-            draft.facts.sensations.remove(at: index)
-        } else {
-            draft.facts.sensations.append(
-                SignalSensation(code: code, locationMarkerIDs: draft.locations.map(\.id))
-            )
+    /// Convenience for the single-location flow. With multiple locations the
+    /// caller must use `setSensation(_:selected:locationMarkerIDs:)` so that
+    /// the user chooses the relation instead of the model guessing it.
+    @discardableResult
+    public func toggleSensation(_ code: SignalSensationCode) -> Bool {
+        do {
+            if draft.facts.sensations.contains(where: { $0.code == code }) {
+                try setSensation(code, selected: false, locationMarkerIDs: [])
+                return true
+            }
+            guard draft.locations.count == 1, let locationID = draft.locations.first?.id else { return false }
+            try setSensation(code, selected: true, locationMarkerIDs: [locationID])
+            return true
+        } catch {
+            return false
         }
+    }
+
+    private func validatedSensationMarkerIDs(_ markerIDs: [UUID]) throws -> [UUID] {
+        guard !markerIDs.isEmpty, Set(markerIDs).count == markerIDs.count else {
+            throw SignalIntakeTransitionError.invalidValue
+        }
+        let activeMarkerIDs = Set(draft.locations.map(\.id))
+        let requestedMarkerIDs = Set(markerIDs)
+        guard requestedMarkerIDs.isSubset(of: activeMarkerIDs) else {
+            throw SignalIntakeTransitionError.invalidValue
+        }
+        return draft.locations.map(\.id).filter { requestedMarkerIDs.contains($0) }
+    }
+
+    /// A sensation cannot survive without at least one explicitly chosen
+    /// active location. Changing the location set never expands an existing
+    /// relation; it instead makes the whole sensation answer reviewable
+    /// again, including a prior global "unknown" answer.
+    private func reconcileSensationsAfterLocationChange(activeMarkerIDs: Set<UUID>) {
+        draft.facts.sensations = draft.facts.sensations.compactMap { sensation in
+            var reconciled = sensation
+            reconciled.locationMarkerIDs.removeAll { !activeMarkerIDs.contains($0) }
+            return reconciled.locationMarkerIDs.isEmpty ? nil : reconciled
+        }
+        invalidateSensationReview()
+    }
+
+    /// BodyLocation is an input to deterministic safety. Any location edit
+    /// therefore invalidates a local safety snapshot and every downstream
+    /// Agent or approval phase; a production client must then ask the server
+    /// to run the complete deterministic safety evaluation again.
+    private func invalidateSafetyAndDependentFlowAfterLocationChange() {
+        draft.safety = SignalSafetyState()
+        draft.lastErrorCode = nil
+        draft.phase = draft.locations.isEmpty ? .choosingLocation : .collectingFacts
+    }
+
+    private func invalidateSensationReview() {
         draft.reviewedGroups.remove(.sensation)
         draft.unknownGroups.remove(.sensation)
-        touch()
     }
 
     public func setOtherSensationLabel(_ value: String) throws {
@@ -828,6 +907,14 @@ public final class SignalIntakeModel {
             guard !draft.locations.isEmpty else { return false }
         case .sensation:
             guard !draft.facts.sensations.isEmpty else { return false }
+            let locationIDs = Set(draft.locations.map(\.id))
+            guard draft.facts.sensations.allSatisfy({ sensation in
+                !sensation.locationMarkerIDs.isEmpty &&
+                    Set(sensation.locationMarkerIDs).count == sensation.locationMarkerIDs.count &&
+                    Set(sensation.locationMarkerIDs).isSubset(of: locationIDs)
+            }) else {
+                return false
+            }
             guard draft.facts.sensations.filter({ $0.code == .other }).allSatisfy({ !($0.userLabel?.isEmpty ?? true) }) else {
                 return false
             }
@@ -914,9 +1001,9 @@ public final class SignalIntakeModel {
         try state.validate()
         draft.safety = state
         switch state.status {
-        case .r0, .r1, .undetermined:
+        case .r0, .r1, .r2, .undetermined:
             draft.phase = .safetyAction
-        case .r2, .noRuleTriggered:
+        case .noRuleTriggered:
             draft.phase = .agentDraft
         case .unavailable, .notRun:
             draft.phase = .offlineDraft

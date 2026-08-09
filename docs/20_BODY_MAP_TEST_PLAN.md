@@ -29,7 +29,7 @@
 | TEST-BODY-011 | PRD-F01 | Integration | 选位置后进入结构化描述 | 未确认位置保留，未自动填感觉 | 待联调 |
 | TEST-BODY-012 | PRD-F03A | Recovery | 3D loader/命中/内存失败 | 提示原因，保留草稿，2D/列表可继续 | Unit + Device |
 
-V2 的行为等价、Zone/Pin 共存、20 个 Pin 上限、摘要编辑、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。
+V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、位置摘要/Inspector、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。地图只产生位置候选；感觉、程度和因素的结构化编辑另由 P1D 验收。
 
 ## 3. 测试数据治理
 
@@ -53,7 +53,7 @@ V2 的行为等价、Zone/Pin 共存、20 个 Pin 上限、摘要编辑、焦点
 
 ## 6. 结果与签字
 
-- 本地 Core：55 tests、0 failures；`scripts/check_baseline.py`：49 Markdown、16 Schema、1 候选资产清单、禁止源码引用 0；
+- 本地 Core 全量：80 tests、0 failures；`scripts/check_baseline.py`：56 Markdown、16 Schema、1 候选资产清单、禁止源码引用 0；
 - iOS `BodyCompanionIOS` 与 `BodyCompanionPrototype` generic iOS Debug build：绿色（无签名）；
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；

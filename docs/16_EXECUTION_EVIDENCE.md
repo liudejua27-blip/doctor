@@ -3,12 +3,12 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | EVIDENCE-01 |
-| 版本 | 2.2.0 |
+| 版本 | 2.7.0 |
 | 状态 | Current local snapshot / Prototype-only |
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
-| 快照日期 | 2026-08-08 |
+| 快照日期 | 2026-08-09 |
 | 对应 Git | `codex/initial-git-ci-baseline` 受保护默认分支；PR #4 合并提交 `2bb8e8a`；复刻切片提交 `6f232b4`、证据绑定提交 `f6a6d5b`；此前基线 `0fa2a17` 由 PR #1/#2 复验 |
-| 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证；本轮设备审计见 `EVIDENCE-DEVICE-01` |
+| 本轮变更状态 | PR #1/#2 均在 required checks 成功后合并；默认分支 CI 与分支保护配置已验证；本轮 P0 体验壳、Zone 状态、R2 普通 Agent 抑制、多位置感觉关联与草稿入口修正仅在本地未提交工作区验证，尚未获得远端 CI 或真机证据 |
 
 ## 1. 证据解释
 
@@ -20,11 +20,11 @@
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=51 checked_links=280 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=56 checked_links=303 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `64 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 状态和 typed draft 投影测试；不证明真机/签名/生产资产 |
-| EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `189 passed` | 后端合成/内存样机全量绿色；不证明生产依赖 |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `80 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 位置状态、Zone + Pin 合计 20 个位置上限且超限不截断、地图仅同步位置、typed facts 不被地图覆盖、R2 普通 Agent 抑制及反序列化/恢复拒绝、多位置感觉显式关联、位置变更（包括同 ID 语义替换）使感觉复核/安全/普通 Agent 失效、恢复时地图投影一致性、P4 1.1 感觉—位置关系/唯一 ID/旧 code-only 版本拒绝、地图/草稿同步和草稿进入策略；不证明真机/签名/生产资产 |
+| EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `194 passed` | 后端合成/内存样机全量绿色；包含 R2 许可与 JSON Schema 负例回归；不证明生产依赖 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
 | EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
@@ -34,6 +34,7 @@
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 | EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
 | EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核尝试 | Xcode 26.6；`discover_projs` 找到 0 个 Xcode project/workspace；两部登记 iPhone 为 Offline/unavailable；iOS device/simulator SDK 编译通过；USDZ `usdchecker`/ZIP 通过且 SHA 一致；静态审计发现 CollisionGroup、triangle/barycentric、下背实体和导出根变换仍需处理 | 证明设备与可运行 App target 的阻塞原因、候选文件结构完整性和代码风险；不证明 Sheet、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
+| EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | 本地未提交工作区执行 `swift test`：80 tests、0 failures；`BodyCompanionIOS` iPhoneOS SDK target 构建通过。今天/记录/AI 身体助手入口统一显示进程内未确认草稿的继续或确认放弃后新建；3D 直接提供前/后部位列表 Sheet；同一区域 Zone 重复点选仅重新选中、重复 Marker ID 明确拒绝、删除为显式动作；Zone + Pin 合计到 20 后明确拒绝新增且不丢失已有位置；地图同步失败会恢复上一次有效位置；位置 Inspector 不含感觉/程度/动作线索；多位置感觉不自动复制；位置变更会清除旧 safety/普通 Agent/审批阶段；R2 不进入普通 Agent；P4 1.1 保留感觉与位置关系 | 证明当前源码可编译，P0 路由、草稿状态、地图—结构化事实边界、列表回退与安全门的 Core/契约回归未破坏；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI 或医疗能力 |
 
 ## 3. 当前已证明
 
@@ -43,12 +44,14 @@
 - 确认链在进程内/fake repository 中验证了 revision、前驱、摘要、幂等、有限写集和 read-back 关系。
 - BodyAssetManifest metadata gate 会对未知、未批准、blocked/retired 或交叉约束不完整的资产回退 2D。
 - 机器契约和当前测试代码仍保留；删除的是重复的过程性 Feature/Test 文档。
+- P0 明亮中文体验壳已连接到既有 2D/3D 位置与未确认结构化草稿路径；地图只产生位置，感觉、程度和因素只能在结构化页填写；没有新增真实资料读取、行动建议或正式写入。
+- R2 已在 Swift/Python 状态机和机器契约中抑制普通 Agent；多位置的感觉关联、结构化删除与草稿继续/新建均需要明确用户动作；位置变化会使本地 safety、普通 Agent 与审批阶段失效，避免复用旧结果。
 
 ## 4. 已关闭项与剩余阻断
 
 ### CLOSED-EV-001 P2A 墙上时钟漂移
 
-根因是 Session 使用固定 `2026-08-06` 创建，部分请求却回退到真实墙上时钟。现在 autouse fixture 冻结领域默认 `utc_now`，并新增省略请求 `now` 的回归；过期测试仍显式注入时间。P2A 19 个与后端全量 189 个测试均绿色。
+根因是 Session 使用固定 `2026-08-06` 创建，部分请求却回退到真实墙上时钟。现在 autouse fixture 冻结领域默认 `utc_now`，并新增省略请求 `now` 的回归；过期测试仍显式注入时间。P2A 19 个与后端全量 194 个测试均绿色。
 
 ### PARTIAL-EV-001 远端 CI 与保护分支
 

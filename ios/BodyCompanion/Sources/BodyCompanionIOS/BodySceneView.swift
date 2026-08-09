@@ -261,8 +261,6 @@ public struct BodySceneView: UIViewRepresentable {
                     UIColor(red: 0.68, green: 0.78, blue: 0.84, alpha: 1)
                 } else if isFocused {
                     .systemOrange
-                } else if mark?.zoneVisualState == .reviewing {
-                    .systemYellow
                 } else {
                     .systemTeal
                 }

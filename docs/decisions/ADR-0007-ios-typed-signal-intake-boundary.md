@@ -31,7 +31,7 @@ P1A 的人体地图可以产生 `BodyLocation`，P4 可以保护简单的未确�
 
 ### 复用 `DraftEnvelope.facts` 的字符串数组作为全部领域模型
 
-拒绝。P4 的 envelope 是同步/加密边界，字符串数组只用于最小样机；把它作为录入真源会丢失上下文和状态。P1D 只在映射层把 typed draft 降维为 P4 `UnconfirmedDraftFacts`。
+拒绝。P4 的 envelope 是同步/加密边界，不是录入真源；即使 P4 1.1 已保留感觉的 code、可选标签和显式位置关联，它仍不承载完整 typed 来源、状态、时间/因素结构或状态机语义。P1D 只在映射层将 typed draft 有损降维为 P4 `UnconfirmedDraftFacts`，不得以 P4 payload 替代 P1D 或服务端 `AssessmentDraft`。
 
 ### 在 iOS 端复制安全规则或让 LLM 决定安全
 

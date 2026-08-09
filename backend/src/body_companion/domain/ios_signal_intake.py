@@ -171,7 +171,7 @@ class IOSClientSafetyState(StrictModel):
 
     @model_validator(mode="after")
     def validate_client_claim(self) -> "IOSClientSafetyState":
-        expected = self.status in {"r2", "no_rule_triggered"}
+        expected = self.status == "no_rule_triggered"
         if self.ordinary_agent_allowed != expected:
             raise ValueError("client safety permission is inconsistent with status")
         if self.status == "no_rule_triggered" and self.display_message:
@@ -234,7 +234,7 @@ class IOSSignalIntakeAdapterResult(StrictModel):
     @model_validator(mode="after")
     def validate_result_shape(self) -> "IOSSignalIntakeAdapterResult":
         if self.status == "ready_for_agent":
-            if self.assessment_draft is None or self.server_safety_tier not in {"R2", "R3"}:
+            if self.assessment_draft is None or self.server_safety_tier != "R3":
                 raise ValueError("ready_for_agent requires a safe server draft")
             if self.error_code is not None:
                 raise ValueError("ready_for_agent cannot carry an error")
@@ -276,13 +276,13 @@ class IOSServerSafetyProjection(StrictModel):
                 raise ValueError("unavailable safety projection cannot claim executed rules")
         if self.ordinary_agent_allowed and not (
             self.status == "complete"
-            and self.tier in {"R2", "R3"}
+            and self.tier == "R3"
             and self.scenario_support == "supported"
             and not self.unresolved_safety
         ):
-            raise ValueError("ordinary Agent is allowed only for a complete supported R2/R3 projection")
-        if self.tier in {"R0", "R1", "undetermined"} and self.ordinary_agent_allowed:
-            raise ValueError("ordinary Agent cannot run for high-risk or undetermined projection")
+            raise ValueError("ordinary Agent is allowed only for a complete supported R3 projection")
+        if self.tier in {"R0", "R1", "R2", "undetermined"} and self.ordinary_agent_allowed:
+            raise ValueError("ordinary Agent cannot run for R0/R1/R2/undetermined projection")
         if self.rule_outcome == "no_rule_triggered" and (
             self.tier != "R3" or self.triggered_rule_ids or not self.all_current_rules_executed
         ):
@@ -340,7 +340,7 @@ class IOSSignalIntakeApplicationHandoff(StrictModel):
                 raise ValueError("ready_for_agent requires server safety and assessment draft")
             if not (
                 self.server_safety.status == "complete"
-                and self.server_safety.tier in {"R2", "R3"}
+                and self.server_safety.tier == "R3"
                 and self.server_safety.ordinary_agent_allowed
                 and not self.server_safety.unresolved_safety
             ):
@@ -412,7 +412,7 @@ def adapt_ios_signal_intake(
     if (
         server_safety.status != "complete"
         or server_safety.unresolved_safety
-        or server_safety.tier in {"R0", "R1", "undetermined"}
+        or server_safety.tier != "R3"
         or server_safety.scenario_support != "supported"
         or not server_safety.ordinary_agent_allowed
     ):

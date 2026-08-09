@@ -104,7 +104,9 @@ def make_payload(
     )
 
 
-def server_safety(*, tier: str = "R2", no_rule: bool = False, ordinary: bool = True) -> SafetyEvaluation:
+def server_safety(*, tier: str = "R3", no_rule: bool | None = None, ordinary: bool = True) -> SafetyEvaluation:
+    if no_rule is None:
+        no_rule = tier == "R3"
     if no_rule:
         tier = "R3"
         outcome = "no_rule_triggered"
@@ -149,7 +151,7 @@ def test_missing_server_safety_never_returns_agent_draft():
     assert result.assessment_draft is None
 
 
-def test_server_r2_maps_typed_draft_and_policy_accepts_it():
+def test_server_r3_maps_typed_draft_and_policy_accepts_it():
     result = adapt_ios_signal_intake(
         make_payload(),
         expected_session_id=SESSION_ID,
@@ -192,9 +194,22 @@ def test_no_rule_triggered_server_result_is_ready_without_safety_claim():
     assert result.server_safety_tier == "R3"
 
 
+def test_r2_never_claims_ordinary_agent_permission():
+    with pytest.raises(ValueError, match="ordinary Agent"):
+        server_safety(tier="R2", ordinary=True)
+
+    with pytest.raises(ValueError, match="client safety permission"):
+        IOSClientSafetyState(status="r2", ordinary_agent_allowed=True)
+
+
 @pytest.mark.parametrize(
     ("tier", "expected"),
-    [("R0", "safety_action_required"), ("R1", "safety_action_required"), ("undetermined", "safety_action_required")],
+    [
+        ("R0", "safety_action_required"),
+        ("R1", "safety_action_required"),
+        ("R2", "safety_action_required"),
+        ("undetermined", "safety_action_required"),
+    ],
 )
 def test_server_high_risk_or_undetermined_never_returns_agent_draft(tier: str, expected: str):
     result = adapt_ios_signal_intake(

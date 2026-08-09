@@ -16,10 +16,11 @@
 ## 决策
 
 1. iOS Core 只定义强类型 `DraftEnvelope`、`DraftKeyProvider`、加密存储端口和 `DraftSyncQueue`；契约见 [`ios-draft-envelope.schema.json`](../contracts/ios-draft-envelope.schema.json)。
-2. `DraftEnvelope` 只表达未确认输入、用户主观 `BodyLocation`、本地 draft revision 和同步状态；没有正式 Event、Approval、Report、诊断或组织损伤字段。
+2. `DraftEnvelope` 只表达未确认输入、用户主观 `BodyLocation`、本地 draft revision 和同步状态；没有正式 Event、Approval、Report、诊断或组织损伤字段。自 P4 `schema_version=1.1` 起，每个降维后的感觉必须保留 code、可选用户标签和明确 `location_marker_ids`；关联只能指向同一 envelope 的唯一位置 ID。
 3. P4 样机使用 CryptoKit AES-256-GCM、按账户隔离的进程内测试密钥和进程内密文仓，验证加密、认证失败、篡改失败、幂等删除和错误所有者隔离。该实现不可直接发布。
 4. 每次同步操作使用稳定 `client_operation_id`，与未来 HTTP `Idempotency-Key` 一对一；accepted 结果只能是 `accepted_unconfirmed`。冲突保留本地 revision/digest 并要求用户处理，禁止最后写入覆盖。
 5. 生产适配器必须替换 `DraftKeyProvider`/`EncryptedDraftStore`，并提供 Keychain 可访问性、Data Protection、原子写、设备锁定、备份迁移、密钥轮换、删除传播、后台任务和真机恢复证据。未完成前，P4 Feature Flag 关闭。
+6. P4 `schema_version=1.0` 仅有无关联的 `sensation_codes`，无法安全重建多位置关系。当前进程内 prototype 不保存跨版本草稿，因此拒绝旧版本而不自动迁移；未来持久化实现必须先通过独立迁移和用户复核设计，禁止把一个感觉复制到所有位置。
 
 ## 未采用方案
 
