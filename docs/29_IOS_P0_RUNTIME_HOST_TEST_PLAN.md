@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.5.1-draft |
+| 版本 | 0.5.2-draft |
 | 状态 | Executed locally: HOST-T-001～015 have internal-only Simulator evidence; `7d8bf59` binds HOST-T-015 locally and its current remote CI is pending |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
@@ -43,7 +43,7 @@
 | HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；文字入口、搜索框、无结果状态和选项使用稳定目录 ID（不能使用过滤后的序号或用户输入）；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
 | HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留共享文字列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留同一入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
 | HOST-T-014 | 更多感觉与未知边界 | 从结构化描述页展开具有稳定、非健康内容 identifier `sensation-picker.more-open` 的“更多感觉”，以固定内部中文标签“麻木”选中既有稳定枚举中的扩展项（不依赖用户输入或过滤序号）；它沿用显式位置关联、只形成未确认草稿，不显示 AI 建议、网络、保存成功或医学结论。两个位置时还必须分别呈现“部分位置的感觉说不清”和“这些位置的感觉都说不清”，不能再出现重复的单位置同义入口 | Simulator UI + Core |
-| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路、今天页两张情境提示卡，以及结构化描述页的“确认/未知”和“保存/未知”成对动作均可滚动到且可点击；并列卡/按钮在该尺寸下纵向排列；只使用稳定 identifier，不判断位置摘要/回退提示、VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
+| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路、今天页两张情境提示卡，以及结构化描述页的“确认/未知”和“保存/未知”成对动作均可滚动到且可点击；在该尺寸下，三组并列内容必须暴露稳定的 `.vertical` 容器 identifier 且同名 `.horizontal` 容器不存在，证明运行时选择纵向布局分支；测试不比较滚动后控件的瞬时屏幕坐标。只使用稳定 identifier，不判断位置摘要/回退提示、VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
 
 ### 3.1 候选 3D probe 的可接受结果
 
@@ -162,3 +162,4 @@ not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗
 | 2026-08-09 | 0.4.4-draft | 归档 `0105cd7` 的 94 项 Core 与 12 项本地 Host UI 收据：HOST-T-014 已执行，完整感觉与两类 unknown 均只进入未确认草稿；感觉修订按 CONFLICT-003 在普通状态失效、在高风险状态拒绝。远端 CI run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建同一 iOS job。 |
 | 2026-08-09 | 0.5.0-draft | 新增 HOST-T-015：只在内部 Simulator 验证 accessibility-size 下的结构与关键动作可达；实现前不把它表述为 VoiceOver、最大字号、深色/高对比度、横屏或真机通过。 |
 | 2026-08-09 | 0.5.1-draft | `7d8bf59` 已在本地 iPhone 17 Pro Max / iOS 26.5 完成 HOST-T-001～015（13 项 UI 流程）；HOST-T-015 只形成 accessibility-size 的局部结构/可达性 Simulator 证据，远端 CI 尚待运行。 |
+| 2026-08-09 | 0.5.2-draft | 为跨 Simulator 尺寸的 HOST-T-015 稳定性，将“纵向排列”的自动化见证固定为运行时布局容器 identifier（`.vertical` 存在、`.horizontal` 不存在）并先滚动到对应动作，再检查分支；仍须由后续本地/远端执行记录证明，不外推视觉几何、VoiceOver 或真机。 |

@@ -191,7 +191,7 @@ public struct SignalIntakeScreen: View {
                 )
                 .frame(minHeight: 44)
             }
-            pairedActions {
+            pairedActions(identifier: "sensation-picker.actions") {
                 Button("确认感觉") { model.markReviewed(.sensation) }
                     .accessibilityIdentifier("sensation-picker.review")
                     .frame(minHeight: 44)
@@ -383,7 +383,7 @@ public struct SignalIntakeScreen: View {
             }
             TextField("补充时间或原话（可选）", text: $temporalText, axis: .vertical)
                 .lineLimit(2...4)
-            pairedActions {
+            pairedActions(identifier: "temporal.actions") {
                 Button("保存时间信息") {
                     model.setTemporal(onsetMode: onsetMode, course: course, userText: temporalText.nilIfEmpty)
                     model.markReviewed(.temporal)
@@ -620,15 +620,20 @@ public struct SignalIntakeScreen: View {
     }
 
     @ViewBuilder
-    private func pairedActions<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    private func pairedActions<Content: View>(
+        identifier: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 8) {
                 content()
             }
+            .accessibilityIdentifier("\(identifier).vertical")
         } else {
             HStack(spacing: 12) {
                 content()
             }
+            .accessibilityIdentifier("\(identifier).horizontal")
         }
     }
 }

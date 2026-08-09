@@ -27,6 +27,11 @@ print(sorted(candidates)[0][3])
   } )"
 fi
 
+result_directory="$(mktemp -d)"
+result_bundle="$result_directory/body-companion-host-smoke.xcresult"
+trap 'rm -rf "$result_directory"' EXIT
+
+set +e
 xcodebuild -quiet \
   -project "$project_path" \
   -scheme BodyCompanionInternal \
@@ -35,4 +40,14 @@ xcodebuild -quiet \
   test \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
-  ONLY_ACTIVE_ARCH=YES
+  ONLY_ACTIVE_ARCH=YES \
+  -resultBundlePath "$result_bundle"
+test_status=$?
+set -e
+
+if [[ "$test_status" -ne 0 ]]; then
+  echo "Internal Host smoke xcresult summary:"
+  xcrun xcresulttool get test-results summary --path "$result_bundle" --compact || true
+fi
+
+exit "$test_status"

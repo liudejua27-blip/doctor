@@ -147,6 +147,7 @@ private struct TodayView: View {
                     identifier: "today.context-cue.work"
                 )
             }
+            .accessibilityIdentifier("today.context-cues.vertical")
         } else {
             HStack(spacing: 12) {
                 ContextCueCard(
@@ -162,6 +163,7 @@ private struct TodayView: View {
                     identifier: "today.context-cue.work"
                 )
             }
+            .accessibilityIdentifier("today.context-cues.horizontal")
         }
     }
 }

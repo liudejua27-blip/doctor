@@ -66,7 +66,17 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .firstMatch
         scrollUntilHittable(exerciseCue, in: app)
         scrollUntilHittable(workCue, in: app)
-        assertVerticallyStacked(exerciseCue, workCue)
+        assertExists(
+            app.descendants(matching: .any)
+                .matching(identifier: "today.context-cues.vertical")
+                .firstMatch
+        )
+        XCTAssertFalse(
+            app.descendants(matching: .any)
+                .matching(identifier: "today.context-cues.horizontal")
+                .firstMatch
+                .exists
+        )
 
         let resume = app.buttons["intake-entry.resume-draft"]
         scrollDownUntilHittable(resume, in: app)
@@ -75,15 +85,33 @@ final class BodyCompanionInternalUITests: XCTestCase {
 
         let reviewSensation = app.buttons["sensation-picker.review"]
         let unknownSensation = app.buttons["sensation-picker.unknown-all"]
-        scrollUntilHittable(reviewSensation, in: app)
-        scrollUntilHittable(unknownSensation, in: app)
-        assertVerticallyStacked(reviewSensation, unknownSensation)
+        scrollUntilHittable(reviewSensation, in: app, maxSwipes: 14)
+        let sensationActions = app.descendants(matching: .any)
+            .matching(identifier: "sensation-picker.actions.vertical")
+            .firstMatch
+        assertExists(sensationActions)
+        XCTAssertFalse(
+            app.descendants(matching: .any)
+                .matching(identifier: "sensation-picker.actions.horizontal")
+                .firstMatch
+                .exists
+        )
+        scrollUntilHittable(unknownSensation, in: app, maxSwipes: 14)
 
         let saveTemporal = app.buttons["temporal.save"]
         let unknownTemporal = app.buttons["temporal.unknown"]
-        scrollUntilHittable(saveTemporal, in: app)
-        scrollUntilHittable(unknownTemporal, in: app)
-        assertVerticallyStacked(saveTemporal, unknownTemporal)
+        scrollUntilHittable(saveTemporal, in: app, maxSwipes: 14)
+        let temporalActions = app.descendants(matching: .any)
+            .matching(identifier: "temporal.actions.vertical")
+            .firstMatch
+        assertExists(temporalActions)
+        XCTAssertFalse(
+            app.descendants(matching: .any)
+                .matching(identifier: "temporal.actions.horizontal")
+                .firstMatch
+                .exists
+        )
+        scrollUntilHittable(unknownTemporal, in: app, maxSwipes: 14)
     }
 
     @MainActor
@@ -402,7 +430,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     private func scrollUntilHittable(
         _ element: XCUIElement,
         in app: XCUIApplication,
-        maxSwipes: Int = 6,
+        maxSwipes: Int = 12,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -416,7 +444,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     private func scrollDownUntilHittable(
         _ element: XCUIElement,
         in app: XCUIApplication,
-        maxSwipes: Int = 6,
+        maxSwipes: Int = 12,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -424,22 +452,6 @@ final class BodyCompanionInternalUITests: XCTestCase {
             app.swipeDown()
         }
         XCTAssertTrue(element.isHittable, "Expected element to become hittable after scrolling down: \(element)", file: file, line: line)
-    }
-
-    @MainActor
-    private func assertVerticallyStacked(
-        _ first: XCUIElement,
-        _ second: XCUIElement,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertGreaterThanOrEqual(
-            second.frame.minY,
-            first.frame.maxY - 1,
-            "Expected accessibility-size controls to stack vertically",
-            file: file,
-            line: line
-        )
     }
 
     @MainActor
