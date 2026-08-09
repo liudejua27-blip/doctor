@@ -93,10 +93,23 @@ covered test IDs: HOST-T-001 ...
 not proven: 真机、签名、VoiceOver 实操、最大 Dynamic Type、Reduce Motion、3D 性能/碰撞、资产许可、临床/生产发布
 ```
 
+### 7.1 当前本地执行记录（候选 3D 专用 probe）
+
+```text
+commit: 79f1f36
+project/scheme: BodyCompanionInternal.xcodeproj / BodyCompanionInternal
+destination: iPhone 17 Pro / iOS 26.5 / 68F37251-71BE-4F42-9849-62D61BFFE7C3
+configuration: DebugInternal
+result: 9 passed, 0 failures
+coverage: 9 个 UI XCTest + `check_internal_ios_host.py` 的静态覆盖共同覆盖 HOST-T-001～013；HOST-T-013 先出现 body-map.candidate-3d-load-attempted，随后出现 body-map.candidate-3d-ready、3D Scene 与列表入口
+not proven: 不点击人体；未生成 BodyLocation 或健康事实；不证明真机、签名、VoiceOver、最大 Dynamic Type、Reduce Motion、3D 性能/碰撞、资产许可、临床/生产发布
+remote CI: 当前提交前 Pending
+```
+
 ## 8. 变更记录
 
 | 日期 | 变更 | 说明 |
 |---|---|---|
 | 2026-08-09 | 新建 TEST-IOS-P0-RUNTIME-01 | 将内部 App Host 的构建、启动、UI smoke、无网络/无权限/无持久化负向检查与真机不可外推边界固定下来。 |
 | 2026-08-09 | 0.2.0 | 本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 和远端 CI iPhone 16 / iOS 18.5 的同一脚本均通过；精确命令与未证明范围见 EVIDENCE-01/EVIDENCE-DEVICE-01。 |
-| 2026-08-09 | 0.3.0 | 执行 HOST-T-013：显式候选 3D Simulator probe 先锁定 loader-entry，再验证本地 ready 或固定 2D 回退仍保留列表入口；不测试人体命中或升级资产/真机结论。 |
+| 2026-08-09 | 0.3.0 | 执行 HOST-T-013：显式候选 3D Simulator probe 先锁定 loader-entry，当前本地运行实际进入 ready 并保留列表入口；不测试人体命中或升级资产/真机结论，远端 CI 待推送。 |
