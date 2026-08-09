@@ -80,4 +80,6 @@
 
 当前结果在 [EVIDENCE-01](16_EXECUTION_EVIDENCE.md)、[EVIDENCE-DEVICE-01](24_DEVICE_VALIDATION_EVIDENCE.md) 和 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md) 更新；本地 Core 绿色不等于真机、临床、隐私或生产通过。设备不可用时，必须把维度标为 `Blocked/Pending`，不得用 Simulator 或 SDK 编译替代真机证据。
 
-`79f1f36` 的本地 iPhone 17 Pro / iOS 26.5 内部 Host 套件为 9 项通过：`TEST-BODY-V2-020` 先观察 loader-entry，实际到达 candidate-ready 并保留 3D 场景/列表；`TEST-BODY-V2-021` 由 Core 回归覆盖当前 attempt 与替代后旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite，但不把 ready/fallback 分支作为资产质量结论。该结果不点击网格、不产生位置或健康事实；所有真机、命中、性能、资产与无障碍维度保持 `Blocked/Pending`。
+`79f1f36` 的本地 iPhone 17 Pro / iOS 26.5 内部 Host 套件为 9 项通过：`TEST-BODY-V2-020` 先观察 loader-entry，实际到达 candidate-ready 并保留 3D 场景/列表；`TEST-BODY-V2-021` 由 Core 回归覆盖当前 attempt 与替代后旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite，但不把 ready/fallback 分支作为资产质量结论。
+
+`9fc54d4` 的本地 Swift Core 为 87 项通过，Internal Host 为 10 项通过：`TEST-BODY-V2-018/022` 覆盖本地中英文文字目录、无结果不写草稿、一次位置同步只推进一次 revision，以及 Pin 模式下文字选择仍强制生成单个 `zone` 的 `Area + region_mask_id + body_part_search`，没有代表性 Point。候选显式 probe 的 ready-or-fallback 终态与默认 2D fallback 都能打开同一文字入口；不点击网格，文字流只创建未确认的宽泛 `BodyLocation`，不产生精确网格命中/3D 位置证据或已确认健康事实。远端 CI run `31303340128` 已成功完成后端/契约与 iOS internal Host 验证；所有真机、命中、性能、资产与无障碍维度保持 `Blocked/Pending`。

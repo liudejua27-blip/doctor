@@ -6,7 +6,7 @@
 | SafetyBaseline | 不调用 SafetyEngine；位置非诊断边界必须保持 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
-| 状态 | Active implementation spec / local Core、iOS build 与候选 3D Simulator probe evidence recorded；device gate open |
+| 状态 | Active implementation spec / local Core、iOS build、文字部位 Area-only 与候选 3D Simulator evidence recorded；device gate open |
 
 ## 1. 测试目标和风险
 
@@ -56,9 +56,10 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 
 ## 6. 结果与签字
 
-- 本地 Core 全量：83 tests、0 failures；其中 V2.5 覆盖 canonical location 投影、同 ID 位置语义替换后的感觉复核、删除最后一个关联位置时不保留空感觉关系，以及候选 3D attempt 的 loader-entry/ready 与旧回调失效；`scripts/check_baseline.py`：61 Markdown、361 links、16 Schema、36 OpenAPI paths、1 候选资产清单、禁止源码引用 0；
+- `9fc54d4` 本地 Core 全量：87 tests、0 failures；除 canonical location 投影、同 ID 位置语义替换后的感觉复核、删除最后一个关联位置时不保留空感觉关系，以及候选 3D attempt 的 loader-entry/ready 与旧回调失效外，还覆盖本地中英文目录搜索、当前视图筛选、Pin 模式文字选择固定为 `Zone + Area + body_part_search + region_mask_id`、无 Point/3D anchor、重复选择不增加 typed draft revision；`scripts/check_baseline.py` 的最终收据见 EVIDENCE-01；
 - iOS `BodyCompanionIOS` 与 `BodyCompanionPrototype` generic iOS Debug build：绿色（无签名）；
 - `79f1f36`：本地 iPhone 17 Pro / iOS 26.5 的 9 项内部 Host UI 测试通过；`TEST-BODY-013` 实际观察到当前候选 Scene 的 loader-entry → candidate-ready → 3D 场景/列表入口，未点击网格、未创建位置事实；`TEST-BODY-014` 由 Core 回归锁定当前 attempt 与旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite；CI 不把 ready/fallback 分支外推为资产质量；
+- `9fc54d4`：本地 iPhone 17 Pro / iOS 26.5 的 10 项 Internal Host UI 流程通过；`TEST-BODY-004/015` 验证 2D 文字搜索“膝”可选择“左膝附近”、无结果不写草稿，候选专属 ready-or-fallback 终态与默认 2D fallback 均保留同一文字入口；不点击网格，文字条目始终是宽泛 Area/Zone。远端 CI run `31303340128` 已成功完成后端/契约、Swift tests、SDK build、Host boundary 与 internal Host smoke；
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；
 - 发布评审：必须绑定 commit SHA、AssetManifest、区域目录和同一测试结果。

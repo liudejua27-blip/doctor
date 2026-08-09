@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.4.1-draft |
+| 版本 | 0.4.2-draft |
 | 状态 | Executed local smoke including candidate 3D probe and text-list Area-safe flow / internal-only evidence |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
@@ -106,6 +106,19 @@ not proven: 不点击人体；未生成 BodyLocation 或健康事实；不证明
 remote CI: ea85c68 / run 31301067572 成功；CI 只证明 HOST-T-013 的允许终态，不将 ready/fallback 分支作为资产质量结论
 ```
 
+### 7.2 当前本地执行记录（文字部位 Area-only）
+
+```text
+commit: 9fc54d4
+project/scheme: BodyCompanionInternal.xcodeproj / BodyCompanionInternal
+destination: iPhone 17 Pro / iOS 26.5 / 68F37251-71BE-4F42-9849-62D61BFFE7C3
+configuration: DebugInternal
+result: 10 passed, 0 failures；Swift Core 87 passed, 0 failures；iPhoneOS SDK build 与 check_internal_ios_host.py 通过
+coverage: HOST-T-005/012 验证 2D 中本地搜索“膝”并选择稳定目录项“左膝附近”、无结果不写草稿；HOST-T-009/013 验证默认 2D fallback 与候选 ready-or-fallback 终态都可进入同一文字入口。Pin 模式的 Area-only 不变量由 Core TEST-BODY-V2-022 覆盖：无 `anchor_2d.point`、`anchor_3d` 或顶层 `model_asset`，但保留 2D 区域锚点的目录资产元数据
+remote CI: 9fc54d4 / run 31303340128 成功；Backend and contracts 与 iOS Swift tests、SDK build、Host boundary、internal Host smoke 均通过
+not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布
+```
+
 ## 8. 变更记录
 
 | 日期 | 变更 | 说明 |
@@ -116,3 +129,4 @@ remote CI: ea85c68 / run 31301067572 成功；CI 只证明 HOST-T-013 的允许�
 | 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建完整 Host suite；其 Host smoke 通过有效终态集合，不把远端分支、碰撞、资产或设备质量外推为通过。 |
 | 2026-08-09 | 0.4.0-draft | 规定 HOST-T-005/013 使用共享的本地文字部位入口；实现后必须证明搜索选择只生成 Area/Zone，且不将 Simulator 外推为 VoiceOver 或真机通过。 |
 | 2026-08-09 | 0.4.1-draft | 已实现本地文字入口、稳定目录项与 Area/Zone-only 写入路径；Core 与本地 Simulator 执行收据由 EVIDENCE-01 归档，VoiceOver/真机门禁不变。 |
+| 2026-08-09 | 0.4.2-draft | 归档 `9fc54d4` 的 87 项 Core 与 10 项本地 Host UI 收据；候选 ready/fallback 共享入口和 Area-only 边界均经 Simulator 自动化覆盖，远端 CI run `31303340128` 已成功。 |
