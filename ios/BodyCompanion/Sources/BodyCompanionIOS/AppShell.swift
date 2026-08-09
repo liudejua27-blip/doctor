@@ -69,6 +69,7 @@ public struct AppShell: View {
 private struct TodayView: View {
     let router: RouterPath
     let intakeModel: SignalIntakeModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         ScrollView {
@@ -102,10 +103,7 @@ private struct TodayView: View {
                     detail: "运动后与工作后都走同一条安全、可复核的记录流程。"
                 )
 
-                HStack(spacing: 12) {
-                    ContextCueCard(icon: "figure.run", title: "运动或训练后", detail: "跑步、健身、球类等")
-                    ContextCueCard(icon: "laptopcomputer", title: "久坐或工作后", detail: "颈肩腰、重复操作等")
-                }
+                contextCueCards
 
                 CompanionCard {
                     HStack(alignment: .top, spacing: 13) {
@@ -127,8 +125,44 @@ private struct TodayView: View {
             .padding(20)
         }
         .navigationTitle("今天")
+        .safeAreaPadding(.top)
         .companionScreenBackground()
         .accessibilityIdentifier("screen.today")
+    }
+
+    @ViewBuilder
+    private var contextCueCards: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 12) {
+                ContextCueCard(
+                    icon: "figure.run",
+                    title: "运动或训练后",
+                    detail: "跑步、健身、球类等",
+                    identifier: "today.context-cue.exercise"
+                )
+                ContextCueCard(
+                    icon: "laptopcomputer",
+                    title: "久坐或工作后",
+                    detail: "颈肩腰、重复操作等",
+                    identifier: "today.context-cue.work"
+                )
+            }
+        } else {
+            HStack(spacing: 12) {
+                ContextCueCard(
+                    icon: "figure.run",
+                    title: "运动或训练后",
+                    detail: "跑步、健身、球类等",
+                    identifier: "today.context-cue.exercise"
+                )
+                ContextCueCard(
+                    icon: "laptopcomputer",
+                    title: "久坐或工作后",
+                    detail: "颈肩腰、重复操作等",
+                    identifier: "today.context-cue.work"
+                )
+            }
+        }
     }
 }
 
@@ -167,6 +201,7 @@ private struct RecordsView: View {
             .padding(20)
         }
         .navigationTitle("记录")
+        .safeAreaPadding(.top)
         .companionScreenBackground()
         .accessibilityIdentifier("screen.records")
     }
@@ -226,6 +261,7 @@ private struct AnalysisView: View {
             .padding(20)
         }
         .navigationTitle("AI 身体助手")
+        .safeAreaPadding(.top)
         .companionScreenBackground()
         .accessibilityIdentifier("screen.analysis")
     }
@@ -328,6 +364,7 @@ private struct ProfileView: View {
             .padding(20)
         }
         .navigationTitle("我的")
+        .safeAreaPadding(.top)
         .companionScreenBackground()
     }
 }
@@ -336,6 +373,8 @@ private struct ContextCueCard: View {
     let icon: String
     let title: String
     let detail: String
+    let identifier: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -349,13 +388,19 @@ private struct ContextCueCard: View {
                 .font(.caption)
                 .foregroundStyle(BodyCompanionTheme.secondaryInk)
         }
-        .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
+        .frame(
+            maxWidth: .infinity,
+            minHeight: dynamicTypeSize.isAccessibilitySize ? nil : 132,
+            alignment: .leading
+        )
         .padding(14)
         .background(BodyCompanionTheme.surface, in: RoundedRectangle(cornerRadius: BodyCompanionTheme.compactCornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: BodyCompanionTheme.compactCornerRadius, style: .continuous)
                 .stroke(BodyCompanionTheme.line.opacity(0.8), lineWidth: 1)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(identifier)
     }
 }
 

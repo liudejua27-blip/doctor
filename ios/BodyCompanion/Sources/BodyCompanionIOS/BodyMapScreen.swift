@@ -6,6 +6,7 @@ public struct BodyMapScreen: View {
     @State private var cameraPreset: BodyCameraPreset = .front
     @State private var isTextRegionPickerPresented = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let onLocationsChanged: ([BodyLocation]) -> Bool
     private let prototype3DEnabled: Bool
 
@@ -62,13 +63,7 @@ public struct BodyMapScreen: View {
                         .pickerStyle(.segmented)
                         .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
 
-                        HStack(spacing: 8) {
-                            CompanionStatusPill("位置 \(model.markerCount) / \(BodyMapModel.maximumMarkerCount)", systemImage: "mappin.and.ellipse", tint: model.markerCount >= BodyMapModel.maximumMarkerCount ? BodyCompanionTheme.warm : BodyCompanionTheme.accent)
-                            Text("区域和针点合计最多 20 个；选中已有针点不会重复新增。")
-                                .font(.caption)
-                                .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                        }
-                        .accessibilityLabel("位置标记数量 \(model.markerCount)，区域和针点合计最多 \(BodyMapModel.maximumMarkerCount) 个")
+                        markerCountSummary
                     }
                 }
 
@@ -152,6 +147,7 @@ public struct BodyMapScreen: View {
             .padding(20)
         }
         .navigationTitle("记录这次不适")
+        .safeAreaPadding(.top)
         .companionScreenBackground()
         .accessibilityIdentifier("screen.body-map")
         .sheet(isPresented: $isTextRegionPickerPresented) {
@@ -207,6 +203,39 @@ public struct BodyMapScreen: View {
     }
 
     @ViewBuilder
+    private var markerCountSummary: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) {
+                markerCountPill
+                markerCountDetail
+            }
+        } else {
+            HStack(spacing: 8) {
+                markerCountPill
+                markerCountDetail
+            }
+        }
+    }
+
+    private var markerCountPill: some View {
+        CompanionStatusPill(
+            "位置 \(model.markerCount) / \(BodyMapModel.maximumMarkerCount)",
+            systemImage: "mappin.and.ellipse",
+            tint: model.markerCount >= BodyMapModel.maximumMarkerCount
+                ? BodyCompanionTheme.warm
+                : BodyCompanionTheme.accent
+        )
+    }
+
+    private var markerCountDetail: some View {
+        Text("区域和针点合计最多 20 个；选中已有针点不会重复新增。")
+            .font(.caption)
+            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+            .accessibilityLabel("位置标记数量 \(model.markerCount)，区域和针点合计最多 \(BodyMapModel.maximumMarkerCount) 个")
+            .accessibilityIdentifier("body-map.marker-count-summary")
+    }
+
+    @ViewBuilder
     private var candidateThreeDContent: some View {
         if let attemptID = model.activeThreeDAttemptID {
             let isReady = model.isCurrentThreeDReady(for: attemptID)
@@ -245,19 +274,7 @@ public struct BodyMapScreen: View {
             .accessibilityIdentifier("body-map.text-picker-open")
 
             if let focusedRegionID = model.focusedRegionID {
-                HStack(spacing: 8) {
-                    Label("正在查看：\(focusedRegionID)", systemImage: "scope")
-                        .font(.caption)
-                        .lineLimit(1)
-                    Spacer()
-                    Button("返回全身") {
-                        model.focus(regionID: nil)
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(minHeight: 44)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("正在聚焦\(focusedRegionID)，可返回全身")
+                focusedRegionControls(regionID: focusedRegionID)
             }
 
             BodySceneView(
@@ -305,6 +322,38 @@ public struct BodyMapScreen: View {
                 .frame(maxWidth: .infinity, minHeight: 320)
                 .task { model.mark3DFailed("内部候选 3D 状态无效；已回退到 2D") }
         }
+    }
+
+    @ViewBuilder
+    private func focusedRegionControls(regionID: String) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                focusedRegionLabel(regionID: regionID)
+                resetFocusButton
+            }
+        } else {
+            HStack(spacing: 8) {
+                focusedRegionLabel(regionID: regionID)
+                Spacer()
+                resetFocusButton
+            }
+        }
+    }
+
+    private func focusedRegionLabel(regionID: String) -> some View {
+        Label("正在查看：\(regionID)", systemImage: "scope")
+            .font(.caption)
+            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+            .accessibilityLabel("正在聚焦\(regionID)")
+    }
+
+    private var resetFocusButton: some View {
+        Button("返回全身") {
+            model.focus(regionID: nil)
+        }
+        .buttonStyle(.bordered)
+        .frame(minHeight: 44)
+        .accessibilityIdentifier("body-map.reset-focus")
     }
 }
 
@@ -360,23 +409,46 @@ private struct BodyMapNotice: View {
     let systemImage: String
     let identifier: String
     let onDismiss: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Label(text, systemImage: systemImage)
-                .font(.footnote)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Button("知道了", action: onDismiss)
-                .font(.footnote.weight(.semibold))
-                .frame(minHeight: 44)
-                .accessibilityLabel("关闭提示")
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    noticeMessage
+                    dismissButton
+                }
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    noticeMessage
+                    dismissButton
+                }
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .foregroundStyle(.orange)
-        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        .background(BodyCompanionTheme.warm.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
+    }
+
+    private var noticeMessage: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(BodyCompanionTheme.warm)
+            Text(text)
+                .foregroundStyle(BodyCompanionTheme.ink)
+        }
+        .font(.footnote)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var dismissButton: some View {
+        Button("知道了", action: onDismiss)
+            .font(.footnote.weight(.semibold))
+            .frame(minHeight: 44)
+            .accessibilityLabel("关闭提示")
+            .accessibilityIdentifier("\(identifier).dismiss")
     }
 }
 
@@ -384,6 +456,7 @@ private struct BodyMapCanvas: View {
     let view: BodyMapView
     let marks: [BodyMark]
     let onSelect: (Point2D) -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         GeometryReader { proxy in
@@ -432,22 +505,7 @@ private struct BodyMapCanvas: View {
                     }
                 }
 
-                VStack {
-                    HStack {
-                        Label(view == .front ? "前面" : "后面", systemImage: view == .front ? "person" : "person.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(BodyCompanionTheme.ink)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.thinMaterial, in: Capsule())
-                        Spacer()
-                        Text("轻点标记位置")
-                            .font(.caption)
-                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                    }
-                    .padding(16)
-                    Spacer()
-                }
+                mapOverlay
             }
             .frame(width: canvasSize.width, height: canvasSize.height)
             .frame(maxWidth: .infinity)
@@ -461,7 +519,44 @@ private struct BodyMapCanvas: View {
             .accessibilityLabel("全身 2D 身体地图，当前为\(view == .front ? "前面" : "后面")")
             .accessibilityHint("轻点你感到不适的大致区域，或使用文字部位入口搜索并选择。")
         }
-        .frame(height: 520)
+        .frame(height: dynamicTypeSize.isAccessibilitySize ? 420 : 520)
+    }
+
+    @ViewBuilder
+    private var mapOverlay: some View {
+        VStack {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    mapViewPill
+                    mapInstruction
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+            } else {
+                HStack {
+                    mapViewPill
+                    Spacer()
+                    mapInstruction
+                }
+                .padding(16)
+            }
+            Spacer()
+        }
+    }
+
+    private var mapViewPill: some View {
+        Label(view == .front ? "前面" : "后面", systemImage: view == .front ? "person" : "person.fill")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(BodyCompanionTheme.ink)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.thinMaterial, in: Capsule())
+    }
+
+    private var mapInstruction: some View {
+        Text("轻点标记位置")
+            .font(.caption)
+            .foregroundStyle(BodyCompanionTheme.secondaryInk)
     }
 
     private func pinColor(_ token: Int) -> Color {
@@ -643,63 +738,15 @@ private struct MarkSummaryPanel: View {
     let model: BodyMapModel
     let suppressAutomaticEditor: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isEditorPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("待确认标记（\(model.marks.count)）")
-                    .font(.headline)
-                    .foregroundStyle(BodyCompanionTheme.ink)
-                Spacer()
-                Button("清空") {
-                    model.clearMarkers()
-                }
-                .buttonStyle(.bordered)
-                .frame(minHeight: 44)
-                .disabled(model.marks.isEmpty)
-            }
+            markerHeader
 
             ForEach(model.marks) { mark in
-                HStack(spacing: 10) {
-                    Button {
-                        model.selectMark(id: mark.id)
-                        if horizontalSizeClass == .compact, !suppressAutomaticEditor {
-                            isEditorPresented = true
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
-                        Image(systemName: mark.kind == .zone ? "square.dashed" : "mappin.circle.fill")
-                            .foregroundStyle(mark.kind == .zone ? BodyCompanionTheme.accent : pinColor(mark.colorToken))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(mark.displayLabel)
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(BodyCompanionTheme.ink)
-                            Text(summary(for: mark))
-                                .font(.caption)
-                                .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                                .lineLimit(2)
-                        }
-                        Spacer()
-                        if mark.id == model.selectedMarkID {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(BodyCompanionTheme.accent)
-                        }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(mark.kind.displayName)：\(mark.displayLabel)，\(summary(for: mark))")
-
-                    Button {
-                        model.removeDraft(id: mark.id)
-                    } label: {
-                        Image(systemName: "trash")
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("删除\(mark.displayLabel)")
-                }
+                markerRow(mark)
                 .padding(10)
                 .background(mark.id == model.selectedMarkID ? BodyCompanionTheme.accentSoft : BodyCompanionTheme.surfaceTinted.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
@@ -749,6 +796,93 @@ private struct MarkSummaryPanel: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
+    }
+
+    @ViewBuilder
+    private var markerHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                markerHeaderTitle
+                clearMarkersButton
+            }
+        } else {
+            HStack {
+                markerHeaderTitle
+                Spacer()
+                clearMarkersButton
+            }
+        }
+    }
+
+    private var markerHeaderTitle: some View {
+        Text("待确认标记（\(model.marks.count)）")
+            .font(.headline)
+            .foregroundStyle(BodyCompanionTheme.ink)
+    }
+
+    private var clearMarkersButton: some View {
+        Button("清空") {
+            model.clearMarkers()
+        }
+        .buttonStyle(.bordered)
+        .frame(minHeight: 44)
+        .disabled(model.marks.isEmpty)
+    }
+
+    @ViewBuilder
+    private func markerRow(_ mark: BodyMark) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                markerSelectionButton(mark)
+                removeMarkerButton(mark)
+            }
+        } else {
+            HStack(spacing: 10) {
+                markerSelectionButton(mark)
+                removeMarkerButton(mark)
+            }
+        }
+    }
+
+    private func markerSelectionButton(_ mark: BodyMark) -> some View {
+        Button {
+            model.selectMark(id: mark.id)
+            if horizontalSizeClass == .compact, !suppressAutomaticEditor {
+                isEditorPresented = true
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: mark.kind == .zone ? "square.dashed" : "mappin.circle.fill")
+                    .foregroundStyle(mark.kind == .zone ? BodyCompanionTheme.accent : pinColor(mark.colorToken))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mark.displayLabel)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(BodyCompanionTheme.ink)
+                    Text(summary(for: mark))
+                        .font(.caption)
+                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                }
+                Spacer()
+                if mark.id == model.selectedMarkID {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(BodyCompanionTheme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(mark.kind.displayName)：\(mark.displayLabel)，\(summary(for: mark))")
+    }
+
+    private func removeMarkerButton(_ mark: BodyMark) -> some View {
+        Button {
+            model.removeDraft(id: mark.id)
+        } label: {
+            Label("删除位置", systemImage: "trash")
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel("删除\(mark.displayLabel)")
     }
 
     private func summary(for mark: BodyMark) -> String {

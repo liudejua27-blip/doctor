@@ -22,6 +22,7 @@ public struct SignalIntakeScreen: View {
     @State private var selectedSensationMarkerIDs: Set<UUID> = []
     @State private var isMoreSensationsExpanded = false
     @State private var inlineError: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: SignalIntakeModel) {
         _model = State(initialValue: model)
@@ -108,14 +109,12 @@ public struct SignalIntakeScreen: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(model.draft.locations) { location in
-                    HStack {
+                    VStack(alignment: .leading, spacing: 8) {
                         Label(location.userLabel ?? location.regionID, systemImage: "mappin.and.ellipse")
-                        Spacer()
                         Button("删除") { model.removeLocation(id: location.id) }
                             .frame(minHeight: 44)
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("待确认位置：\(location.userLabel ?? location.regionID)")
+                    .accessibilityIdentifier("signal-intake.location-\(location.id.uuidString)")
                 }
             }
         } header: {
@@ -192,12 +191,14 @@ public struct SignalIntakeScreen: View {
                 )
                 .frame(minHeight: 44)
             }
-            HStack {
+            pairedActions {
                 Button("确认感觉") { model.markReviewed(.sensation) }
+                    .accessibilityIdentifier("sensation-picker.review")
                     .frame(minHeight: 44)
                 Button(unknownSensationButtonTitle) {
                     perform { try model.markUnknown(.sensation) }
                 }
+                    .accessibilityIdentifier("sensation-picker.unknown-all")
                     .frame(minHeight: 44)
             }
             .disabled(model.isSensationEditingBlockedBySafetyAction)
@@ -382,13 +383,15 @@ public struct SignalIntakeScreen: View {
             }
             TextField("补充时间或原话（可选）", text: $temporalText, axis: .vertical)
                 .lineLimit(2...4)
-            HStack {
+            pairedActions {
                 Button("保存时间信息") {
                     model.setTemporal(onsetMode: onsetMode, course: course, userText: temporalText.nilIfEmpty)
                     model.markReviewed(.temporal)
                 }
+                .accessibilityIdentifier("temporal.save")
                 .frame(minHeight: 44)
                 Button("未知") { perform { try model.markUnknown(.temporal) } }
+                    .accessibilityIdentifier("temporal.unknown")
                     .frame(minHeight: 44)
             }
         } header: {
@@ -613,6 +616,19 @@ public struct SignalIntakeScreen: View {
             inlineError = nil
         } catch {
             inlineError = (error as? SignalIntakeTransitionError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    @ViewBuilder
+    private func pairedActions<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                content()
+            }
+        } else {
+            HStack(spacing: 12) {
+                content()
+            }
         }
     }
 }

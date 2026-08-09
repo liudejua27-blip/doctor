@@ -53,6 +53,40 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
+    func testAccessibilitySizeKeepsP0ActionsReachableAndAdaptive() {
+        let app = launchAccessibilitySizeApp()
+        selectKneeFromTextPicker(in: app)
+        returnToToday(in: app)
+
+        let exerciseCue = app.descendants(matching: .any)
+            .matching(identifier: "today.context-cue.exercise")
+            .firstMatch
+        let workCue = app.descendants(matching: .any)
+            .matching(identifier: "today.context-cue.work")
+            .firstMatch
+        scrollUntilHittable(exerciseCue, in: app)
+        scrollUntilHittable(workCue, in: app)
+        assertVerticallyStacked(exerciseCue, workCue)
+
+        let resume = app.buttons["intake-entry.resume-draft"]
+        scrollDownUntilHittable(resume, in: app)
+        resume.tap()
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
+
+        let reviewSensation = app.buttons["sensation-picker.review"]
+        let unknownSensation = app.buttons["sensation-picker.unknown-all"]
+        scrollUntilHittable(reviewSensation, in: app)
+        scrollUntilHittable(unknownSensation, in: app)
+        assertVerticallyStacked(reviewSensation, unknownSensation)
+
+        let saveTemporal = app.buttons["temporal.save"]
+        let unknownTemporal = app.buttons["temporal.unknown"]
+        scrollUntilHittable(saveTemporal, in: app)
+        scrollUntilHittable(unknownTemporal, in: app)
+        assertVerticallyStacked(saveTemporal, unknownTemporal)
+    }
+
+    @MainActor
     func testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown() {
         let app = launchApp()
         selectBothKneesFromTextPicker(in: app)
@@ -248,6 +282,19 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
+    private func launchAccessibilitySizeApp() -> XCUIApplication {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BODY_COMPANION_UI_SMOKE"] = "1"
+        app.launchArguments += [
+            "-UIPreferredContentSizeCategoryName",
+            "UICTContentSizeCategoryAccessibilityXXXL",
+        ]
+        app.launch()
+        return app
+    }
+
+    @MainActor
     private func launchCandidateThreeDProbe() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -258,8 +305,10 @@ final class BodyCompanionInternalUITests: XCTestCase {
 
     @MainActor
     private func openBodyMap(in app: XCUIApplication) {
-        assertExists(app.buttons["intake-entry.start-record"])
-        app.buttons["intake-entry.start-record"].tap()
+        let startRecord = app.buttons["intake-entry.start-record"]
+        assertExists(startRecord)
+        scrollUntilHittable(startRecord, in: app)
+        startRecord.tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.body-map").firstMatch)
     }
 
@@ -268,6 +317,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         openBodyMap(in: app)
         let textPicker = app.buttons["body-map.text-picker-open"]
         assertExists(textPicker)
+        scrollUntilHittable(textPicker, in: app)
         textPicker.tap()
 
         let search = app.textFields["body-map.text-picker.search"]
@@ -277,7 +327,11 @@ final class BodyCompanionInternalUITests: XCTestCase {
         dismissKeyboard(in: app)
 
         let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
-        assertExists(leftKnee)
+        // At accessibility sizes the sheet keeps results below its explanatory
+        // text, so the lazy List has not materialized this row until it is
+        // scrolled into view. Use the same real interaction as a user rather
+        // than treating off-screen content as absent.
+        scrollUntilHittable(leftKnee, in: app)
         leftKnee.tap()
         assertExists(app.buttons["body-map.next"])
         assertExists(app.staticTexts["已添加待确认位置：左膝附近"])
@@ -293,6 +347,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         openBodyMap(in: app)
         let textPicker = app.buttons["body-map.text-picker-open"]
         assertExists(textPicker)
+        scrollUntilHittable(textPicker, in: app)
         textPicker.tap()
 
         let search = app.textFields["body-map.text-picker.search"]
@@ -303,7 +358,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
 
         let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
         let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right"]
-        assertExists(leftKnee)
+        scrollUntilHittable(leftKnee, in: app)
         leftKnee.tap()
         scrollUntilHittable(rightKnee, in: app)
         rightKnee.tap()
@@ -319,6 +374,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     private func assertTextPickerCanOpen(in app: XCUIApplication) {
         let textPicker = app.buttons["body-map.text-picker-open"]
         assertExists(textPicker)
+        scrollUntilHittable(textPicker, in: app)
         textPicker.tap()
         assertExists(app.textFields["body-map.text-picker.search"])
         let done = app.buttons["body-map.text-picker-done"]
@@ -354,6 +410,36 @@ final class BodyCompanionInternalUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(element.isHittable, "Expected element to become hittable: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func scrollDownUntilHittable(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        maxSwipes: Int = 6,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0..<maxSwipes where !element.isHittable {
+            app.swipeDown()
+        }
+        XCTAssertTrue(element.isHittable, "Expected element to become hittable after scrolling down: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func assertVerticallyStacked(
+        _ first: XCUIElement,
+        _ second: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertGreaterThanOrEqual(
+            second.frame.minY,
+            first.frame.maxY - 1,
+            "Expected accessibility-size controls to stack vertically",
+            file: file,
+            line: line
+        )
     }
 
     @MainActor

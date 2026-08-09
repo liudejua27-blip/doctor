@@ -52,7 +52,7 @@
 | Sheet | **Simulator smoke passed / device blocked** | 紧凑宽度通过系统 `.sheet`、`.medium/.large` detents、drag indicator 和 `ScrollView` 承载**位置 Inspector**；UI smoke 打开列表/编辑器并通过显式“完成”返回；删除后状态会由模型清理 | 在 iPhone 上验证首次选择、再次选择、切换标记、删除、旋转和系统返回；确认 Sheet 不遮挡继续入口、焦点不丢失 |
 | VoiceOver | **Blocked** | 2D 有部位列表等价路径；主要按钮有 label/hint；3D 仅提供整体语义说明并保留 2D/列表回退 | 开启 VoiceOver，从 Today → 记录 → 2D/列表 → 位置 Inspector → 结构化描述 → 删除 → 继续全程完成；验证提示、计数、结构化程度控件、回退公告和导航顺序 |
 | Dynamic Type | **Blocked** | 使用 `.body/.headline/.caption/.footnote` 等语义字体，位置 Inspector 和结构化描述均放入 `ScrollView` | 最大可访问字号和横屏下不截断标题、位置摘要、提示、结构化程度控件和按钮；确认 Sheet 可滚动且关键操作仍可达 |
-| Reduce Motion | **Blocked** | 未发现 `withAnimation`、`.animation` 或持续旋转；视角切换代码是直接 `look(at:from:)` | 开启 Reduce Motion，重复 front/back/left/right/top、焦点和 Sheet 展开；确认无不必要动画、闪烁或自动旋转，手势仍可用 |
+| Reduce Motion | **Blocked** | 主题按钮的按压缩放使用 `.animation`，但在 `accessibilityReduceMotion` 时显式置为 `nil`；视角切换代码是直接 `look(at:from:)`，未发现持续旋转 | 开启 Reduce Motion，重复 front/back/left/right/top、焦点和 Sheet 展开；确认无不必要动画、闪烁或自动旋转，手势仍可用 |
 | 3D 性能 | **Blocked** | USDZ 约 606 KB、manifest LOD 三角面 22,804；默认 UI smoke 强制禁用候选 3D，专用 probe 显式开启后仅观察 loader-entry 与 ready/回退终态；代码在加载时同步 `ModelEntity.loadModel` 和 `generateCollisionShapes(recursive:)` | 最低支持 iPhone 冷启动、首次交互、连续旋转/缩放 5 分钟；采集冷启动、P95 命中、FPS、内存、热状态和崩溃 |
 | 碰撞命中 | **Blocked** | 使用 `hitTest(.nearest, mask: .all)`；先识别 `marker_`，再向父链解析 `body_`；保存 root-local position/normal | 真机逐区域黄金点、边界点、遮挡点和已有 Marker 重叠点；验证命中延迟、误落点、Marker 优先级和 2D 回退 |
 | 候选资产生产审核 | **Candidate only / blocked by gate** | ZIP 无损、`usdchecker` Success、SHA 与清单一致；清单仍为 candidate/unverified/anatomy pending/performance pending/商业与 App Store false | 作者链/许可证、法务署名、解剖语义、区域图/碰撞、坐标迁移、真机性能、无障碍、签名读回全部通过后才可申请 approved |

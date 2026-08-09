@@ -436,9 +436,10 @@ P4 的可执行规格是 [FEAT-P4-IOS-OFFLINE-DRAFT-SYNC-SLICE](18_IMPLEMENTED_P
 ### 11.1 必须支持
 
 - VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；该列表入口在 2D 和 3D 均直接可达，3D 通过 SwiftUI Sheet 暴露前/后部位目录，不能要求用户先操作 RealityKit。P0 Sheet 仅匹配本地静态目录的中英文显示名，返回目录已有的侧别/表面和 `depth=unspecified` 的 `Area/Zone`；搜索文字只保留在 View，不能读取历史或生成 Point；
-- Dynamic Type，包括编辑 Sheet 和报告；
+- Dynamic Type，包括编辑 Sheet 和报告；在 accessibility size 下，并列场景卡、位置/回退摘要与并列动作必须改为可滚动的纵向布局，不得裁切关键文案或隐藏动作；
 - Reduce Motion，关闭相机飞行动画、扫描和持续旋转；
-- Increase Contrast / Differentiate Without Color；
+- Increase Contrast / Differentiate Without Color；主题前景色必须随浅色/深色与系统对比度提供可读文本，状态不可仅用颜色表达；
+- 将 `Button` 放入组合语义容器时，容器必须保留子动作的独立可聚焦性，不得使“删除”“返回全身”或提示关闭动作被静默吞并；
 - 至少 44×44 pt 的主要触控目标；
 - 明确焦点顺序和状态变化播报；
 - 颜色之外的图标、文字和形状；
@@ -518,6 +519,7 @@ RealityKit Canvas 本身不构成可访问控件。当前可见人体、选中�
 - 断网、超时、会话失效后草稿保留；
 - VoiceOver 无图形点击全流程；
 - Dynamic Type、Reduce Motion、非颜色编码；
+- Internal Host 的 accessibility-size 结构 smoke；它只检查入口、2D/列表与结构化描述的关键控件仍可达，不能取代设备上的 VoiceOver、最大字号、横屏、深色/高对比度或 Switch Control 验收；
 - 用户修改和确认后服务端回读一致；
 - 数据导出和删除端到端。
 

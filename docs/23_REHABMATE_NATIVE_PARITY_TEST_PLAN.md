@@ -56,7 +56,7 @@
 | TEST-BODY-V2-DEVICE-001 | 最低支持 iPhone 冷启动 | 2D 可用；候选 3D 在目标时间内可交互，否则稳定回退 |
 | TEST-BODY-V2-DEVICE-002 | 连续旋转/缩放 5 分钟 | 无崩溃、无误落 Pin、无明显热失控；帧率和内存记录 signpost |
 | TEST-BODY-V2-DEVICE-003 | VoiceOver | 不操作 3D 也能打开文字部位入口、按中文/英文目录搜索、选择宽泛区域、编辑、删除、继续；列表不会生成 Pin |
-| TEST-BODY-V2-DEVICE-004 | Dynamic Type 最大档 | 摘要和编辑器不遮挡主要操作，文本状态可读 |
+| TEST-BODY-V2-DEVICE-004 | Dynamic Type 最大档、深色和高对比度 | 摘要、回退公告、编辑器与主要动作不遮挡；可读文本不依赖浅色强调色；每个动作仍可独立聚焦 |
 | TEST-BODY-V2-DEVICE-005 | Reduce Motion | 不飞行/闪烁/持续旋转，焦点和视角直接切换 |
 | TEST-BODY-V2-DEVICE-006 | 离线/资产失败 | 2D、列表和安全入口可用，未确认草稿不丢失 |
 

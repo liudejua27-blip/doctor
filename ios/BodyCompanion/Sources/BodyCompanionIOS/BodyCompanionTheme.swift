@@ -1,22 +1,117 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Visual tokens for the internal, Chinese-first prototype shell. These
 /// tokens do not carry health, safety, or persistence semantics.
 enum BodyCompanionTheme {
-    static let canvas = Color(red: 0.958, green: 0.973, blue: 0.988)
-    static let surface = Color.white.opacity(0.94)
-    static let surfaceTinted = Color(red: 0.912, green: 0.953, blue: 0.976)
-    static let ink = Color(red: 0.071, green: 0.145, blue: 0.255)
-    static let secondaryInk = Color(red: 0.282, green: 0.373, blue: 0.498)
-    static let accent = Color(red: 0.086, green: 0.475, blue: 0.922)
-    static let accentSoft = Color(red: 0.808, green: 0.921, blue: 0.992)
-    static let mint = Color(red: 0.079, green: 0.635, blue: 0.560)
-    static let warm = Color(red: 0.947, green: 0.536, blue: 0.248)
-    static let line = Color(red: 0.826, green: 0.871, blue: 0.918)
-    static let shadow = Color(red: 0.102, green: 0.224, blue: 0.390).opacity(0.09)
+    /// The shell has no health-state colours. These semantic display tokens
+    /// adapt to system appearance and Increased Contrast only; colour never
+    /// carries a safety, diagnosis, or persistence meaning.
+    static let canvas = adaptive(
+        light: rgb(0.958, 0.973, 0.988),
+        dark: rgb(0.035, 0.090, 0.157),
+        highContrastLight: rgb(0.940, 0.962, 0.985),
+        highContrastDark: rgb(0.012, 0.043, 0.086)
+    )
+    static let surface = adaptive(
+        light: .white,
+        dark: rgb(0.071, 0.145, 0.235),
+        highContrastLight: .white,
+        highContrastDark: rgb(0.031, 0.078, 0.141)
+    )
+    static let surfaceTinted = adaptive(
+        light: rgb(0.912, 0.953, 0.976),
+        dark: rgb(0.086, 0.196, 0.314),
+        highContrastLight: rgb(0.885, 0.936, 0.970),
+        highContrastDark: rgb(0.055, 0.137, 0.235)
+    )
+    static let ink = adaptive(
+        light: rgb(0.047, 0.110, 0.204),
+        dark: rgb(0.941, 0.969, 1.000),
+        highContrastLight: rgb(0.000, 0.051, 0.125),
+        highContrastDark: .white
+    )
+    static let secondaryInk = adaptive(
+        light: rgb(0.235, 0.314, 0.439),
+        dark: rgb(0.773, 0.843, 0.925),
+        highContrastLight: rgb(0.141, 0.204, 0.306),
+        highContrastDark: rgb(0.851, 0.918, 0.984)
+    )
+    /// Accent is suitable for icons and control chrome. Readable text keeps
+    /// using `ink` rather than a low-contrast tinted foreground.
+    static let accent = adaptive(
+        light: rgb(0.020, 0.345, 0.698),
+        dark: rgb(0.525, 0.761, 1.000),
+        highContrastLight: rgb(0.000, 0.247, 0.537),
+        highContrastDark: rgb(0.651, 0.820, 1.000)
+    )
+    static let primaryButtonFill = adaptive(
+        light: rgb(0.020, 0.345, 0.698),
+        dark: rgb(0.090, 0.333, 0.635),
+        highContrastLight: rgb(0.000, 0.235, 0.510),
+        highContrastDark: rgb(0.039, 0.235, 0.502)
+    )
+    static let accentSoft = adaptive(
+        light: rgb(0.808, 0.921, 0.992),
+        dark: rgb(0.102, 0.278, 0.451),
+        highContrastLight: rgb(0.725, 0.878, 0.988),
+        highContrastDark: rgb(0.071, 0.208, 0.376)
+    )
+    static let mint = adaptive(
+        light: rgb(0.024, 0.451, 0.361),
+        dark: rgb(0.408, 0.863, 0.706),
+        highContrastLight: rgb(0.000, 0.329, 0.263),
+        highContrastDark: rgb(0.561, 0.949, 0.784)
+    )
+    static let warm = adaptive(
+        light: rgb(0.647, 0.227, 0.035),
+        dark: rgb(1.000, 0.675, 0.486),
+        highContrastLight: rgb(0.478, 0.137, 0.000),
+        highContrastDark: rgb(1.000, 0.765, 0.588)
+    )
+    static let line = adaptive(
+        light: rgb(0.682, 0.741, 0.816),
+        dark: rgb(0.235, 0.353, 0.498),
+        highContrastLight: rgb(0.518, 0.608, 0.710),
+        highContrastDark: rgb(0.365, 0.514, 0.686)
+    )
+    static let shadow = adaptive(
+        light: rgb(0.102, 0.224, 0.390, alpha: 0.09),
+        dark: .black.opacity(0.30),
+        highContrastLight: rgb(0.047, 0.110, 0.204, alpha: 0.14),
+        highContrastDark: .black.opacity(0.42)
+    )
 
     static let cornerRadius: CGFloat = 24
     static let compactCornerRadius: CGFloat = 16
+
+    private static func rgb(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat, alpha: CGFloat = 1) -> Color {
+        Color(red: Double(red), green: Double(green), blue: Double(blue), opacity: Double(alpha))
+    }
+
+    private static func adaptive(
+        light: Color,
+        dark: Color,
+        highContrastLight: Color,
+        highContrastDark: Color
+    ) -> Color {
+        #if canImport(UIKit)
+        Color(uiColor: UIColor { traits in
+            let isDark = traits.userInterfaceStyle == .dark
+            let isHighContrast = traits.accessibilityContrast == .high
+            switch (isDark, isHighContrast) {
+            case (false, false): return UIColor(light)
+            case (false, true): return UIColor(highContrastLight)
+            case (true, false): return UIColor(dark)
+            case (true, true): return UIColor(highContrastDark)
+            }
+        })
+        #else
+        light
+        #endif
+    }
 }
 
 struct CompanionCard<Content: View>: View {
@@ -84,9 +179,13 @@ struct CompanionStatusPill: View {
     }
 
     var body: some View {
-        Label(text, systemImage: systemImage)
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .foregroundStyle(tint)
+            Text(text)
+                .foregroundStyle(BodyCompanionTheme.ink)
+        }
             .font(.caption.weight(.semibold))
-            .foregroundStyle(tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .background(tint.opacity(0.10), in: Capsule())
@@ -102,7 +201,7 @@ struct CompanionPrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 54)
             .background(
-                BodyCompanionTheme.accent.opacity(configuration.isPressed ? 0.78 : 1),
+                BodyCompanionTheme.primaryButtonFill.opacity(configuration.isPressed ? 0.78 : 1),
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
