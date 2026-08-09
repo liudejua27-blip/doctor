@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.0 |
-| 状态 | Executed local smoke including candidate 3D probe / internal-only evidence / remote run pending |
+| 版本 | 0.3.1 |
+| 状态 | Executed local smoke including candidate 3D probe / remote CI rebuilt / internal-only evidence |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -103,7 +103,7 @@ configuration: DebugInternal
 result: 9 passed, 0 failures
 coverage: 9 个 UI XCTest + `check_internal_ios_host.py` 的静态覆盖共同覆盖 HOST-T-001～013；HOST-T-013 先出现 body-map.candidate-3d-load-attempted，随后出现 body-map.candidate-3d-ready、3D Scene 与列表入口
 not proven: 不点击人体；未生成 BodyLocation 或健康事实；不证明真机、签名、VoiceOver、最大 Dynamic Type、Reduce Motion、3D 性能/碰撞、资产许可、临床/生产发布
-remote CI: 当前提交前 Pending
+remote CI: ea85c68 / run 31301067572 成功；CI 只证明 HOST-T-013 的允许终态，不将 ready/fallback 分支作为资产质量结论
 ```
 
 ## 8. 变更记录
@@ -113,3 +113,4 @@ remote CI: 当前提交前 Pending
 | 2026-08-09 | 新建 TEST-IOS-P0-RUNTIME-01 | 将内部 App Host 的构建、启动、UI smoke、无网络/无权限/无持久化负向检查与真机不可外推边界固定下来。 |
 | 2026-08-09 | 0.2.0 | 本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 和远端 CI iPhone 16 / iOS 18.5 的同一脚本均通过；精确命令与未证明范围见 EVIDENCE-01/EVIDENCE-DEVICE-01。 |
 | 2026-08-09 | 0.3.0 | 执行 HOST-T-013：显式候选 3D Simulator probe 先锁定 loader-entry，当前本地运行实际进入 ready 并保留列表入口；不测试人体命中或升级资产/真机结论，远端 CI 待推送。 |
+| 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建完整 Host suite；其 Host smoke 通过有效终态集合，不把远端分支、碰撞、资产或设备质量外推为通过。 |

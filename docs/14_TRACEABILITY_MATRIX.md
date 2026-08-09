@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 3.0.0-draft |
+| 版本 | 3.0.1-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -33,7 +33,7 @@
 | PRD-F09B HealthKit/文件 | AGENT-01、PRIV-01 | Connector capabilities | 未实现 | Planned P1 | 首发后独立门禁 |
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
 | PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001、CONFLICT-002 | 待 ADR 批准后新增上下文、资料收据、行动引用、报告显示类型与 P1I `QuestionPlan` 契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；P1I 审核附录与 COMP-T-024～030 已定义；无情境化 API、目录或生产实现 | Draft / P0 prototype only | GATE-02/03/04/07/08 |
-| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表，当前远端 CI 待推送 | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
+| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表；`ea85c68` / run `31301067572` 远端完整 Host smoke 成功（不记录 probe 分支为质量结论） | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
 
 ## 3. 安全不变量追踪
 
@@ -65,7 +65,7 @@
 | NFR-PRIV-001 最小数据 | typed scope 与禁日志规范 | 真实 Consent、Provider、遥测审计 |
 | NFR-TRUST-CTX-001 资料范围可见性 | FEAT-COMP-01/ADR-0019 Draft；无生产实现 | 本次实际使用资料收据、拒绝可选资料完成率与真实审计 |
 | NFR-COMP-001 契约兼容 | OpenAPI/16 schemas、Markdown 和禁止引用已有版本化检查器及 CI job | 生成客户端、相邻版本兼容和首次远端 CI 证据 |
-| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；静态扫描通过，当前候选远端 CI 待推送 | 不得外推真机、签名、VoiceOver、Dynamic Type、Reduce Motion、3D 性能/碰撞或无障碍通过 |
+| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；`ea85c68` / run `31301067572` 远端完整 Host smoke 成功；静态扫描通过 | 不得外推真机、签名、VoiceOver、Dynamic Type、Reduce Motion、3D 性能/碰撞或无障碍通过 |
 
 ## 5. 参考项目采用追踪
 

@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.0 |
-| 状态 | Implemented / internal candidate 3D Simulator probe locally verified；未构成生产、真机或资产批准 |
+| 版本 | 0.3.1 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；未构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -136,7 +136,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
 | HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围 | iOS + 无障碍 + QA | GATE-06 前 | 仅声称 UI smoke，不称无障碍通过 |
-| HOST-OPEN-003 | 候选 3D 的远端 Simulator 加载与回退 probe 稳定性；本地设计和首次执行已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | 合并前 / GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
+| HOST-OPEN-003 | 候选 3D 的跨 Simulator/Xcode 加载与回退 probe 稳定性；本地与单次远端重建已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
 任一 Host 出现网络请求、权限请求、健康数据落盘、遥测上传、AI/行动内容伪装、2D/列表不可用或草稿无确认 reset，必须停止该内部路径并回退修复；不得以“仅 Simulator”豁免。
@@ -148,3 +148,4 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 2026-08-09 | 新建 FEAT-IOS-P0-RUNTIME-01 | 以受版本控制的内部 App Host 解除 Swift Package 无 `.app` 的 Simulator 运行证据缺口，不增加产品健康语义。 |
 | 2026-08-09 | 0.2.0 | `BodyCompanionInternal` App target、共享 scheme、静态边界扫描、7 项本地 UI smoke 与远端 CI 均已通过；证据见 EVIDENCE-01/EVIDENCE-DEVICE-01，真机与发布门禁保持打开。 |
 | 2026-08-09 | 0.3.0 | 实现 `HOST-OPEN-003` 的本地候选 3D Simulator probe：每次请求有独立内存 attempt，先确认 loader-entry，再以 ready 或 fail-closed 回退保留列表路径；不改变候选资产状态或扩大 P0 能力。 |
+| 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建候选 probe 所在完整 Host suite；远端只验证受控 probe 的成功终态集合，不升级资产、真机、性能、碰撞、无障碍或发布结论。 |

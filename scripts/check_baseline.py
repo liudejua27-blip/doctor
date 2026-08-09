@@ -34,7 +34,7 @@ EXPECTED_SCHEMAS = {
     "p1c-ux-research-record.schema.json",
     "session-turn-projection-result.schema.json",
 }
-IGNORED_PARTS = {".git", ".venv", ".venv311", ".build", ".swiftpm", "__pycache__"}
+IGNORED_PARTS = {".git", ".venv", ".venv311", ".build", ".swiftpm", "__pycache__", ".pytest_cache"}
 LINK_PATTERN = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 STALE_OPEN_PATTERN = re.compile(r"\bOPEN-P[1-4][A-Z0-9-]*\b")
 PROHIBITED_SOURCE_PATTERNS = {

@@ -79,4 +79,4 @@
 
 当前结果在 [EVIDENCE-01](16_EXECUTION_EVIDENCE.md)、[EVIDENCE-DEVICE-01](24_DEVICE_VALIDATION_EVIDENCE.md) 和 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md) 更新；本地 Core 绿色不等于真机、临床、隐私或生产通过。设备不可用时，必须把维度标为 `Blocked/Pending`，不得用 Simulator 或 SDK 编译替代真机证据。
 
-`79f1f36` 的本地 iPhone 17 Pro / iOS 26.5 内部 Host 套件为 9 项通过：`TEST-BODY-V2-020` 先观察 loader-entry，实际到达 candidate-ready 并保留 3D 场景/列表；`TEST-BODY-V2-021` 由 Core 回归覆盖当前 attempt 与替代后旧回调失效。该结果不点击网格、不产生位置或健康事实；当前候选远端 CI 待推送，所有真机、命中、性能、资产与无障碍维度保持 `Blocked/Pending`。
+`79f1f36` 的本地 iPhone 17 Pro / iOS 26.5 内部 Host 套件为 9 项通过：`TEST-BODY-V2-020` 先观察 loader-entry，实际到达 candidate-ready 并保留 3D 场景/列表；`TEST-BODY-V2-021` 由 Core 回归覆盖当前 attempt 与替代后旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite，但不把 ready/fallback 分支作为资产质量结论。该结果不点击网格、不产生位置或健康事实；所有真机、命中、性能、资产与无障碍维度保持 `Blocked/Pending`。

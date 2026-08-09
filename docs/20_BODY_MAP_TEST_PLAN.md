@@ -55,9 +55,9 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 
 ## 6. 结果与签字
 
-- 本地 Core 全量：83 tests、0 failures；其中 V2.5 覆盖 canonical location 投影、同 ID 位置语义替换后的感觉复核、删除最后一个关联位置时不保留空感觉关系，以及候选 3D attempt 的 loader-entry/ready 与旧回调失效；`scripts/check_baseline.py`：62 Markdown、361 links、16 Schema、36 OpenAPI paths、1 候选资产清单、禁止源码引用 0；
+- 本地 Core 全量：83 tests、0 failures；其中 V2.5 覆盖 canonical location 投影、同 ID 位置语义替换后的感觉复核、删除最后一个关联位置时不保留空感觉关系，以及候选 3D attempt 的 loader-entry/ready 与旧回调失效；`scripts/check_baseline.py`：61 Markdown、361 links、16 Schema、36 OpenAPI paths、1 候选资产清单、禁止源码引用 0；
 - iOS `BodyCompanionIOS` 与 `BodyCompanionPrototype` generic iOS Debug build：绿色（无签名）；
-- `79f1f36`：本地 iPhone 17 Pro / iOS 26.5 的 9 项内部 Host UI 测试通过；`TEST-BODY-013` 实际观察到当前候选 Scene 的 loader-entry → candidate-ready → 3D 场景/列表入口，未点击网格、未创建位置事实；`TEST-BODY-014` 由 Core 回归锁定当前 attempt 与旧回调失效。当前候选远端 CI 待推送；
+- `79f1f36`：本地 iPhone 17 Pro / iOS 26.5 的 9 项内部 Host UI 测试通过；`TEST-BODY-013` 实际观察到当前候选 Scene 的 loader-entry → candidate-ready → 3D 场景/列表入口，未点击网格、未创建位置事实；`TEST-BODY-014` 由 Core 回归锁定当前 attempt 与旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite；CI 不把 ready/fallback 分支外推为资产质量；
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；
 - 发布评审：必须绑定 commit SHA、AssetManifest、区域目录和同一测试结果。

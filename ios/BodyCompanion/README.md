@@ -29,7 +29,7 @@ python3 ../scripts/check_internal_ios_host.py
 bash ../scripts/run_internal_ios_host_tests.sh
 ```
 
-当前 Swift Core 为 83 tests、0 failures；内部 Host 当前本地 9 项 UI smoke（含显式候选 3D probe）通过，基础 7 项亦已在远端 CI 中通过。本次候选 probe 的远端结果仍待提交后 CI；它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
+当前 Swift Core 为 83 tests、0 failures；内部 Host 当前本地 9 项 UI smoke（含显式候选 3D probe）通过，基础 7 项和当前完整 Host suite 均已在远端 CI run `31301067572` 中成功重建。远端 probe 只验证受控的有效终态，不把 ready/fallback 分支外推为真实设备、签名、无障碍、3D 性能/碰撞或生产资产通过。详细边界见：
 
 - [IOS-01](../../docs/04_IOS_ARCHITECTURE.md)
 - [BODY-01](../../docs/08_BODY_MAP_2D_3D.md)
