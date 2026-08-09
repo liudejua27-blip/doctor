@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.2.0 |
-| 状态 | Executed: local Simulator + remote CI passed / internal-only evidence |
+| 版本 | 0.3.0 |
+| 状态 | Executed local smoke including candidate 3D probe / internal-only evidence / remote run pending |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -41,6 +41,18 @@
 | HOST-T-010 | 权限与网络负向 | `check_internal_ios_host.py` 断言无 HealthKit/相机/麦克风/照片/通知 usage key、Provider/URLSession 入口或分析 SDK；冷启动 UI smoke 不出现应用权限流程 | 静态 + UI |
 | HOST-T-011 | 存储负向 | 无 UserDefaults/Keychain/文件/数据库健康草稿写入；重启不宣称恢复 | 静态 + UI |
 | HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
+| HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留 3D 列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留 2D 列表入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
+
+### 3.1 候选 3D probe 的可接受结果
+
+`HOST-T-013` 必须单独启动 App，避免默认 smoke 的 `BODY_COMPANION_UI_SMOKE=1` 覆盖显式候选开关。每次请求均有新的仅内存 attempt ID；测试先观察当前 `BodySceneView` 在 Bundle 查询/loader 前发出的 `onLoadAttempted`，再观察可见终态：
+
+1. **内部候选加载成功**：可见“内部候选模型，未经生产审核”与 3D 页面中的“从列表选择部位”入口；或
+2. **fail-closed 回退**：可见候选 loader 专用的固定 `body-map.candidate-3d-fallback-notice` 与 2D 部位列表入口；加载错误、初始化失败或 8 秒无终态都必须走此路径。普通 UI smoke 的 `body-map.fallback-notice` 不能代替此断言。
+
+两者都不是质量结论。不得由测试点击 3D 网格、Pin、Zone 或将测试结果解释为 Region/Collision/triangle/barycentric、视觉、解剖、FPS、内存、VoiceOver、Dynamic Type、Reduce Motion、真机或许可通过。
+
+“已加载”可见状态必须只对应同一个已 `onLoadAttempted` 的当前 Scene `onReady`。`BodyMapModel` 的初始/2D interactive 状态、直接改为 3D mode、失败/过期 attempt 或测试 fixture 都不能复用该 identifier；切到 2D 或新的请求后，旧回调必须被拒绝；对应 Unit coverage 为 TEST-BODY-014 / TEST-BODY-V2-021。
 
 ## 4. 必须保留的现有回归
 
@@ -64,7 +76,7 @@ Simulator smoke 可以证明 accessibility identifier、可见文案、无 3D �
 
 ## 6. 通过条件与停止规则
 
-通过 Simulator Host smoke 的最低条件：HOST-T-001～012 均有自动化或静态覆盖、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。系统 confirmationDialog 的取消/确认状态转换由 Core 回归锁定，避免把当前 XCTest 对原生系统按钮层级的可见性差异误写为功能缺口。
+通过 Simulator Host smoke 的最低条件：HOST-T-001～013 均有自动化或静态覆盖、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。系统 confirmationDialog 的取消/确认状态转换必须由 UI black-box 回归与 Core 回归共同锁定，避免把当前 XCTest 对原生系统按钮层级的可见性差异误写为功能缺口。
 
 以下任一项失败即停止：2D/列表不能完成、草稿被静默丢弃或误称保存、普通 AI/建议被伪造、检测到网络/Provider/权限/持久化/分析入口、候选 3D 没有回退、或文档把 Simulator 外推为真机/生产。
 
@@ -87,3 +99,4 @@ not proven: 真机、签名、VoiceOver 实操、最大 Dynamic Type、Reduce Mo
 |---|---|---|
 | 2026-08-09 | 新建 TEST-IOS-P0-RUNTIME-01 | 将内部 App Host 的构建、启动、UI smoke、无网络/无权限/无持久化负向检查与真机不可外推边界固定下来。 |
 | 2026-08-09 | 0.2.0 | 本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 和远端 CI iPhone 16 / iOS 18.5 的同一脚本均通过；精确命令与未证明范围见 EVIDENCE-01/EVIDENCE-DEVICE-01。 |
+| 2026-08-09 | 0.3.0 | 执行 HOST-T-013：显式候选 3D Simulator probe 先锁定 loader-entry，再验证本地 ready 或固定 2D 回退仍保留列表入口；不测试人体命中或升级资产/真机结论。 |

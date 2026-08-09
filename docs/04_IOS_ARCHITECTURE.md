@@ -155,7 +155,7 @@ P0 中的 `IntakeEntryPolicy` 仅针对内存中的 `SignalIntakeDraft`：有位
 
 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 允许在不新增健康语义的前提下，为现有 Swift Package 建立受版本控制的 `BodyCompanionInternal` iOS App target 和 UI test target。Host 只链接本地 `BodyCompanionIOS` library，`@main` 只创建 `AppShell`；它不得复制 Sources/资产、调用 `BodyCompanionPrototype`、读取远端 FeatureConfiguration、写入健康数据或把 Swift Package library 当成可安装 App。
 
-Host 由固定的内部能力集启动：2D/部位列表开启，候选 3D 仅显式内部开关，网络/Provider/API、身份/同意/资料读取、正式写入/分享、Keychain/文件持久化和分析/遥测均关闭。UI test 通过稳定的无健康正文 identifier 验证启动、入口、2D/列表、草稿继续/明确放弃、AI 普通对话关闭和 3D 回退；它不模拟真实账户、SafetyTier、Agent 内容、已确认事实或跨进程恢复。
+Host 由固定的内部能力集启动：2D/部位列表开启，候选 3D 仅显式内部开关，网络/Provider/API、身份/同意/资料读取、正式写入/分享、Keychain/文件持久化和分析/遥测均关闭。默认 UI smoke 验证 3D fail-closed 回退；专用候选 probe 必须先观察当前一次内存 attempt 的 loader-entry，再观察 ready 或固定回退，旧回调不得覆盖新请求。两者均只使用稳定、无健康正文 identifier；它不模拟真实账户、SafetyTier、Agent 内容、已确认事实或跨进程恢复。
 
 Simulator Host 成功只证明可安装的内部 UI smoke。它不能关闭真机、签名、VoiceOver 实操、最大 Dynamic Type、Reduce Motion、GPU/热/内存、3D 碰撞/资产或 GATE-06/07/08 门禁；详细验收以 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 和 EVIDENCE-DEVICE-01 为准。
 

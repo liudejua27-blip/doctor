@@ -14,6 +14,7 @@ HOST = ROOT / "ios" / "BodyCompanion" / "AppHost"
 PROJECT = HOST / "BodyCompanionInternal.xcodeproj"
 APP_SOURCE = HOST / "BodyCompanionInternal"
 UI_TEST_SOURCE = HOST / "BodyCompanionInternalUITests" / "BodyCompanionInternalUITests.swift"
+BODY_MAP_SCREEN_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "BodyMapScreen.swift"
 
 
 def fail(message: str) -> None:
@@ -41,6 +42,7 @@ def main() -> int:
         APP_SOURCE / "InternalHostLaunchOptions.swift",
         APP_SOURCE / "Info.plist",
         UI_TEST_SOURCE,
+        BODY_MAP_SCREEN_SOURCE,
         HOST / "Config" / "Base.xcconfig",
         HOST / "Config" / "DebugInternal.xcconfig",
         HOST / "Config" / "ReleaseInternal.xcconfig",
@@ -106,13 +108,31 @@ def main() -> int:
     ui_test = UI_TEST_SOURCE.read_text(encoding="utf-8")
     for expected in (
         '"BODY_COMPANION_UI_SMOKE"',
+        '"BODY_COMPANION_ENABLE_CANDIDATE_3D"',
         '"body-map.2d-list.option-0"',
         '"body-map.fallback-notice"',
+        '"body-map.candidate-3d-ready"',
+        '"body-map.candidate-3d-fallback-notice"',
+        '"body-map.candidate-3d-load-attempted"',
+        '"body-map.3d-list"',
         '"screen.records"',
         '"analysis.standard-chat-unavailable"',
+        "launchCandidateThreeDProbe",
     ):
         if expected not in ui_test:
             fail(f"missing_ui_smoke_assertion:{expected}")
+
+    body_map_screen = require_text(BODY_MAP_SCREEN_SOURCE, '"body-map.candidate-3d-ready"')
+    for expected in (
+        '"body-map.candidate-3d-loading"',
+        '"body-map.candidate-3d-fallback-notice"',
+        '"body-map.candidate-3d-load-attempted"',
+        '"body-map.3d-list"',
+        '"body-map.3d-scene"',
+        "allowsPrototypeCandidate: true",
+    ):
+        if expected not in body_map_screen:
+            fail(f"missing_candidate_probe_boundary:{expected}")
 
     info = plistlib.loads((APP_SOURCE / "Info.plist").read_bytes())
     restricted_info_keys = {

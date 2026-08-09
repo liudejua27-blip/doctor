@@ -106,9 +106,17 @@ public struct BodyMapScreen: View {
                     BodyMapNotice(
                         text: reason,
                         systemImage: "arrow.uturn.backward.circle",
-                        identifier: "body-map.fallback-notice"
+                        identifier: prototype3DEnabled
+                            ? "body-map.candidate-3d-fallback-notice"
+                            : "body-map.fallback-notice"
                     ) {
                         model.switchTo2D()
+                    }
+                    if prototype3DEnabled, model.hasRecordedThreeDLoadAttempt {
+                        Text("内部候选加载请求已发起；已保留 2D/列表路径。")
+                            .font(.caption2)
+                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                            .accessibilityIdentifier("body-map.candidate-3d-load-attempted")
                     }
                 }
 
@@ -180,87 +188,119 @@ public struct BodyMapScreen: View {
         case .twoD:
             BodyMap2DView(model: model)
         case .threeD:
-            if case .loading = model.loadState {
+            if prototype3DEnabled {
+                candidateThreeDContent
+            } else {
                 ProgressView("加载原生 3D…")
                     .frame(maxWidth: .infinity, minHeight: 320)
                     .task {
-                        // A production manifest is fail-closed. The explicit
-                        // prototype flag is the only path that can load the
-                        // original procedural candidate in this harness.
-                        if prototype3DEnabled {
-                            model.mark3DReady()
-                        } else {
-                            model.mark3DFailed("3D 资产尚未批准，已回退到 2D")
-                        }
+                        // A production manifest is fail-closed. Only the
+                        // explicit internal candidate path below may create
+                        // a RealityKit view; all normal callers return to 2D.
+                        model.mark3DFailed("3D 资产尚未批准，已回退到 2D")
                     }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var candidateThreeDContent: some View {
+        if let attemptID = model.activeThreeDAttemptID {
+            let isReady = model.isCurrentThreeDReady(for: attemptID)
+            VStack(alignment: .leading, spacing: 8) {
+            if !isReady {
+                CompanionStatusPill("正在加载内部候选模型", systemImage: "hourglass", tint: BodyCompanionTheme.warm)
+                    .accessibilityLabel("正在加载内部候选模型；未经生产审核")
+                    .accessibilityIdentifier("body-map.candidate-3d-loading")
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    if prototype3DEnabled {
-                        CompanionStatusPill("内部候选模型 · 未经生产审核", systemImage: "flask", tint: BodyCompanionTheme.warm)
-                            .accessibilityLabel("内部候选模型，未经生产审核")
-                    }
+                CompanionStatusPill("内部候选模型 · 未经生产审核", systemImage: "flask", tint: BodyCompanionTheme.warm)
+                    .accessibilityLabel("内部候选模型，未经生产审核")
+                    .accessibilityIdentifier("body-map.candidate-3d-ready")
+            }
 
-                    Picker("3D 视角", selection: $cameraPreset) {
-                        ForEach(BodyCameraPreset.allCases, id: \.self) { preset in
-                            Text(preset.label).tag(preset)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+            if model.hasRecordedCurrentThreeDLoadAttempt {
+                Text("内部候选加载请求已发起")
+                    .font(.caption2)
+                    .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                    .accessibilityIdentifier("body-map.candidate-3d-load-attempted")
+            }
 
-                    Button {
-                        isAccessibleRegionPickerPresented = true
-                    } label: {
-                        Label("从列表选择部位", systemImage: "list.bullet")
-                    }
-                    .buttonStyle(CompanionOutlineButtonStyle())
-                    .accessibilityHint("无需操作 3D 人体，也能选择前面或后面的身体部位")
-
-                    if let focusedRegionID = model.focusedRegionID {
-                        HStack(spacing: 8) {
-                            Label("正在查看：\(focusedRegionID)", systemImage: "scope")
-                                .font(.caption)
-                                .lineLimit(1)
-                            Spacer()
-                            Button("返回全身") {
-                                model.focus(regionID: nil)
-                            }
-                            .buttonStyle(.bordered)
-                            .frame(minHeight: 44)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("正在聚焦\(focusedRegionID)，可返回全身")
-                    }
-
-                    BodySceneView(
-                        allowsPrototypeCandidate: prototype3DEnabled,
-                        cameraPreset: cameraPreset,
-                        marks: model.marks,
-                        focusedRegionID: model.focusedRegionID,
-                        selectedMarkID: model.selectedMarkID,
-                        onReady: { model.mark3DReady() },
-                        onFailure: { model.mark3DFailed($0) },
-                        onHitEvidence: { evidence in
-                            guard let option = BodyRegionCatalog.option(forEntityID: evidence.entityID),
-                                  let location = BodyLocationMapper.from3D(
-                                      evidence,
-                                      regionID: option.regionID,
-                                      laterality: option.laterality,
-                                      surface: option.surface,
-                                      depth: option.depth
-                                  ) else { return }
-                            let mutation = model.applySelection(location)
-                            if mutation == .rejectedMarkerLimit || mutation == .rejectedDuplicateLocation {
-                                return
-                            }
-                        },
-                        onMarkerTapped: { id in
-                            model.selectMark(id: id)
-                        }
-                    )
-                    .frame(minHeight: 320)
-                    .accessibilityLabel("原生 3D 身体地图；可拖动旋转、双指缩放并轻点部位。当前为\(model.markingMode.displayName)模式。若不可用，可切换到 2D 或部位列表。")
+            Picker("3D 视角", selection: $cameraPreset) {
+                ForEach(BodyCameraPreset.allCases, id: \.self) { preset in
+                    Text(preset.label).tag(preset)
                 }
             }
+            .pickerStyle(.segmented)
+
+            Button {
+                isAccessibleRegionPickerPresented = true
+            } label: {
+                Label("从列表选择部位", systemImage: "list.bullet")
+            }
+            .buttonStyle(CompanionOutlineButtonStyle())
+            .accessibilityHint("无需操作 3D 人体，也能选择前面或后面的身体部位")
+            .accessibilityIdentifier("body-map.3d-list")
+
+            if let focusedRegionID = model.focusedRegionID {
+                HStack(spacing: 8) {
+                    Label("正在查看：\(focusedRegionID)", systemImage: "scope")
+                        .font(.caption)
+                        .lineLimit(1)
+                    Spacer()
+                    Button("返回全身") {
+                        model.focus(regionID: nil)
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(minHeight: 44)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("正在聚焦\(focusedRegionID)，可返回全身")
+            }
+
+            BodySceneView(
+                allowsPrototypeCandidate: true,
+                cameraPreset: cameraPreset,
+                marks: model.marks,
+                focusedRegionID: model.focusedRegionID,
+                selectedMarkID: model.selectedMarkID,
+                onLoadAttempted: { model.mark3DLoadAttempted(for: attemptID) },
+                onReady: { model.mark3DReady(for: attemptID) },
+                onFailure: { model.mark3DFailed($0, for: attemptID) },
+                onHitEvidence: { evidence in
+                    guard model.isCurrentThreeDReady(for: attemptID),
+                          let option = BodyRegionCatalog.option(forEntityID: evidence.entityID),
+                          let location = BodyLocationMapper.from3D(
+                              evidence,
+                              regionID: option.regionID,
+                              laterality: option.laterality,
+                              surface: option.surface,
+                              depth: option.depth
+                          ) else { return }
+                    let mutation = model.applySelection(location)
+                    if mutation == .rejectedMarkerLimit || mutation == .rejectedDuplicateLocation {
+                        return
+                    }
+                },
+                onMarkerTapped: { id in
+                    model.selectMark(id: id)
+                }
+            )
+            .id(attemptID)
+            .frame(minHeight: 320)
+            .accessibilityIdentifier("body-map.3d-scene")
+            .accessibilityLabel("原生 3D 身体地图；可拖动旋转、双指缩放并轻点部位。当前为\(model.markingMode.displayName)模式。若不可用，可切换到 2D 或部位列表。")
+            }
+            .task(id: attemptID) {
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            guard !Task.isCancelled else { return }
+            model.mark3DFailed("内部候选 3D 初始化超时；已回退到 2D", for: attemptID)
+            }
+        } else {
+            // This should be unreachable because request3D() creates the ID
+            // before mode changes. Fail closed if a future caller violates it.
+            ProgressView("内部候选 3D 状态无效；正在回退到 2D…")
+                .frame(maxWidth: .infinity, minHeight: 320)
+                .task { model.mark3DFailed("内部候选 3D 状态无效；已回退到 2D") }
         }
     }
 }

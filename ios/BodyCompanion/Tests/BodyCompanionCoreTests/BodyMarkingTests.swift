@@ -143,6 +143,40 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(model.marks.map(\.colorToken), [0, 1])
     }
 
+    func testThreeDReadyRequiresAnActiveRequestedLoad() {
+        let model = BodyMapModel()
+
+        model.mark3DReady(for: UUID())
+        XCTAssertEqual(model.mode, .twoD)
+        XCTAssertEqual(model.loadState, .interactive)
+
+        model.mode = .threeD
+        model.mark3DReady(for: UUID())
+        XCTAssertEqual(model.loadState, .interactive)
+
+        let firstAttempt = model.request3D()
+        XCTAssertEqual(model.loadState, .loading)
+        model.mark3DReady(for: firstAttempt)
+        XCTAssertEqual(model.loadState, .loading)
+        model.mark3DLoadAttempted(for: firstAttempt)
+        XCTAssertTrue(model.hasRecordedCurrentThreeDLoadAttempt)
+        model.mark3DReady(for: firstAttempt)
+        XCTAssertEqual(model.loadState, .threeDReady)
+
+        model.switchTo2D()
+        XCTAssertEqual(model.mode, .twoD)
+        XCTAssertEqual(model.loadState, .interactive)
+
+        let replacementAttempt = model.request3D()
+        model.mark3DLoadAttempted(for: replacementAttempt)
+        model.mark3DReady(for: firstAttempt)
+        model.mark3DFailed("stale", for: firstAttempt)
+        XCTAssertEqual(model.mode, .threeD)
+        XCTAssertEqual(model.loadState, .loading)
+        model.mark3DReady(for: replacementAttempt)
+        XCTAssertEqual(model.loadState, .threeDReady)
+    }
+
     func testRemovingFocusedMarkClearsFocusButLeavesOtherRegion() {
         let model = BodyMapModel()
         model.markingMode = .zone

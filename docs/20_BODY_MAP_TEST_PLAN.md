@@ -28,6 +28,8 @@
 | TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type | 无 3D 完成选择，动画可关闭 | 待真机 |
 | TEST-BODY-011 | PRD-F01 | Integration | 选位置后进入结构化描述 | 未确认位置保留，未自动填感觉 | 待联调 |
 | TEST-BODY-012 | PRD-F03A | Recovery | 3D loader/命中/内存失败 | 提示原因，保留草稿，2D/列表可继续 | Unit + Device |
+| TEST-BODY-013 | PRD-F03A | Simulator probe | 显式内部候选 Bundle 加载 | 先观察当前 Scene 的 `onLoadAttempted` 运行时确认，再只接受内部候选状态+列表入口，或加载/初始化错误、8 秒超时后的固定 2D 回退+列表入口；不点击网格、不创建位置事实 | 是 / 非真机 |
+| TEST-BODY-014 | PRD-F03A | Unit | 3D attempt 状态权威 | 只有当前 `request3D()` attempt 的 `onLoadAttempted` 后 `onReady` 可以进入 3D ready；初始/2D interactive、跳过确认、切回 2D 后的旧回调或被新请求替代的旧回调均不得改变当前状态 | 是 |
 
 V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、位置摘要/Inspector、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。地图只产生位置候选；感觉、程度和因素的结构化编辑另由 P1D 验收。
 
@@ -58,3 +60,4 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；
 - 发布评审：必须绑定 commit SHA、AssetManifest、区域目录和同一测试结果。
+- `TEST-BODY-013` 只补充候选 Scene 已进入加载入口且其最终成功/回退路径可达；它不关闭 TEST-BODY-009/010/012 的真机、性能、命中、无障碍或资产审批要求。

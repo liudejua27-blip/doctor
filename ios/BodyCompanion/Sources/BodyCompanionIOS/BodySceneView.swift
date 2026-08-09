@@ -31,6 +31,7 @@ public struct BodySceneView: UIViewRepresentable {
     public let marks: [BodyMark]
     public let focusedRegionID: String?
     public let selectedMarkID: UUID?
+    public let onLoadAttempted: () -> Void
     public let onReady: () -> Void
     public let onFailure: (String) -> Void
     public let onHitEvidence: (BodyHitEvidence) -> Void
@@ -43,6 +44,7 @@ public struct BodySceneView: UIViewRepresentable {
         marks: [BodyMark] = [],
         focusedRegionID: String? = nil,
         selectedMarkID: UUID? = nil,
+        onLoadAttempted: @escaping () -> Void,
         onReady: @escaping () -> Void,
         onFailure: @escaping (String) -> Void,
         onHitEvidence: @escaping (BodyHitEvidence) -> Void,
@@ -55,6 +57,7 @@ public struct BodySceneView: UIViewRepresentable {
             : marks
         self.focusedRegionID = focusedRegionID
         self.selectedMarkID = selectedMarkID
+        self.onLoadAttempted = onLoadAttempted
         self.onReady = onReady
         self.onFailure = onFailure
         self.onHitEvidence = onHitEvidence
@@ -68,6 +71,7 @@ public struct BodySceneView: UIViewRepresentable {
             marks: marks,
             focusedRegionID: focusedRegionID,
             selectedMarkID: selectedMarkID,
+            onLoadAttempted: onLoadAttempted,
             onReady: onReady,
             onFailure: onFailure,
             onHitEvidence: onHitEvidence,
@@ -94,6 +98,7 @@ public struct BodySceneView: UIViewRepresentable {
     @MainActor
     public final class Coordinator: NSObject {
         private let allowsPrototypeCandidate: Bool
+        private let onLoadAttempted: () -> Void
         private let onReady: () -> Void
         private let onFailure: (String) -> Void
         private let onHitEvidence: (BodyHitEvidence) -> Void
@@ -124,6 +129,7 @@ public struct BodySceneView: UIViewRepresentable {
             marks: [BodyMark],
             focusedRegionID: String?,
             selectedMarkID: UUID?,
+            onLoadAttempted: @escaping () -> Void,
             onReady: @escaping () -> Void,
             onFailure: @escaping (String) -> Void,
             onHitEvidence: @escaping (BodyHitEvidence) -> Void,
@@ -134,6 +140,7 @@ public struct BodySceneView: UIViewRepresentable {
             self.currentMarks = marks
             self.focusedRegionID = focusedRegionID
             self.selectedMarkID = selectedMarkID
+            self.onLoadAttempted = onLoadAttempted
             self.onReady = onReady
             self.onFailure = onFailure
             self.onHitEvidence = onHitEvidence
@@ -164,6 +171,11 @@ public struct BodySceneView: UIViewRepresentable {
 
         private func loadPrototypeAsset() {
             guard let arView else { return }
+            // This acknowledgement is intentionally emitted before any Bundle
+            // lookup or RealityKit load. It carries no model/health data and
+            // exists only to prove the current internal probe reached loader
+            // entry; the parent validates its per-request attempt identity.
+            onLoadAttempted()
             guard let url = Bundle.module.url(forResource: "BodyNeutralPrototype", withExtension: "usdz") else {
                 reportFailure("内部候选 3D 资产缺失；已回退到 2D")
                 return
@@ -196,7 +208,7 @@ public struct BodySceneView: UIViewRepresentable {
                 self.hasLoaded = true
                 applyCameraPresetIfNeeded(force: true)
                 syncMarks(currentMarks)
-                onReady()
+                DispatchQueue.main.async { [onReady] in onReady() }
             } catch {
                 reportFailure("内部候选 3D 资产加载失败；已回退到 2D")
             }
@@ -390,6 +402,7 @@ public struct BodySceneView: View {
         marks: [BodyMark] = [],
         focusedRegionID: String? = nil,
         selectedMarkID: UUID? = nil,
+        onLoadAttempted: @escaping () -> Void = {},
         onReady: @escaping () -> Void = {},
         onFailure: @escaping (String) -> Void = { _ in },
         onHitEvidence: @escaping (BodyHitEvidence) -> Void = { _ in },

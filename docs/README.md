@@ -67,8 +67,8 @@ flowchart TD
 - [UX-COMP-01 对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md)：上述主闭环的评审级屏幕、来源标签、安全替代、无障碍与六个走查场景；不新增契约或实现授权。
 - [TEST-COMP-01 对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)：上述主闭环的安全、隐私、无障碍、可用性和发布门禁；未执行。
 - [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
-- [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的 Simulator App Host、显式关闭能力集和 P0 UI smoke；已在本地与远端 CI 验证，internal only。
-- [TEST-IOS-P0-RUNTIME-01 内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)：构建、安装、启动、2D/列表回退和无网络/权限/持久化负向检查；已执行，仅形成 Simulator 证据。
+- [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的 Simulator App Host、显式关闭能力集、默认 P0 UI smoke 与专用候选 3D probe；基础 smoke 已在本地与远端 CI 验证，候选 probe 的当前远端验证待本次提交，internal only。
+- [TEST-IOS-P0-RUNTIME-01 内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)：构建、安装、启动、2D/列表回退、无网络/权限/持久化负向检查和候选 Scene loader-entry/终态；已在本地执行，仅形成 Simulator 证据。
 
 实现入口：
 

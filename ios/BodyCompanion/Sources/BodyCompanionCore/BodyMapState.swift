@@ -9,6 +9,9 @@ public enum BodyMapMode: String, CaseIterable, Sendable {
 public enum BodyMapLoadState: Equatable, Sendable {
     case idle
     case loading
+    /// A candidate scene may use this only after the active RealityKit loader
+    /// reports `onReady`. It is deliberately distinct from 2D interactive.
+    case threeDReady
     case interactive
     case failed(String)
     case fallback2D(String)
@@ -24,6 +27,14 @@ public final class BodyMapModel {
     public private(set) var marks: [BodyMark] = []
     public private(set) var selectedMarkID: UUID?
     public private(set) var focusedRegionID: String?
+    /// An opaque, in-memory identity for the currently requested candidate
+    /// Scene. It is UI lifecycle state only: never a BodyLocation, health fact,
+    /// persisted value, or Agent input.
+    public private(set) var activeThreeDAttemptID: UUID?
+    /// A Scene records this only after it has attached and is about to query
+    /// the candidate Bundle / invoke its loader. It remains available after a
+    /// fail-closed fallback solely as internal probe evidence.
+    public private(set) var lastRecordedThreeDLoadAttemptID: UUID?
     /// The most recent user-facing map mutation. This is UI feedback only;
     /// it is never serialized as a health fact or sent to the Agent.
     public private(set) var lastMutation: BodyMarkMutation?
@@ -33,6 +44,15 @@ public final class BodyMapModel {
     }
 
     public var markerCount: Int { marks.count }
+
+    public var hasRecordedCurrentThreeDLoadAttempt: Bool {
+        guard let activeThreeDAttemptID else { return false }
+        return activeThreeDAttemptID == lastRecordedThreeDLoadAttemptID
+    }
+
+    public var hasRecordedThreeDLoadAttempt: Bool {
+        lastRecordedThreeDLoadAttemptID != nil
+    }
 
     public init(markerDrafts: [BodyLocation] = []) {
         guard markerDrafts.count <= Self.maximumMarkerCount else {
@@ -252,23 +272,67 @@ public final class BodyMapModel {
     public static let maximumMarkerCount = 20
 
     public func switchTo2D(reason: String? = nil) {
+        // Invalidates every callback owned by the outgoing Scene before the
+        // visible mode changes. Keep the last acknowledgement only for the
+        // internal candidate probe's fail-closed evidence, never as data.
+        activeThreeDAttemptID = nil
         mode = .twoD
         loadState = reason.map(BodyMapLoadState.fallback2D) ?? .interactive
         lastMutation = nil
     }
 
-    public func request3D() {
+    /// Begins a new candidate request. A newer request supersedes any prior
+    /// Scene immediately, so an old asynchronous callback cannot mark it ready
+    /// or force it back to 2D.
+    @discardableResult
+    public func request3D() -> UUID {
+        let attemptID = UUID()
+        activeThreeDAttemptID = attemptID
+        lastRecordedThreeDLoadAttemptID = nil
         mode = .threeD
         loadState = .loading
         lastMutation = nil
+        return attemptID
     }
 
-    public func mark3DReady() {
-        guard mode == .threeD else { return }
-        loadState = .interactive
+    /// Records the loader-entry acknowledgement for the active candidate Scene.
+    /// Calling this with an expired or replaced attempt is deliberately a no-op.
+    public func mark3DLoadAttempted(for attemptID: UUID) {
+        guard isCurrentThreeDLoadingAttempt(attemptID) else { return }
+        lastRecordedThreeDLoadAttemptID = attemptID
     }
 
-    public func mark3DFailed(_ message: String) {
+    /// Only the current Scene that has acknowledged loader entry may mark 3D
+    /// ready. This prevents direct mode changes and stale async callbacks from
+    /// being displayed as a loaded candidate.
+    public func mark3DReady(for attemptID: UUID) {
+        guard isCurrentThreeDLoadingAttempt(attemptID),
+              lastRecordedThreeDLoadAttemptID == attemptID else { return }
+        loadState = .threeDReady
+    }
+
+    /// A candidate Scene may fail only its own active request. The unscoped
+    /// overload remains for the normal production-gated path, which never
+    /// instantiates a candidate Scene and fails closed synchronously.
+    public func mark3DFailed(_ message: String, for attemptID: UUID? = nil) {
+        if let attemptID {
+            guard isCurrentThreeDAttempt(attemptID) else { return }
+        } else {
+            guard mode == .threeD else { return }
+        }
         switchTo2D(reason: message)
+    }
+
+    public func isCurrentThreeDReady(for attemptID: UUID) -> Bool {
+        guard activeThreeDAttemptID == attemptID, mode == .threeD else { return false }
+        return loadState == .threeDReady
+    }
+
+    private func isCurrentThreeDLoadingAttempt(_ attemptID: UUID) -> Bool {
+        activeThreeDAttemptID == attemptID && mode == .threeD && loadState == .loading
+    }
+
+    private func isCurrentThreeDAttempt(_ attemptID: UUID) -> Bool {
+        activeThreeDAttemptID == attemptID && mode == .threeD
     }
 }

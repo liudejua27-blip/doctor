@@ -64,8 +64,8 @@ stateDiagram-v2
     TwoDInteractive --> MarkerDraft: explicit region tap / list choice
     MarkerDraft --> TwoDInteractive: edit or delete
     TwoDInteractive --> ThreeDLoading: user requests 3D
-    ThreeDLoading --> ThreeDInteractive: prototype asset loader succeeds
-    ThreeDLoading --> TwoDInteractive: gate/load/performance failure
+    ThreeDLoading --> ThreeDInteractive: current prototype attempt onLoadAttempted -> onReady succeeds
+    ThreeDLoading --> TwoDInteractive: gate/load/init timeout/performance failure
     ThreeDInteractive --> MarkerDraft: hit evidence -> candidate
     ThreeDInteractive --> TwoDInteractive: user switches or fallback
     MarkerDraft --> SignalIntake: continue
@@ -73,6 +73,8 @@ stateDiagram-v2
 ```
 
 必须覆盖取消、重复点击、视图切换、资产失败、命中失败、列表替代、离线草稿、VoiceOver、Dynamic Type、Reduce Motion 和恢复。任何视觉选择先形成候选/草稿，不能直接形成正式身体事件。
+
+每次 `request3D()` 必须生成一个仅用于运行时、不可持久化的 opaque attempt ID。候选 Scene 在查询 Bundle/调用 loader 前只能为该 ID 发送一次 `onLoadAttempted`；只有同一仍活跃 ID 的 `onReady` 或 `onFailure` 可以改变地图状态。切回 2D 或发起新请求会使旧 ID 失效，旧回调必须被忽略。3D 命中在该 ID 进入 ready 前不得产生位置候选。
 
 ## 5. 数据与来源
 

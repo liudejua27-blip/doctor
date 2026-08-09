@@ -12,7 +12,7 @@ iOS Swift Package 是原生 Core/界面样机；它本身不是可发布 App。�
 - metadata-only `BodyAssetManifest` 运行时门禁；
 - 默认关闭的研究元数据记录器；
 - CryptoKit 密文草稿与同步状态机。
-- `BodyCompanionInternal` 的本地/远端 Simulator UI smoke：默认关闭候选 3D、网络、Provider、权限、持久化和遥测。
+- `BodyCompanionInternal` 的本地/远端 Simulator UI smoke：默认关闭候选 3D、网络、Provider、权限、持久化和遥测；另有仅内部的显式候选 3D loader-entry/ready-or-fallback probe。
 
 明确未实现：生产 approved 人体模型/anatomyMap、Keychain/Data Protection、文件 durability、后台同步、真实 API、签名安装、真机性能和完整 VoiceOver 验收。候选模型的权利、哈希和生产门禁见 [BODY-ASSET-01](../../docs/21_BODY_ASSET_PROVENANCE.md)。
 
@@ -29,7 +29,7 @@ python3 ../scripts/check_internal_ios_host.py
 bash ../scripts/run_internal_ios_host_tests.sh
 ```
 
-当前 Swift Core 为 82 tests、0 failures；内部 Host 在本地 7 项 UI smoke 与远端 CI 中均通过。它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
+当前 Swift Core 为 83 tests、0 failures；内部 Host 当前本地 9 项 UI smoke（含显式候选 3D probe）通过，基础 7 项亦已在远端 CI 中通过。本次候选 probe 的远端结果仍待提交后 CI；它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
 
 - [IOS-01](../../docs/04_IOS_ARCHITECTURE.md)
 - [BODY-01](../../docs/08_BODY_MAP_2D_3D.md)

@@ -38,7 +38,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
-    func testDraftResumeAndStartOverConfirmationAreExplicit() {
+    func testStartOverCancellationKeepsCurrentDraftResumable() {
         let app = launchApp()
         selectFirstLocationFromTwoDList(in: app)
         returnToToday(in: app)
@@ -55,7 +55,39 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(startOver)
         startOver.tap()
         assertExists(app.staticTexts["新建一条记录？"])
-        XCTAssertTrue(resume.exists)
+        tapStartOverCancellation(in: app)
+
+        XCTAssertFalse(app.sheets["新建一条记录？"].waitForExistence(timeout: 1))
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.today").firstMatch)
+        assertExists(resume)
+        resume.tap()
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
+    }
+
+    @MainActor
+    func testStartOverConfirmationClearsCurrentDraft() {
+        let app = launchApp()
+        selectFirstLocationFromTwoDList(in: app)
+        returnToToday(in: app)
+
+        let resume = app.buttons["intake-entry.resume-draft"]
+        assertExists(resume)
+
+        let startOver = app.buttons["intake-entry.start-over"]
+        assertExists(startOver)
+        startOver.tap()
+        assertExists(app.staticTexts["新建一条记录？"])
+
+        let confirmDiscard = app.buttons.matching(identifier: "intake-entry.confirm-discard").firstMatch
+        assertExists(confirmDiscard)
+        confirmDiscard.tap()
+
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.body-map").firstMatch)
+        XCTAssertFalse(app.buttons["body-map.next"].exists)
+
+        returnToToday(in: app)
+        assertExists(app.buttons["intake-entry.start-record"])
+        XCTAssertFalse(app.buttons["intake-entry.resume-draft"].exists)
     }
 
     @MainActor
@@ -81,6 +113,47 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
+    func testExplicitCandidateThreeDProbeKeepsListPath() {
+        let app = launchCandidateThreeDProbe()
+        openBodyMap(in: app)
+
+        let modeControl = app.segmentedControls["body-map.mode"]
+        assertExists(modeControl)
+        modeControl.buttons["3D"].tap()
+
+        let candidateReady = app.descendants(matching: .any)
+            .matching(identifier: "body-map.candidate-3d-ready")
+            .firstMatch
+        let fallback = app.descendants(matching: .any)
+            .matching(identifier: "body-map.candidate-3d-fallback-notice")
+            .firstMatch
+        let loadAttempted = app.descendants(matching: .any)
+            .matching(identifier: "body-map.candidate-3d-load-attempted")
+            .firstMatch
+        let terminalState = app.descendants(matching: .any)
+            .matching(
+                NSPredicate(
+                    format: "identifier == %@ OR identifier == %@",
+                    "body-map.candidate-3d-ready",
+                    "body-map.candidate-3d-fallback-notice"
+                )
+            )
+            .firstMatch
+
+        assertExists(loadAttempted, timeout: 10)
+        assertExists(terminalState, timeout: 10)
+        if candidateReady.exists {
+            XCTAssertFalse(fallback.exists)
+            assertExists(app.descendants(matching: .any).matching(identifier: "body-map.3d-scene").firstMatch)
+            assertExists(app.buttons["body-map.3d-list"])
+        } else {
+            assertExists(fallback)
+            XCTAssertFalse(candidateReady.exists)
+            assertExists(app.buttons["body-map.2d-list.option-0"])
+        }
+    }
+
+    @MainActor
     func testRestartDoesNotClaimDraftPersistence() {
         let app = launchApp()
         selectFirstLocationFromTwoDList(in: app)
@@ -97,6 +170,15 @@ final class BodyCompanionInternalUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["BODY_COMPANION_UI_SMOKE"] = "1"
+        app.launch()
+        return app
+    }
+
+    @MainActor
+    private func launchCandidateThreeDProbe() -> XCUIApplication {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["BODY_COMPANION_ENABLE_CANDIDATE_3D"] = "1"
         app.launch()
         return app
     }
@@ -126,6 +208,25 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(back)
         back.tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.today").firstMatch)
+    }
+
+    @MainActor
+    private func tapStartOverCancellation(in app: XCUIApplication) {
+        // This iPhone simulator presents SwiftUI's confirmation dialog as a
+        // popover with no visible cancel row. Dismissing its system region is
+        // the black-box cancellation action; other presentations expose the
+        // app's Chinese cancel control instead.
+        let candidates = [
+            app.otherElements.matching(identifier: "PopoverDismissRegion").firstMatch,
+            app.buttons.matching(identifier: "intake-entry.cancel-discard").firstMatch,
+            app.buttons["取消"],
+            app.buttons["Cancel"],
+        ]
+        guard let cancel = candidates.first(where: \.exists) else {
+            XCTFail("Expected a cancellation control in the start-over confirmation dialog")
+            return
+        }
+        cancel.tap()
     }
 
     @MainActor

@@ -2,7 +2,7 @@
 
 这是一个受版本控制、仅限内部的 iOS Simulator App Host。它只链接父目录 Swift Package 的 `BodyCompanionIOS`，不复制任何页面或 USDZ 资产，也不使用 `BodyCompanionPrototype`。
 
-默认运行能力：2D/部位列表和进程内未确认草稿。候选 3D 只有在手动运行时显式设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1` 才可尝试；UI smoke 始终关闭它。Host 不接入网络、Provider、正式写入、分享、Keychain、文件持久化、遥测或系统健康/媒体权限。
+默认运行能力：2D/部位列表和进程内未确认草稿。候选 3D 只有在手动运行或专用 probe 显式设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1` 才可尝试；默认 UI smoke 关闭它，专用 probe 则先确认当前 loader-entry 后只接受 ready 或安全回退。Host 不接入网络、Provider、正式写入、分享、Keychain、文件持久化、遥测或系统健康/媒体权限。
 
 ```bash
 cd /Users/liuchongjiang/Documents/3D人体

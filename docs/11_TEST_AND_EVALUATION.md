@@ -104,7 +104,7 @@
 
 P1-A AssetManifest 当前完成 13 个 Swift Core metadata gate 场景，覆盖 candidate/approved/blocked/retired、权利/签名/审核/性能交叉约束、坐标/拓扑/LOD/映射、嵌套 unknown-field、2D fallback 和禁止 `.glb` 格式；Schema 的 candidate/approved/blocked synthetic fixture 也通过 Draft 2020-12 校验。这些只证明清单和运行时门的 fail-closed 边界，不证明真实文件签名/哈希、许可证、解剖准确度、真机性能或视觉质量。
 
-P1-C 当前完成 10 个 Swift Core 记录器契约/隐私场景，覆盖默认关闭、固定枚举/计数、停止关系、删除、未知字段/版本/flag 拒绝和 Schema 禁止字段扫描；这些只证明 metadata-only 工程边界，不能替代真实参与者研究、伦理/隐私审批、临床规则、真实 iOS UI 或安全理解结论。当前同一 Swift Package 共 82 个测试：AssetManifest 13、`BodyLocation` 5、Zone/Pin 位置状态 9、区域目录 5、P1D typed intake 25、P1-C 10、P4 离线草稿 15。P1D 覆盖状态机、来源/未知、安全回退、显式感觉—位置关系、地图仅同步位置、位置变更使安全/普通 Agent 失效、超过 20 个位置时明确拒绝而不截断，以及删除最后关联位置不留下非法感觉；同一 Marker ID 的位置语义替换也会要求重新复核感觉；恢复时还要求地图投影与已验证的位置集合一致。P4 覆盖加密/篡改/所有者/队列边界，以及 P4 1.1 感觉—位置关系保留、重复位置/悬空关联拒绝和 code-only 1.0 不自动迁移。P1E 当前完成 18 个 Python 适配器测试，覆盖服务端安全门禁、revision、来源、marker 关系、未知映射和无副作用。它们可证明类型和非法转换边界，但不能替代临床规则、真实 iOS UI、公开认证 API 或生产数据库。生产门禁必须把 P1D/P1E/P4 测试计划扩展到真实设备和认证网络，且仍不得把 `accepted_unconfirmed` 当作正式 Event。
+P1-C 当前完成 10 个 Swift Core 记录器契约/隐私场景，覆盖默认关闭、固定枚举/计数、停止关系、删除、未知字段/版本/flag 拒绝和 Schema 禁止字段扫描；这些只证明 metadata-only 工程边界，不能替代真实参与者研究、伦理/隐私审批、临床规则、真实 iOS UI 或安全理解结论。当前同一 Swift Package 共 83 个测试：AssetManifest 13、`BodyLocation` 5、Zone/Pin 位置状态 10、区域目录 5、P1D typed intake 25、P1-C 10、P4 离线草稿 15。Zone/Pin 新增候选 3D attempt 代次回归：只有当前已确认 loader-entry 的 request 可进入 ready，切回 2D 或被新请求替代后的旧回调无效。P1D 覆盖状态机、来源/未知、安全回退、显式感觉—位置关系、地图仅同步位置、位置变更使安全/普通 Agent 失效、超过 20 个位置时明确拒绝而不截断，以及删除最后关联位置不留下非法感觉；同一 Marker ID 的位置语义替换也会要求重新复核感觉；恢复时还要求地图投影与已验证的位置集合一致。P4 覆盖加密/篡改/所有者/队列边界，以及 P4 1.1 感觉—位置关系保留、重复位置/悬空关联拒绝和 code-only 1.0 不自动迁移。P1E 当前完成 18 个 Python 适配器测试，覆盖服务端安全门禁、revision、来源、marker 关系、未知映射和无副作用。它们可证明类型和非法转换边界，但不能替代临床规则、真实 iOS UI、公开认证 API 或生产数据库。生产门禁必须把 P1D/P1E/P4 测试计划扩展到真实设备和认证网络，且仍不得把 `accepted_unconfirmed` 当作正式 Event。
 
 P2B 的 23 个聚焦用例覆盖合法 R2/R3、非 draft 状态、八组 reviewed fields、model-constructed 请求复验、turn/revision/digest、Session 过期、R0 代表性高风险/incomplete/unavailable/unsupported（R1 复用同一阻断谓词）、三种 EpisodeSelection、owner/交叉 Session、同键重放/冲突、结果 JSON Schema/隐私扫描、EventStore 零写入、禁用和存储失败。它们只证明 typed Application boundary 和 prototype store 的 fail-closed 行为；不证明真实认证、Consent、数据库事务、跨实例锁、真实客户端恢复、临床规则或公开 `requestDraftConfirmation`。
 
@@ -416,7 +416,7 @@ FEAT-COMP-01 的验证以 TEST-COMP-01 为最低测试计划，且不得用页�
 
 ### 7.6 内部 iOS App Host 与 Simulator smoke
 
-[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 只验证现有 P0 壳能在受版本控制的 iOS App Host 中构建、安装和启动；它不新增 Agent、资料读取、正式写入、持久化或健康字段。执行证据必须同时证明：Host 仅依赖本地 `BodyCompanionIOS`、UI smoke 默认关闭候选 3D、网络/Provider/权限/持久化/遥测入口为零，以及 2D/部位列表、草稿继续/明确放弃、普通 AI 关闭和回退路径可达。
+[FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 只验证现有 P0 壳能在受版本控制的 iOS App Host 中构建、安装和启动；它不新增 Agent、资料读取、正式写入、持久化或健康字段。执行证据必须同时证明：Host 仅依赖本地 `BodyCompanionIOS`、默认 UI smoke 关闭候选 3D、专用 probe 只有在当前 loader-entry 确认后才接受 ready/fallback、网络/Provider/权限/持久化/遥测入口为零，以及 2D/部位列表、草稿继续/明确放弃、普通 AI 关闭和回退路径可达。
 
 该检查只能产生 `Simulator host smoke passed`。它不能证明或关闭 VoiceOver 实操、最大 Dynamic Type、Reduce Motion、真机触控、GPU/热/内存、RealityKit 碰撞、资产许可、签名、临床安全、隐私合规或 GATE-06/07/08；这些仍按 EVIDENCE-DEVICE-01 和相应设备/发布计划另行验证。
 

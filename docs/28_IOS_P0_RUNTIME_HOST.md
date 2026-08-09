@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.2.0 |
-| 状态 | Implemented and Simulator smoke verified / internal only；未构成生产或真机批准 |
+| 版本 | 0.3.0 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally verified；未构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -65,7 +65,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 能力 | DebugInternal 默认 | ReleaseInternal 默认 | UI smoke 默认 | 约束 |
 |---|---:|---:|---:|---|
 | 2D/部位列表 | 开 | 开 | 开 | 是完整记录回退路径 |
-| 候选 3D | 显式内部开关 | 关 | 关 | 未经生产审核；UI smoke 不依赖 RealityKit 碰撞 |
+| 候选 3D | 显式内部开关 | 关 | 关 | 未经生产审核；默认 UI smoke 不依赖 RealityKit 碰撞 |
 | 网络 / Provider / API | 关 | 关 | 关 | 不得创建 URLSession 请求或发送健康数据 |
 | 身份 / 同意 / Profile / 历史资料 | 关 | 关 | 关 | 不得模拟“已授权”或“已读取” |
 | 正式写入 / 分享 / 导出 | 关 | 关 | 关 | 只能保留进程内未确认草稿 |
@@ -81,6 +81,9 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 - UI test 可以通过启动参数选择 2D/列表回退和可重复的初始页面，但不得注入真实/仿真健康正文、持久化记录、SafetyTier、Agent 内容或已确认事实；
 - Host 不在 `body`、`task`、生命周期回调或后台任务中发起网络、授权、存储或遥测；
 - 候选 3D 开关开启时，页面必须持续保留“内部候选、未经生产审核”说明和 2D/列表回退。任何加载/碰撞失败只回退，不能改写位置事实或阻断 P0 路径。
+- `BODY_COMPANION_ENABLE_CANDIDATE_3D=1` 只能由人工内部运行或专门的 Simulator probe 显式设置；默认 UI smoke 仍以 `BODY_COMPANION_UI_SMOKE=1` 强制关闭它。probe 不得同时设置两个开关，也不得把候选开关变成 Debug/Release 的默认值。
+- 专门 probe 先记录当前 Scene 的 `onLoadAttempted`（发生在 Bundle 查询/loader 前），再只允许记录两种终态：RealityKit 实际加载候选 Bundle 后出现内部候选状态与 3D→列表回退入口，或加载/渲染初始化失败、在 8 秒内没有进入任一终态后出现固定 2D 回退公告与列表入口。它不点击人体、不生成 `BodyLocation`、不验证碰撞、区域映射、性能、无障碍或资产审批。
+- 每次 3D 请求都有新的仅内存 attempt ID；“内部候选已加载”不是通用 interactive 状态的别名：它只能由当前已请求且已 `onLoadAttempted` 的 `BodySceneView.onReady` 写入。初始 2D、手动改 mode、失效 attempt 或未收到回调都必须保持 loading，随后 fail-closed 回退；切到 2D 或再次请求会使旧回调无效。
 
 ### 3.4 隐私、权限与包体边界
 
@@ -100,6 +103,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | HOST-AC-004 | 已有草稿 → 继续 / 新建 | 继续不改变 draft；新建必须展示放弃确认；取消不 reset | 草稿已落盘或正式保存 |
 | HOST-AC-005 | AI 身体助手页 | “普通对话尚未接入”与开始记录入口可见 | AI 分析、建议、行动计划或安全完成 |
 | HOST-AC-006 | 3D 被禁用或失败 | 可理解回退文案，2D/列表仍可完成 | 真机 3D、性能或碰撞验收 |
+| HOST-AC-007 | 显式内部候选 3D probe | 在独立 Simulator 启动中先确认当前 Scene 的 loader-entry，再只接受“候选加载后仍有列表入口”或“固定 2D 回退后仍有列表入口”两种终态 | 候选资产获批、视觉/解剖正确、任一 3D 命中、碰撞、性能、真机或发布验收 |
 
 每个可测入口、可见状态与确认动作使用稳定的 identifier；identifier 不得编码身体位置、用户输入、健康事实或诊断词。
 
@@ -124,13 +128,15 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 6. `EVIDENCE-DEVICE-01` 仅追加 Simulator Host 的真实命令与范围，明确真机、签名、VoiceOver、Dynamic Type、Reduce Motion、3D 性能/碰撞和资产审核仍未通过；
 7. 相应 commit、远端 required CI 与文档链接均可追溯。
 
+`HOST-AC-007` 的通过只能补充“候选 Bundle 的内部 Simulator 加载/回退路径已运行”的证据。它不改变 `BodyAssetManifest`、许可、审核、性能或发布状态，也不能关闭任一 `DEVICE-FINDING-*`、GATE-06、GATE-07 或 GATE-08。
+
 ## 7. 未决项与停止规则
 
 | ID | 未决项 | 责任角色 | 最晚门禁 | 临时行为 |
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
 | HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围 | iOS + 无障碍 + QA | GATE-06 前 | 仅声称 UI smoke，不称无障碍通过 |
-| HOST-OPEN-003 | 候选 3D 的 Simulator 加载与回退测试是否稳定 | iOS + 3D 资产 + QA | GATE-06 前 | UI smoke 默认强制 2D/列表 |
+| HOST-OPEN-003 | 候选 3D 的远端 Simulator 加载与回退 probe 稳定性；本地设计和首次执行已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | 合并前 / GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
 任一 Host 出现网络请求、权限请求、健康数据落盘、遥测上传、AI/行动内容伪装、2D/列表不可用或草稿无确认 reset，必须停止该内部路径并回退修复；不得以“仅 Simulator”豁免。
@@ -141,3 +147,4 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 |---|---|---|
 | 2026-08-09 | 新建 FEAT-IOS-P0-RUNTIME-01 | 以受版本控制的内部 App Host 解除 Swift Package 无 `.app` 的 Simulator 运行证据缺口，不增加产品健康语义。 |
 | 2026-08-09 | 0.2.0 | `BodyCompanionInternal` App target、共享 scheme、静态边界扫描、7 项本地 UI smoke 与远端 CI 均已通过；证据见 EVIDENCE-01/EVIDENCE-DEVICE-01，真机与发布门禁保持打开。 |
+| 2026-08-09 | 0.3.0 | 实现 `HOST-OPEN-003` 的本地候选 3D Simulator probe：每次请求有独立内存 attempt，先确认 loader-entry，再以 ready 或 fail-closed 回退保留列表路径；不改变候选资产状态或扩大 P0 能力。 |
