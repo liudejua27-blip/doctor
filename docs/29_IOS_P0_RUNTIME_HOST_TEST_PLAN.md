@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.1.0-draft |
-| 状态 | Draft / 尚未执行 |
+| 版本 | 0.2.0 |
+| 状态 | Executed: local Simulator + remote CI passed / internal-only evidence |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -34,13 +34,13 @@
 | HOST-T-003 | 冷启动今天页 | “今天”“记录这次不适”和非诊断说明存在；无“已恢复/已保存” | UI |
 | HOST-T-004 | 多入口一致 | 今天、记录、AI 身体助手都可进入同一位置草稿路径 | UI |
 | HOST-T-005 | 2D/列表路径 | 不依赖候选 3D 选择一个合成部位，进入结构化描述 | UI |
-| HOST-T-006 | 草稿继续 | 进入草稿后返回入口，再继续时保持同一进程内位置数和流程状态 | UI |
-| HOST-T-007 | 新建确认 | 有草稿时“新建”先显示放弃对话框；取消不 reset；确认后才 reset | UI |
+| HOST-T-006 | 草稿继续 | 进入草稿后返回入口，再继续时按当前 phase 进入结构化描述并保持进程内 draft；Core 测试锁定 UUID/位置/phase 语义 | UI + Core |
+| HOST-T-007 | 新建确认 | 有草稿时“新建”先显示放弃对话框；UI 断言固定可见标题，Core 测试锁定取消不 reset、确认后才 reset | UI + Core |
 | HOST-T-008 | 普通 AI 关闭 | AI 身体助手明确显示“普通对话尚未接入”；不存在建议、行动或资料已使用断言 | UI |
 | HOST-T-009 | 候选 3D 回退 | UI test 配置下显示 2D/列表或明确内部候选/回退提示；不得依赖碰撞命中 | UI |
-| HOST-T-010 | 权限与网络负向 | 无 HealthKit/相机/麦克风/照片/通知权限提示、无 Provider/URLSession 入口、无分析 SDK | 静态 + 运行时 |
+| HOST-T-010 | 权限与网络负向 | `check_internal_ios_host.py` 断言无 HealthKit/相机/麦克风/照片/通知 usage key、Provider/URLSession 入口或分析 SDK；冷启动 UI smoke 不出现应用权限流程 | 静态 + UI |
 | HOST-T-011 | 存储负向 | 无 UserDefaults/Keychain/文件/数据库健康草稿写入；重启不宣称恢复 | 静态 + UI |
-| HOST-T-012 | identifier 与动态文字基础 | 主要按钮、路径状态和确认操作有稳定 identifier/可见中文文字；不得只以颜色传达状态 | UI 静态 + Simulator |
+| HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
 
 ## 4. 必须保留的现有回归
 
@@ -64,7 +64,7 @@ Simulator smoke 可以证明 accessibility identifier、可见文案、无 3D �
 
 ## 6. 通过条件与停止规则
 
-通过 Simulator Host smoke 的最低条件：HOST-T-001～012 全部通过、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。
+通过 Simulator Host smoke 的最低条件：HOST-T-001～012 均有自动化或静态覆盖、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。系统 confirmationDialog 的取消/确认状态转换由 Core 回归锁定，避免把当前 XCTest 对原生系统按钮层级的可见性差异误写为功能缺口。
 
 以下任一项失败即停止：2D/列表不能完成、草稿被静默丢弃或误称保存、普通 AI/建议被伪造、检测到网络/Provider/权限/持久化/分析入口、候选 3D 没有回退、或文档把 Simulator 外推为真机/生产。
 
@@ -86,3 +86,4 @@ not proven: 真机、签名、VoiceOver 实操、最大 Dynamic Type、Reduce Mo
 | 日期 | 变更 | 说明 |
 |---|---|---|
 | 2026-08-09 | 新建 TEST-IOS-P0-RUNTIME-01 | 将内部 App Host 的构建、启动、UI smoke、无网络/无权限/无持久化负向检查与真机不可外推边界固定下来。 |
+| 2026-08-09 | 0.2.0 | 本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 和远端 CI iPhone 16 / iOS 18.5 的同一脚本均通过；精确命令与未证明范围见 EVIDENCE-01/EVIDENCE-DEVICE-01。 |

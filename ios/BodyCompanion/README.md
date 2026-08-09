@@ -1,6 +1,6 @@
 # BodyCompanion iOS prototype
 
-iOS Swift Package 是原生 Core/界面样机，不是可发布 App。当前包括：
+iOS Swift Package 是原生 Core/界面样机；它本身不是可发布 App。受版本控制的 `AppHost/BodyCompanionInternal.xcodeproj` 仅为内部 Simulator 提供可安装运行壳，不含签名、真实 Bundle ID、生产数据能力或发布资格。当前包括：
 
 - 规范 `BodyLocation` 与 2D/3D 状态；
 - SwiftUI 全身 2D 前/后地图、稳定区域目录和可访问部位列表；
@@ -12,6 +12,7 @@ iOS Swift Package 是原生 Core/界面样机，不是可发布 App。当前包�
 - metadata-only `BodyAssetManifest` 运行时门禁；
 - 默认关闭的研究元数据记录器；
 - CryptoKit 密文草稿与同步状态机。
+- `BodyCompanionInternal` 的本地/远端 Simulator UI smoke：默认关闭候选 3D、网络、Provider、权限、持久化和遥测。
 
 明确未实现：生产 approved 人体模型/anatomyMap、Keychain/Data Protection、文件 durability、后台同步、真实 API、签名安装、真机性能和完整 VoiceOver 验收。候选模型的权利、哈希和生产门禁见 [BODY-ASSET-01](../../docs/21_BODY_ASSET_PROVENANCE.md)。
 
@@ -22,9 +23,13 @@ cd /Users/liuchongjiang/Documents/3D人体/ios/BodyCompanion
 swift test
 swift build --sdk "$(xcrun --sdk iphoneos --show-sdk-path)" \
   --triple arm64-apple-ios17.0 --target BodyCompanionIOS
+
+cd ..
+python3 ../scripts/check_internal_ios_host.py
+bash ../scripts/run_internal_ios_host_tests.sh
 ```
 
-当前 Swift Core 为 80 tests、0 failures；iOS SDK target 可编译，但这不证明真实设备或生产资产。详细边界见：
+当前 Swift Core 为 80 tests、0 failures；内部 Host 在本地 7 项 UI smoke 与远端 CI 中均通过。它仍不证明真实设备、签名、无障碍、3D 性能/碰撞或生产资产。详细边界见：
 
 - [IOS-01](../../docs/04_IOS_ARCHITECTURE.md)
 - [BODY-01](../../docs/08_BODY_MAP_2D_3D.md)
@@ -34,3 +39,5 @@ swift build --sdk "$(xcrun --sdk iphoneos --show-sdk-path)" \
 - [TEST-BODY-MAP-V2](../../docs/23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)
 - [BODY-ASSET-01](../../docs/21_BODY_ASSET_PROVENANCE.md)
 - [EVIDENCE-01](../../docs/16_EXECUTION_EVIDENCE.md)
+- [FEAT-IOS-P0-RUNTIME-01](../../docs/28_IOS_P0_RUNTIME_HOST.md)
+- [TEST-IOS-P0-RUNTIME-01](../../docs/29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)

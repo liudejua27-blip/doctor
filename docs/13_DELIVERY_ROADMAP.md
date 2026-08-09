@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | REL-01 |
-| 版本 | 2.4.0-draft |
+| 版本 | 2.5.0-draft |
 | 状态 | Active roadmap |
 | 负责人 | 交付负责人 + 产品负责人 |
 | 审核角色 | 临床安全、隐私安全、iOS、后端、Agent、QA、运营 |
@@ -167,10 +167,10 @@ GATE-03～06 可以并行，但任何一项未通过都不能进入正式纵向�
 
 ## 6. 当前最短下一步
 
-1. 在不改变产品语义的前提下，完成并留存 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的内部 Simulator Host smoke；它是工程例外，不替代任何 GATE。
+1. 已完成并留存 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的内部 Simulator Host smoke：本地与远端 CI 均通过；它仍是工程例外，不替代任何 GATE。
 2. 填写并书面批准 [GOV-01](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 的责任矩阵和 G2-DEC-001～008；在此之前不增加新的内存产品样机层。
 3. 评审 ADR-0019，确认情境透镜、资料使用收据、审核行动和沟通摘要的产品/安全/隐私边界。
 4. 在 GATE-03 内锁定运动/工作情境的内容范围、停止条件和营养边界，并将其映射到 TEST-COMP-01。
-5. 并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
+5. 在获批后并行启动真实 Provider/Consent、正式 repository 和默认人体资产三条生产工作流；不得把新设计稿直接当作已实现能力。
 
 在远端基线和 GATE-02 完成前，不继续增加新的内存产品样机层；仅可执行本节明确列出的内部 iOS App Host 工程例外。

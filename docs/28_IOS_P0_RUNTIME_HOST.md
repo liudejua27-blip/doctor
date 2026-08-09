@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.1.0-draft |
-| 状态 | Approved for internal engineering prototype only / 未构成生产或真机批准 |
+| 版本 | 0.2.0 |
+| 状态 | Implemented and Simulator smoke verified / internal only；未构成生产或真机批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -140,3 +140,4 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 日期 | 变更 | 说明 |
 |---|---|---|
 | 2026-08-09 | 新建 FEAT-IOS-P0-RUNTIME-01 | 以受版本控制的内部 App Host 解除 Swift Package 无 `.app` 的 Simulator 运行证据缺口，不增加产品健康语义。 |
+| 2026-08-09 | 0.2.0 | `BodyCompanionInternal` App target、共享 scheme、静态边界扫描、7 项本地 UI smoke 与远端 CI 均已通过；证据见 EVIDENCE-01/EVIDENCE-DEVICE-01，真机与发布门禁保持打开。 |
