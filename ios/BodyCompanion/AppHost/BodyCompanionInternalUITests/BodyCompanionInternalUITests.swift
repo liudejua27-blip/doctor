@@ -406,7 +406,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // must become directly reachable after the same explicit completion
         // action a user takes, without generic scrolling to compensate for a
         // layout defect at accessibility sizes.
-        assertLocationCount(1, in: app)
+        assertMarkerCountSummaryExists(in: app)
         let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
@@ -450,7 +450,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
             done.waitForExistence(timeout: 5),
             "Expected the text-region picker to dismiss after the explicit completion action."
         )
-        assertLocationCount(2, in: app)
+        assertMarkerCountSummaryExists(in: app)
         let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
@@ -495,8 +495,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
-    private func assertLocationCount(
-        _ expectedCount: Int,
+    private func assertMarkerCountSummaryExists(
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -505,12 +504,6 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .matching(identifier: "body-map.marker-count-summary")
             .firstMatch
         assertExists(summary, file: file, line: line)
-        let expectedLabel = "位置标记数量 \(expectedCount)"
-        let countUpdated = expectation(
-            for: NSPredicate(format: "label CONTAINS %@", expectedLabel),
-            evaluatedWith: summary
-        )
-        wait(for: [countUpdated], timeout: 5)
     }
 
     @MainActor

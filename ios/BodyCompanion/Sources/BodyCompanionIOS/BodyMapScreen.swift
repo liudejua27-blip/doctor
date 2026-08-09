@@ -250,14 +250,16 @@ public struct BodyMapScreen: View {
                 ? BodyCompanionTheme.warm
                 : BodyCompanionTheme.accent
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("已选位置")
+        .accessibilityValue("\(model.markerCount) / \(BodyMapModel.maximumMarkerCount)")
+        .accessibilityIdentifier("body-map.marker-count-summary")
     }
 
     private var markerCountDetail: some View {
         Text("区域和针点合计最多 20 个；选中已有针点不会重复新增。")
             .font(.caption)
             .foregroundStyle(BodyCompanionTheme.secondaryInk)
-            .accessibilityLabel("位置标记数量 \(model.markerCount)，区域和针点合计最多 \(BodyMapModel.maximumMarkerCount) 个")
-            .accessibilityIdentifier("body-map.marker-count-summary")
     }
 
     @ViewBuilder

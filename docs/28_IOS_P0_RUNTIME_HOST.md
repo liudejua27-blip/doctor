@@ -3,13 +3,15 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.11 |
-| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；最新远端 run `31318855810`（SHA `544c39a`）中 Backend and contracts 成功，iOS 仅 Host smoke 失败：12 passed、1 failed、0 skipped，HOST-T-015 报 `Expected element to exist: body-map.next Button`（exit 65）。CI 没有 artifact 或 accessibility hierarchy，不能断定是文字选择未保留位置还是 AX 投影/元素类型问题。SHA `544c39a` 前的本地定向/完整 Simulator 回归仅为历史收据。当前 sibling footer、marker-count 先验和 generic stable-ID CTA 验收已实现；本地 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2/0/0（138.1s），完整 internal Host script exit 0（426.285s）；远端尚未推送、远端收据 Pending；不构成生产、真机或资产批准 |
+| 版本 | 0.3.13 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；SHA `544c39a` / run `31318855810` 是历史 H015 失败。最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；唯一 H015 在 5 秒内未满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前修复使摘要可见/可访问、stable ID 位于真实 count pill，Host 仅检查摘要存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（136.2s），完整 internal Host script exit 0（421.656s）；新修复未推送、远端收据 Pending；不构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
 | 关联需求 | PRD-F01、PRD-F03A、NFR-A11Y-001、NFR-PERF-001、COMP-P0-001～005 |
 | 依赖 | DOC-00、IOS-01、BODY-01、PRIV-01、QA-01、REL-01、TRACE-01、FEAT-COMP-01、FEAT-BODY-MAP-V1/V2、EVIDENCE-DEVICE-01 |
+
+> **2026-08-10 H015 current evidence.** 最新远端 `cb5f798` / run `31321251024` terminal failed；Backend and contracts、Swift、SDK 与 Host boundary 成功，internal Host smoke 12/1/0。唯一 H015 在 5 秒内未满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前工作树使摘要保持可见/可访问、stable ID 移至真实 count pill，Host 对摘要只检查存在；`body-map.next` 继续以 any-element `exists`/`isHittable`/`tap` 证明位置行为。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（136.2s），完整 internal Host script exit 0（421.656s）；新修复未推送、远端重试 Pending。仅内部 Simulator。
 | 机器契约 | 沿用现有 `body-location`、`ios-signal-intake@1.1` 与 `ios-draft-envelope@1.1`；本功能不新增 API、OpenAPI 或 JSON Schema |
 
 ## 1. 目的
@@ -104,7 +106,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | HOST-AC-005 | AI 身体助手页 | “普通对话尚未接入”与开始记录入口可见 | AI 分析、建议、行动计划或安全完成 |
 | HOST-AC-006 | 3D 被禁用或失败 | 可理解回退文案，2D/列表仍可完成 | 真机 3D、性能或碰撞验收 |
 | HOST-AC-007 | 显式内部候选 3D probe | 在独立 Simulator 启动中先确认当前 Scene 的 loader-entry，再只接受“候选加载后仍有列表入口”或“固定 2D 回退后仍有列表入口”两种终态 | 候选资产获批、视觉/解剖正确、任一 3D 命中、碰撞、性能、真机或发布验收 |
-| HOST-AC-008 | accessibility-size 结构回归 | `UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、两张今天展示性情境卡与结构化页指定成对动作保持纵向结构；内容滚动后，情境卡只验证单一合并的非动作卡片元素、独立 stable ID 与运行时 vertical 布局分支 identifier。所有布局分支容器不得把自己的 identifier 传播或覆盖到子卡片或子动作；结构化动作和地图继续动作才验证可点击。文字选择完成/关闭后，先由 `body-map.marker-count-summary` 表达恰有一项位置；地图继续动作必须在底部独立、非滚动的安全内容布局区，通过 stable identifier 的任意元素查询验证存在、`isHittable` 且可 `tap`。具体布局 API 和 AX element class（尤其 `Button`）不是跨 OS 契约 | VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机或发布验收 |
+| HOST-AC-008 | accessibility-size 结构回归 | `UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、两张今天展示性情境卡与结构化页指定成对动作保持纵向结构；内容滚动后，情境卡只验证单一合并的非动作卡片元素、独立 stable ID 与运行时 vertical 布局分支 identifier。所有布局分支容器不得把自己的 identifier 传播或覆盖到子卡片或子动作；结构化动作和地图继续动作才验证可点击。文字选择完成/关闭后，`body-map.marker-count-summary` 必须作为可见、可访问的非动作摘要存在；精确数量/去重由 Core 回归锁定，Host 不把 SwiftUI `Text` AX label/value 当跨 OS 状态协议。地图继续动作必须在底部独立、非滚动的安全内容布局区，通过 stable identifier 的任意元素查询验证存在、`isHittable` 且可 `tap`；该条件主动作证明位置已保留。具体布局 API 和 AX element class（尤其 `Button`）不是跨 OS 契约 | VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机或发布验收 |
 
 每个可测入口、可见状态与确认动作使用稳定的 identifier；identifier 不得编码身体位置、用户输入、健康事实或诊断词。
 
@@ -131,14 +133,14 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 
 `HOST-AC-007` 的通过只能补充“候选 Bundle 的内部 Simulator 加载/回退路径已运行”的证据。它不改变 `BodyAssetManifest`、许可、审核、性能或发布状态，也不能关闭任一 `DEVICE-FINDING-*`、GATE-06、GATE-07 或 GATE-08。
 
-SHA `544c39a` 的远端 run `31318855810` 不满足 HOST-AC-008：Backend and contracts 成功，但 iOS Host smoke 以 `Expected element to exist: body-map.next Button` 失败（12 passed、1 failed、0 skipped，exit 65）。由于 CI 未提供 artifact 或 accessibility hierarchy，它只表明当时黑箱断言未成立，不能判断位置选择是否丢失，或 `body-map.next` 是否仅以不同 AX 投影/元素类型出现。当前工作树已实现 sibling footer 的底部独立、非滚动安全内容布局区；H015 先断言 `body-map.marker-count-summary` 为一项位置，再以 generic stable-ID any-element 查询验证 CTA 存在、`isHittable` 与 `tap`。不得把 `safeAreaInset` 或 `Button` class 固定为验收 API。本地 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2/0/0（138.1s），完整 internal Host script exit 0（426.285s）；远端尚未推送，远端重试 Pending。
+历史 SHA `544c39a` 的远端 run `31318855810` 不满足 HOST-AC-008：Backend and contracts 成功，但 iOS Host smoke 以 `Expected element to exist: body-map.next Button` 失败（12 passed、1 failed、0 skipped，exit 65）。由于 CI 未提供 artifact 或 accessibility hierarchy，它只表明当时黑箱断言未成立，不能判断位置选择是否丢失，或 `body-map.next` 是否仅以不同 AX 投影/元素类型出现。最新 SHA `cb5f798` 的 run `31321251024` 同样只失败于 H015：5 秒内未满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前工作树保持 sibling footer 的底部独立、非滚动安全内容布局区，摘要位于真实 count pill、保持可见/可访问，Host 只检查其 stable identifier 存在；再以 generic stable-ID any-element 查询验证 CTA 存在、`isHittable` 与 `tap`。不得把 `safeAreaInset`、SwiftUI `Text` AX label/value 或 `Button` class 固定为验收 API。本地 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2/0/0（136.2s），完整 internal Host script exit 0（421.656s）；新修复未推送，远端重试 Pending。
 
 ## 7. 未决项与停止规则
 
 | ID | 未决项 | 责任角色 | 最晚门禁 | 临时行为 |
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
-| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；最新 SHA `544c39a` 的 run `31318855810` 中 Backend and contracts 成功，iOS 仅 Host smoke 的 HOST-T-015 失败（12 passed、1 failed、0 skipped，`Expected element to exist: body-map.next Button`，exit 65）。CI 缺 artifact/accessibility hierarchy，选择状态与 AX 投影根因均未知。当前工作树已实现 sibling footer 的底部独立、非滚动安全内容布局区，先验证 `body-map.marker-count-summary` 为一项位置，再以 generic stable-ID any-element 查询验证 CTA 存在、可点击并触发；不得要求具体 `safeAreaInset` API 或 `Button` class。本地 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2/0/0（138.1s），完整 internal Host script exit 0（426.285s）；远端尚未推送，远端 retry Pending | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
+| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；历史 SHA `544c39a` / run `31318855810` 的 H015 为 CTA Button 不存在，最新 SHA `cb5f798` / run `31321251024` 的 H015 为 count-summary label predicate 超时；两者均不能归因位置丢失，CI 缺 artifact/accessibility hierarchy。当前工作树使用 sibling footer，摘要位于真实 count pill 且 Host 仅验证 identifier 存在，再验证 CTA 的 any-element 存在、可点击并触发；不得要求具体 `safeAreaInset`、SwiftUI `Text` AX label/value 或 `Button` class。本地 iPhone 17 Pro / iOS 26.5 的 targeted H015 + MoreSensations 2/0/0（136.2s），完整 Host script exit 0（421.656s）；新修复未推送、远端 retry Pending | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
 | HOST-OPEN-003 | 候选 3D 的跨 Simulator/Xcode 加载与回退 probe 稳定性；本地与单次远端重建已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
@@ -160,5 +162,6 @@ SHA `544c39a` 的远端 run `31318855810` 不满足 HOST-AC-008：Backend and co
 | 2026-08-09 | 0.3.7 | 归档 SHA `98a4200` 的第四次远端 run `31314859140`：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped；唯一 HOST-T-015 失败是文字部位 Sheet 关闭后 `body-map.next` 已存在但不可点击，Backend and contracts、Swift 94、SDK build 与 Host 静态边界均成功。后续当前工作树把继续动作固定在 bottom safe-area，并保留展示性情境卡/子动作 identifier；在最后的 Today 强制内容滚动与 type-agnostic intake 查询小改后，当前版本本地复测与远端 retry 均待执行。该状态不关闭无障碍或设备门禁。 |
 | 2026-08-09 | 0.3.8 | 归档当前工作树的 safe-area map footer、identifier 保留、Today 内容滚动与 type-agnostic intake 查询修复；最后新增两条“情境卡为非操作元素”UI 断言后，iPhone 17 Pro / iOS 26.5 的 XcodeBuildMCP 定向 HOST-T-015 为 1 passed、0 failed、0 skipped（86.0s）。完整 `run_internal_ios_host_tests.sh` 已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数）；远端 retry 尚未推送。这些仍只是内部 Simulator 局部回归，不关闭无障碍、真机或设备门禁。 |
 | 2026-08-09 | 0.3.9 | 归档 SHA `544c39a` 的 run `31318855810`：Backend and contracts 成功，iOS 仅 internal Host smoke 失败（12 passed、1 failed、0 skipped）；HOST-T-015 报 `Expected element to exist: body-map.next Button`（exit 65）。CI 未上传 artifact/accessibility hierarchy，不能在选择未保留与 AX 投影/元素类型之间归因。将下一次修复规格收敛为底部独立、非滚动的安全内容布局区；文字选择后先验证 `body-map.marker-count-summary` 的一项位置，CTA 再以 stable-id any-element 查询验证存在、`isHittable` 与 `tap`，不以 `safeAreaInset` 或 `Button` class 为跨 OS 契约。新实现、本地复测和下一次远端 retry 均 Pending，不关闭无障碍或设备门禁。 |
-| 2026-08-09 | 0.3.10 | 当前工作树已实现 sibling footer 的独立非滚动安全内容区、文字选择后的 marker-count 一项位置断言，以及 generic stable-ID any-element CTA exists/hittable/tap 验收；具体 `safeAreaInset` API 与 `Button` class 仍不构成跨 OS 条件。随后收据见 0.3.11；该状态不关闭无障碍、真机或设备门禁。 |
-| 2026-08-09 | 0.3.11 | 当前工作树在 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2 passed、0 failed、0 skipped（138.1s），完整 internal Host script exit 0（426.285s）。远端尚未推送、远端重试 Pending；该收据仅限内部 Simulator，不关闭无障碍、真机或设备门禁。 |
+| 2026-08-09 | 0.3.10 | 当时工作树已实现 sibling footer 的独立非滚动安全内容区、文字选择后的 marker-count 一项位置断言，以及 generic stable-ID any-element CTA exists/hittable/tap 验收；具体 `safeAreaInset` API 与 `Button` class 仍不构成跨 OS 条件。随后收据见 0.3.11；该状态不关闭无障碍、真机或设备门禁。 |
+| 2026-08-09 | 0.3.11 | 当时工作树在 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2 passed、0 failed、0 skipped（138.1s），完整 internal Host script exit 0（426.285s）。远端尚未推送、远端重试 Pending；该收据仅限内部 Simulator，不关闭无障碍、真机或设备门禁。 |
+| 2026-08-10 | 0.3.13 | 归档 SHA `cb5f798` / run `31321251024`：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 仅在 5 秒内未满足 count-summary 的旧 label predicate，不能归因位置丢失。当前修复将 summary stable ID 移至真实 count pill，Host 只检查其存在；CTA 仍以 any-element `exists`/`isHittable`/`tap` 验证。iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（136.2s），完整 Host script exit 0（421.656s）；新修复未推送、远端 Pending；仅内部 Simulator。 |

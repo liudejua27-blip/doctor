@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.6.5-draft |
+| 版本 | 1.6.6-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
@@ -177,7 +177,7 @@ Simulator Host 成功只证明可安装的内部 UI smoke。它不能关闭真�
 | `CameraPresetController` | front/back/left/right/focus | 可取消的相机变换 |
 | `AccessibleBodyRegionPicker` | 共享 SwiftUI Sheet、本地目录搜索/浏览、目录已有的侧别/表面 | 与图形区域输入相同的宽泛 `BodyLocation` 草稿；P0 固定为 `Area/Zone + region_mask_id + body_part_search`，不得依据 Pin 模式或代表性中心点生成 Point |
 
-`BodyMapScreen` 负责一个纯表现层的继续动作规则：只要当前未确认地图至少有一个位置，稳定 identifier `body-map.next` 必须在页面底部独立、非滚动的安全内容布局区保持可见、可聚焦和可触发。SwiftUI `safeAreaInset` 只是可选实现，不是 API 契约；任何等价原生布局机制都必须让该区不随主内容滚动，并让主内容为它预留同等底部空间。文字部位 Sheet 的 `body-map.text-picker-done` 关闭后，先由 `body-map.marker-count-summary` 表达恰有一项位置；随后通过 stable identifier 的任意元素查询验证 `body-map.next` 存在、`isHittable` 且可 `tap`，不得把 AX element class（尤其 `Button`）作为跨 OS 契约。该规则不新增页面状态、健康字段、`BodyLocation` 映射、API、网络、持久化或安全/AI 行为；无位置时不呈现继续动作。
+`BodyMapScreen` 负责一个纯表现层的继续动作规则：只要当前未确认地图至少有一个位置，稳定 identifier `body-map.next` 必须在页面底部独立、非滚动的安全内容布局区保持可见、可聚焦和可触发。SwiftUI `safeAreaInset` 只是可选实现，不是 API 契约；任何等价原生布局机制都必须让该区不随主内容滚动，并让主内容为它预留同等底部空间。文字部位 Sheet 的 `body-map.text-picker-done` 关闭后，`body-map.marker-count-summary` 必须附在实际 count pill 上，作为可见、可访问的非动作摘要存在；精确数量/去重由 Core 回归锁定，Host 对该摘要只检查稳定 identifier 存在，不把 SwiftUI `Text` 的 AX label/value 或精确文案当跨 OS 状态协议。随后通过 stable identifier 的任意元素查询验证 `body-map.next` 存在、`isHittable` 且可 `tap`；该条件主动作是至少一个未确认位置已保留的黑箱证明，且不得把 AX element class（尤其 `Button`）作为跨 OS 契约。该规则不新增页面状态、健康字段、`BodyLocation` 映射、API、网络、持久化或安全/AI 行为；无位置时不呈现继续动作。
 
 Canvas 的命中坐标只是在当前视图中定位区域的瞬时证据，不自动等同用户要求的精确点：在 Zone 模式，Canvas 必须使用命中的目录区域和当前视图生成 `shape=area + anchor_2d.region_mask_id`，并省略 `anchor_2d.point`；在 Pin 模式，用户对 Canvas 的明确点选才可以生成 `shape=point + anchor_2d.point`。这只是现有 `BodyLocation` 字段的映射规则，不新增 API、Schema 或长期健康事实字段。`BodyMapModel` 的选中/聚焦状态必须通过完整 Zone 语义键或已选 `marker_id` 解析，不能仅以 `focusedRegionID` 的区域字符串覆盖另一个表面。
 
@@ -443,7 +443,7 @@ P4 的可执行规格是 [FEAT-P4-IOS-OFFLINE-DRAFT-SYNC-SLICE](18_IMPLEMENTED_P
 
 - VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；该列表入口在 2D 和 3D 均直接可达，3D 通过 SwiftUI Sheet 暴露前/后部位目录，不能要求用户先操作 RealityKit。P0 Sheet 仅匹配本地静态目录的中英文显示名，返回目录已有的侧别/表面和 `depth=unspecified` 的 `Area/Zone`；搜索文字只保留在 View，不能读取历史或生成 Point；
 - Dynamic Type，包括编辑 Sheet 和报告；在 accessibility size 下，并列场景卡、位置/回退摘要与并列动作必须改为可滚动的纵向布局，不得裁切关键文案或隐藏动作；
-- 当地图已有至少一个未确认位置时，`body-map.next` 必须位于底部独立、非滚动的安全内容布局区，滚动内容不得覆盖该区；文字部位 Sheet 完成/关闭后，先由 `body-map.marker-count-summary` 表达一项位置，再以 stable identifier 的任意元素查询验证主动作存在、可点击并可触发，而不是要求用户以额外滚动寻找它；具体布局 API 与 AX element class 不是该验收的契约；
+- 当地图已有至少一个未确认位置时，`body-map.next` 必须位于底部独立、非滚动的安全内容布局区，滚动内容不得覆盖该区；文字部位 Sheet 完成/关闭后，实际 count pill 上的 `body-map.marker-count-summary` 必须保持可见、可访问，Host 只以 stable identifier 存在证明摘要仍在，再以 stable identifier 的任意元素查询验证主动作存在、可点击并可触发，而不是要求用户以额外滚动寻找它；精确数量/去重由 Core 覆盖，SwiftUI `Text` AX label/value/精确文案、具体布局 API 与 AX element class 不是该 Host 验收的契约；
 - Reduce Motion，关闭相机飞行动画、扫描和持续旋转；
 - Increase Contrast / Differentiate Without Color；主题前景色必须随浅色/深色与系统对比度提供可读文本，状态不可仅用颜色表达；
 - 将 `Button` 放入组合语义容器时，容器必须保留子动作的独立可聚焦性，不得使“删除”“返回全身”或提示关闭动作被静默吞并；
@@ -527,7 +527,7 @@ RealityKit Canvas 本身不构成可访问控件。当前可见人体、选中�
 - 断网、超时、会话失效后草稿保留；
 - VoiceOver 无图形点击全流程；
 - Dynamic Type、Reduce Motion、非颜色编码；
-- Internal Host 的 accessibility-size 结构 smoke；在文字部位 Sheet 完成/关闭后，它先检查 `body-map.marker-count-summary` 的一项位置，再用 stable identifier 的任意元素查询检查 `body-map.next` 位于底部独立、非滚动的安全内容布局区且存在、可点击、可触发，而不是用通用滚动或元素 class 掩盖布局/AX 投影缺陷；它不能取代设备上的 VoiceOver、最大字号、横屏、深色/高对比度或 Switch Control 验收；
+- Internal Host 的 accessibility-size 结构 smoke；在文字部位 Sheet 完成/关闭后，它先检查实际 count pill 上可见、可访问的 `body-map.marker-count-summary` 的 stable identifier 存在，再用 stable identifier 的任意元素查询检查 `body-map.next` 位于底部独立、非滚动的安全内容布局区且存在、可点击、可触发，而不是用通用滚动、SwiftUI `Text` label/value/精确文案或元素 class 掩盖布局/AX 投影缺陷；精确数量/去重由 Core 回归锁定。它不能取代设备上的 VoiceOver、最大字号、横屏、深色/高对比度或 Switch Control 验收；
 - 用户修改和确认后服务端回读一致；
 - 数据导出和删除端到端。
 
