@@ -8,6 +8,7 @@
 - 当前工程状态只能称为 `Prototype verified`：已证明若干类型、状态、权限和失败关闭边界，未证明临床安全、生产可靠性、真实模型许可或真实用户 30 秒完成目标。
 - 首发产品重心已明确为“运动/工作不适 → 位置 → 情境化 AI 追问 → 安全行动 → 复查/沟通摘要”；具体功能仍是 Draft，不能被描述为已上线或临床批准能力。
 - 下一阶段不是继续增加内部样机层，而是按 [REL-01 当前执行顺序](13_DELIVERY_ROADMAP.md#3-当前执行顺序)关闭生产门禁，形成可运行的最小纵向切片。
+- [GOV-01 GATE-02 决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 已准备好供具名责任人填写和书面批准；在其关闭前保持内部原型边界。
 
 ## 文档退役登记
 
@@ -63,6 +64,7 @@ flowchart TD
 - [EVIDENCE-DEVICE-01 真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md)：本轮设备可用性、Sheet/VoiceOver/Dynamic Type/Reduce Motion、3D 性能、碰撞命中和候选资产审核结果；Blocked 不得外推为通过。
 - [FEAT-COMP-01 对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md)：运动/工作不适的主闭环、AI 对话、资料可见性、审核行动和沟通摘要的产品/交互真源；Draft，未实现。
 - [TEST-COMP-01 对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)：上述主闭环的安全、隐私、无障碍、可用性和发布门禁；未执行。
+- [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
 
 实现入口：
 
@@ -88,6 +90,7 @@ flowchart TD
 | OSS-01 | [开源采用与复刻边界](12_OPEN_SOURCE_ADOPTION.md) | PydanticAI/RehabMate 审计和许可边界 | Verified Snapshot |
 | FRAME-01 | [参考项目到产品框架的实施蓝图](17_FRAMEWORK_IMPLEMENTATION_BLUEPRINT.md) | PydanticAI 运行时、RehabMate 交互参考和长期模块边界 | Active implementation boundary |
 | REL-01 | [交付路线图](13_DELIVERY_ROADMAP.md) | 当前生产门禁、依赖和退出条件 | Active roadmap |
+| GOV-01 | [GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) | 具名责任、地区、外测与宣传边界的书面决策和退出条件 | Pending written approval |
 | TRACE-01 | [追踪矩阵](14_TRACEABILITY_MATRIX.md) | 当前需求到实现/验证/门禁的追踪 | Active traceability |
 | TERM-01 | [统一术语](15_GLOSSARY.md) | 唯一名词和字段语义真源 | Baseline Draft |
 | EVIDENCE-01 | [当前工程样机验证记录](16_EXECUTION_EVIDENCE.md) | 可复现命令、已证明边界与未证明能力 | Evidence snapshot / Prototype-only |
@@ -171,7 +174,7 @@ FRAME-01 是参考采用和模块落地真源；它不替代产品、数据、�
 
 | 优先级 | 缺口 | 关闭条件 | 当前保守行为 |
 |---|---|---|---|
-| P0 | 责任主体与外部边界 | 实名产品/临床/隐私/安全/工程/QA 负责人签字；确认首发地区、最低 iOS、产品分类和宣传边界 | 仅内部原型，不外测、不宣传诊断能力 |
+| P0 | [责任主体与外部边界](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) | 实名产品/临床/隐私/安全/工程/QA 负责人签字；确认首发地区、最低 iOS、产品分类和宣传边界 | 仅内部原型，不外测、不宣传诊断能力 |
 | P0 | 临床安全基线 | 完成红旗规则、行动文案、内容库、锁定 Golden Set、独立临床审核和 SafetyBaseline | 规则/内容未获批时关闭普通 AI 分析，保留固定安全入口 |
 | P0 | 身份、同意与正式数据链 | OIDC/近期认证、Consent/撤回、正式数据库、事务/CAS/幂等/读回、审计、导出删除和迁移恢复通过 | 使用内存/假仓库，不接生产用户数据 |
 | P0 | 真实 Agent Provider | 确认 Provider、地区/留存/传输、模型 profile、结构化输出、失败回退、成本与真实语义评测 | 仅 TestModel/FunctionModel，不发送真实健康请求 |
