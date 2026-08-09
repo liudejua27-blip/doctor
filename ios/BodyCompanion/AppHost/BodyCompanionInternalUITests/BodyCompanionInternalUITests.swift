@@ -55,8 +55,6 @@ final class BodyCompanionInternalUITests: XCTestCase {
     @MainActor
     func testAccessibilitySizeKeepsP0ActionsReachableAndAdaptive() {
         let app = launchAccessibilitySizeApp()
-        selectKneeFromTextPicker(in: app)
-        returnToToday(in: app)
 
         let exerciseCue = app.descendants(matching: .any)
             .matching(identifier: "today.context-cue.exercise")
@@ -64,12 +62,26 @@ final class BodyCompanionInternalUITests: XCTestCase {
         let workCue = app.descendants(matching: .any)
             .matching(identifier: "today.context-cue.work")
             .firstMatch
-        scrollUntilHittable(exerciseCue, in: app)
-        scrollUntilHittable(workCue, in: app)
+        // Context cues are display-only content, not P0 actions. Their stable
+        // identifiers and the adaptive vertical container provide the intended
+        // structure evidence. Scroll only to materialize the presentation
+        // content; `isHittable` would incorrectly turn it into a tappable
+        // control requirement.
+        app.swipeUp()
+        scrollUntilExists(exerciseCue, in: app)
+        scrollUntilExists(workCue, in: app)
         assertExists(
             app.descendants(matching: .any)
                 .matching(identifier: "today.context-cues.vertical")
                 .firstMatch
+        )
+        XCTAssertFalse(
+            app.buttons["today.context-cue.exercise"].exists,
+            "Expected the exercise context cue to remain display content, not an action."
+        )
+        XCTAssertFalse(
+            app.buttons["today.context-cue.work"].exists,
+            "Expected the work context cue to remain display content, not an action."
         )
         XCTAssertFalse(
             app.descendants(matching: .any)
@@ -78,14 +90,22 @@ final class BodyCompanionInternalUITests: XCTestCase {
                 .exists
         )
 
-        let resume = app.buttons["intake-entry.resume-draft"]
-        scrollDownUntilHittable(resume, in: app)
-        resume.tap()
+        // The cards are presentation content on the Today scroll view. Switch
+        // to the independent Records entry rather than coupling the rest of
+        // this test to reversing that long accessibility-size scroll position.
+        app.tabBars.buttons["记录"].tap()
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.records").firstMatch)
+        selectKneeFromTextPicker(in: app)
+        app.buttons["body-map.next"].tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
 
+        let intakeScroll = app.descendants(matching: .any)
+            .matching(identifier: "screen.signal-intake")
+            .firstMatch
+        assertExists(intakeScroll)
         let reviewSensation = app.buttons["sensation-picker.review"]
         let unknownSensation = app.buttons["sensation-picker.unknown-all"]
-        scrollUntilHittable(reviewSensation, in: app, maxSwipes: 14)
+        scrollUntilHittable(reviewSensation, in: app, within: intakeScroll, maxSwipes: 30)
         let sensationActions = app.descendants(matching: .any)
             .matching(identifier: "sensation-picker.actions.vertical")
             .firstMatch
@@ -96,11 +116,11 @@ final class BodyCompanionInternalUITests: XCTestCase {
                 .firstMatch
                 .exists
         )
-        scrollUntilHittable(unknownSensation, in: app, maxSwipes: 14)
+        scrollUntilHittable(unknownSensation, in: app, within: intakeScroll, maxSwipes: 30)
 
         let saveTemporal = app.buttons["temporal.save"]
         let unknownTemporal = app.buttons["temporal.unknown"]
-        scrollUntilHittable(saveTemporal, in: app, maxSwipes: 14)
+        scrollUntilHittable(saveTemporal, in: app, within: intakeScroll, maxSwipes: 30)
         let temporalActions = app.descendants(matching: .any)
             .matching(identifier: "temporal.actions.vertical")
             .firstMatch
@@ -111,7 +131,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
                 .firstMatch
                 .exists
         )
-        scrollUntilHittable(unknownTemporal, in: app, maxSwipes: 14)
+        scrollUntilHittable(unknownTemporal, in: app, within: intakeScroll, maxSwipes: 30)
     }
 
     @MainActor
@@ -379,12 +399,13 @@ final class BodyCompanionInternalUITests: XCTestCase {
             "Expected the text-region picker to dismiss after the explicit completion action."
         )
 
-        // The map's next action belongs to the sheet's background. On older
-        // simulator runtimes it is not materialized for XCTest until the
-        // system sheet has dismissed, so verify it only after the same
-        // explicit completion action a user takes.
+        // The map's next action is a persistent bottom safe-area action. It
+        // must become directly reachable after the same explicit completion
+        // action a user takes, without generic scrolling to compensate for a
+        // layout defect at accessibility sizes.
         let next = app.buttons["body-map.next"]
-        scrollUntilHittable(next, in: app)
+        assertExists(next)
+        XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
     }
 
     @MainActor
@@ -423,7 +444,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         )
         let next = app.buttons["body-map.next"]
         assertExists(next)
-        scrollUntilHittable(next, in: app)
+        XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
     }
 
     @MainActor
@@ -458,14 +479,39 @@ final class BodyCompanionInternalUITests: XCTestCase {
     private func scrollUntilHittable(
         _ element: XCUIElement,
         in app: XCUIApplication,
+        within scrollContainer: XCUIElement? = nil,
         maxSwipes: Int = 12,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        for _ in 0..<maxSwipes where !element.isHittable {
+        func isReachable() -> Bool {
+            element.exists && element.isHittable
+        }
+
+        for _ in 0..<maxSwipes where !isReachable() {
+            if let scrollContainer {
+                let start = scrollContainer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72))
+                let end = scrollContainer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.32))
+                start.press(forDuration: 0.01, thenDragTo: end)
+            } else {
+                app.swipeUp()
+            }
+        }
+        XCTAssertTrue(isReachable(), "Expected element to become hittable: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func scrollUntilExists(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        maxSwipes: Int = 12,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0..<maxSwipes where !element.exists {
             app.swipeUp()
         }
-        XCTAssertTrue(element.isHittable, "Expected element to become hittable: \(element)", file: file, line: line)
+        XCTAssertTrue(element.exists, "Expected presentation element to exist after scrolling: \(element)", file: file, line: line)
     }
 
     @MainActor

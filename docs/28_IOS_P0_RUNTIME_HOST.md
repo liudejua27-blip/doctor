@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 功能 ID | FEAT-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.5 |
-| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；`31311301360`、`31312416395` 与 `31313515662` 的 accessibility-size Host smoke 均仅 HOST-T-015 failed（exit 65），测试专用修复 `0ed0563` 已在本地复测完整 Host suite、单测与 Swift Core 94/94，remote retry 尚未推送；未构成生产、真机或资产批准 |
+| 版本 | 0.3.8 |
+| 状态 | Implemented / internal candidate 3D Simulator probe locally and remotely rebuilt；最新远端 run `31314859140`（SHA `98a4200`）的 accessibility-size Host smoke 仍仅 HOST-T-015 failed（12 passed、1 failed、0 skipped；`body-map.next` 存在但不可点击）。safe-area map footer / identifier 保留、Today 内容滚动与 type-agnostic intake 查询修复已通过本地定向/完整 Simulator 回归，远端 retry 尚未推送；不构成生产、真机或资产批准 |
 | 负责人 | iOS 负责人（待 GOV-01 指定） |
 | 审核角色 | iOS、QA、无障碍、隐私安全、3D 资产、产品 |
 | 变更级别 | B：安装运行时与测试路径；不得改变健康、AI、隐私或位置语义 |
@@ -104,7 +104,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | HOST-AC-005 | AI 身体助手页 | “普通对话尚未接入”与开始记录入口可见 | AI 分析、建议、行动计划或安全完成 |
 | HOST-AC-006 | 3D 被禁用或失败 | 可理解回退文案，2D/列表仍可完成 | 真机 3D、性能或碰撞验收 |
 | HOST-AC-007 | 显式内部候选 3D probe | 在独立 Simulator 启动中先确认当前 Scene 的 loader-entry，再只接受“候选加载后仍有列表入口”或“固定 2D 回退后仍有列表入口”两种终态 | 候选资产获批、视觉/解剖正确、任一 3D 命中、碰撞、性能、真机或发布验收 |
-| HOST-AC-008 | accessibility-size 结构回归 | `UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、两张今天情境卡、结构化页指定成对动作可纵向且可达 | VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机或发布验收 |
+| HOST-AC-008 | accessibility-size 结构回归 | `UICTContentSizeCategoryAccessibilityXXXL` 下文字部位 Sheet、两张今天展示性情境卡与结构化页指定成对动作保持纵向结构；内容滚动后，情境卡只验证单一合并的非动作卡片元素、独立 stable ID 与运行时 vertical 布局分支 identifier。所有布局分支容器不得把自己的 identifier 传播或覆盖到子卡片或子动作；结构化动作和地图继续动作才验证可点击 | VoiceOver、完整最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机或发布验收 |
 
 每个可测入口、可见状态与确认动作使用稳定的 identifier；identifier 不得编码身体位置、用户输入、健康事实或诊断词。
 
@@ -136,7 +136,7 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | ID | 未决项 | 责任角色 | 最晚门禁 | 临时行为 |
 |---|---|---|---|---|
 | HOST-OPEN-001 | 内部 App 的最终 Bundle ID、Team、签名和真机安装策略 | iOS + 安全 | 真机安装前 | 仅 Simulator，绝不提交 Team/证书 |
-| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；三次 HOST-T-015 远端尝试均失败，第三次为 pushed SHA `306f2b91` 缺少静态选择反馈文案。测试专用修复 `0ed0563` 已完成本地 accessibility-size 局部结构复测与 Swift Core 94/94，远端 retry 尚未推送 | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
+| HOST-OPEN-002 | Simulator 可证明的 VoiceOver/Dynamic Type/Reduce Motion 最低自动化范围；最新第四次 HOST-T-015 远端尝试为 SHA `98a4200` 的 run `31314859140`，文字部位 Sheet 关闭后 `body-map.next` 存在但不可点击（12 passed、1 failed、0 skipped）。最后新增两条“情境卡为非操作元素”UI 断言后的当前修复已在 iPhone 17 Pro / iOS 26.5 通过 XcodeBuildMCP 定向 HOST-T-015（1 passed、0 failed、0 skipped，86.0s）；完整 Host 脚本已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数），远端 retry 尚未推送 | iOS + 无障碍 + QA | GATE-06 前 | 仅声称局部 UI smoke，不称无障碍通过 |
 | HOST-OPEN-003 | 候选 3D 的跨 Simulator/Xcode 加载与回退 probe 稳定性；本地与单次远端重建已完成，但不替代资产或真机门禁 | iOS + 3D 资产 + QA | GATE-06 前 | 默认 UI smoke 强制 2D/列表；probe 仅显式开关、先确认 loader-entry 且两种终态都保持列表回退 |
 | HOST-OPEN-004 | Xcode project 的 CI macOS/Xcode 版本与 scheme 保持策略 | iOS + QA | 合并前 | 使用受版本控制 project/scheme 和当前 CI 的 Swift Package 基线 |
 
@@ -154,3 +154,6 @@ Host 必须显式构造 `InternalP0RuntimeConfiguration`（命名可在实现中
 | 2026-08-09 | 0.3.3 | 首次远端 run `31311301360` 在 iPhone 16 / iOS Simulator 18.5 只有 HOST-T-015 失败（exit 65），后端/契约、Swift 94、SDK build 和 Host 静态边界均成功。`7e64833` 只稳定 HOST-T-015 自动化见证；其本地 iPhone 17 Pro / iOS 26.5 复测通过，后续远端结果见 0.3.4，未关闭无障碍或设备门禁。 |
 | 2026-08-09 | 0.3.4 | `7e64833` 的第二次远端 run `31312416395` 仍只失败于 HOST-T-015（exit 65）；iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 中为 12 passed、1 failed、0 skipped，未找到 `body-map.next` Button。`e0f1089` 只将断言移至文字部位 Sheet 关闭后；本地完整 Host suite 与单独 HOST-T-015 通过，远端 retry pending，未关闭无障碍或设备门禁。 |
 | 2026-08-09 | 0.3.5 | pushed SHA `306f2b91` 的第三次远端 run `31313515662` 仍只失败于 HOST-T-015（exit 65）；iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 中为 12 passed、1 failed、0 skipped，未找到静态文案“已添加待确认位置：左膝附近”。测试专用修复 `0ed0563` 不再依赖该短暂选择反馈，先验证无并存 `MarkEditor`、完成/关闭文字部位 Sheet 后检查 `body-map.next`，并同样加固 `selectBoth`；本地完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，远端 retry 尚未推送，未关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.3.6 | 澄清 HOST-AC-008：今天的两张情境卡是单一合并的非动作展示信息，不是 P0 点击入口；accessibility-size smoke 在内容滚动后只验证其独立 stable ID 与 vertical 布局分支 identifier，且所有布局容器不得覆盖子卡片或子动作 ID，不用 `isHittable` 伪造展示动作验收。该布局 identifier 不是 VoiceOver 结论。结构化动作与地图继续动作仍必须可点击。该澄清不改变健康、API、网络、持久化、安全或 AI 行为；本版本执行收据待后续验证归档。 |
+| 2026-08-09 | 0.3.7 | 归档 SHA `98a4200` 的第四次远端 run `31314859140`：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped；唯一 HOST-T-015 失败是文字部位 Sheet 关闭后 `body-map.next` 已存在但不可点击，Backend and contracts、Swift 94、SDK build 与 Host 静态边界均成功。后续当前工作树把继续动作固定在 bottom safe-area，并保留展示性情境卡/子动作 identifier；在最后的 Today 强制内容滚动与 type-agnostic intake 查询小改后，当前版本本地复测与远端 retry 均待执行。该状态不关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.3.8 | 归档当前工作树的 safe-area map footer、identifier 保留、Today 内容滚动与 type-agnostic intake 查询修复；最后新增两条“情境卡为非操作元素”UI 断言后，iPhone 17 Pro / iOS 26.5 的 XcodeBuildMCP 定向 HOST-T-015 为 1 passed、0 failed、0 skipped（86.0s）。完整 `run_internal_ios_host_tests.sh` 已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数）；远端 retry 尚未推送。这些仍只是内部 Simulator 局部回归，不关闭无障碍、真机或设备门禁。 |

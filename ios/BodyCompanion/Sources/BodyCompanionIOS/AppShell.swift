@@ -124,10 +124,13 @@ private struct TodayView: View {
             }
             .padding(20)
         }
+        // Keep the screen identifier on the scroll content itself. Applying it
+        // after outer presentation modifiers can collapse child display-card
+        // identifiers in XCTest's accessibility hierarchy.
+        .accessibilityIdentifier("screen.today")
         .navigationTitle("今天")
         .safeAreaPadding(.top)
         .companionScreenBackground()
-        .accessibilityIdentifier("screen.today")
     }
 
     @ViewBuilder
@@ -147,6 +150,7 @@ private struct TodayView: View {
                     identifier: "today.context-cue.work"
                 )
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("today.context-cues.vertical")
         } else {
             HStack(spacing: 12) {
@@ -163,6 +167,7 @@ private struct TodayView: View {
                     identifier: "today.context-cue.work"
                 )
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("today.context-cues.horizontal")
         }
     }
@@ -401,7 +406,12 @@ private struct ContextCueCard: View {
             RoundedRectangle(cornerRadius: BodyCompanionTheme.compactCornerRadius, style: .continuous)
                 .stroke(BodyCompanionTheme.line.opacity(0.8), lineWidth: 1)
         }
-        .accessibilityElement(children: .combine)
+        // Present the card as one non-action accessibility element. Relying on
+        // implicit child combination leaves this display-only card without a
+        // stable identifier on some Simulator runtimes at accessibility sizes.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title)，\(detail)")
+        .accessibilityAddTraits(.isStaticText)
         .accessibilityIdentifier(identifier)
     }
 }

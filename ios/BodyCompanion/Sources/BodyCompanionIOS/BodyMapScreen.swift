@@ -135,21 +135,27 @@ public struct BodyMapScreen: View {
                         model: model,
                         suppressAutomaticEditor: isTextRegionPickerPresented
                     )
-
-                    NavigationLink(value: AppRoute.intake) {
-                        Label("下一步：描述你的感受", systemImage: "arrow.right")
-                    }
-                    .buttonStyle(CompanionPrimaryButtonStyle())
-                    .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
-                    .accessibilityIdentifier("body-map.next")
                 }
             }
             .padding(20)
         }
+        .accessibilityIdentifier("screen.body-map")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !model.marks.isEmpty {
+                continuationAction
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(BodyCompanionTheme.canvas)
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(BodyCompanionTheme.line.opacity(0.72))
+                            .frame(height: 1)
+                    }
+            }
+        }
         .navigationTitle("记录这次不适")
         .safeAreaPadding(.top)
         .companionScreenBackground()
-        .accessibilityIdentifier("screen.body-map")
         .sheet(isPresented: $isTextRegionPickerPresented) {
             NavigationStack {
                 AccessibleRegionPicker(
@@ -177,6 +183,15 @@ public struct BodyMapScreen: View {
                 model.restoreMarks(previousMarks)
             }
         }
+    }
+
+    private var continuationAction: some View {
+        NavigationLink(value: AppRoute.intake) {
+            Label("下一步：描述你的感受", systemImage: "arrow.right")
+        }
+        .buttonStyle(CompanionPrimaryButtonStyle())
+        .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
+        .accessibilityIdentifier("body-map.next")
     }
 
     @ViewBuilder

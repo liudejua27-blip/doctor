@@ -7,7 +7,7 @@
 - 文档真源已经收敛到 `docs/`：需求、术语、架构、数据、API、Agent、2D/3D、安全、隐私、测试、开源采用、路线图、追踪和执行证据均有稳定入口。
 - 当前工程状态只能称为 `Prototype verified`：已证明若干类型、状态、权限和失败关闭边界，未证明临床安全、生产可靠性、真实模型许可或真实用户 30 秒完成目标。
 - 首发产品重心已明确为“运动/工作不适 → 位置 → 情境化 AI 追问 → 安全行动 → 复查/沟通摘要”；具体功能仍是 Draft，不能被描述为已上线或临床批准能力。
-- [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的仅限内部 Simulator App Host 已在本地与历史远端 CI 重建；`0105cd7` 的 94 项 Core 与 HOST-T-001～014 已由 run `31307042209` 在 iPhone 16 / iOS Simulator 18.5 重建。`7d8bf59` 的首次远端 run `31311301360`、`7e64833` 的第二次 run `31312416395` 与 pushed SHA `306f2b91` 的第三次 run `31313515662` 均只失败于 HOST-T-015（均为 exit 65）；后两次运行在 iPhone 16 / iOS 18.5 / Xcode 16.4 中，第三次为 12 passed、1 failed、0 skipped，断言未找到静态文案“已添加待确认位置：左膝附近”，而后端/契约、Swift 94、iPhoneOS SDK build 和 Host 静态边界均成功。测试专用修复 `0ed0563` 不再依赖短暂选择反馈，先验证无并存 `MarkEditor`、实际完成/关闭文字部位 Sheet 后检查 `body-map.next`，并同样加固 `selectBoth`；本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，远端复测尚未推送。该工程例外不新增产品样机层，也不替代真机/生产验证；接下来仍须按 [REL-01 当前执行顺序](13_DELIVERY_ROADMAP.md#3-当前执行顺序)关闭生产门禁。
+- [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 的仅限内部 Simulator App Host 已在本地与历史远端 CI 重建；`0105cd7` 的 94 项 Core 与 HOST-T-001～014 已由 run `31307042209` 在 iPhone 16 / iOS Simulator 18.5 重建。最新第四次远端 run `31314859140`（SHA `98a4200`）仍只失败于 HOST-T-015：iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 的 Host smoke 为 12 passed、1 failed、0 skipped，文字部位 Sheet 关闭后 `body-map.next` 已存在但不可点击；Backend and contracts、Swift 94、iPhoneOS SDK build 与 Host 静态边界均成功。当前 safe-area CTA / identifier 保留、Today 内容滚动与 type-agnostic intake 查询修复在最后新增两条“情境卡为非操作元素”UI 断言后，已在 iPhone 17 Pro / iOS 26.5 通过定向 HOST-T-015（1/0/0，86.0s）；完整 Host 脚本已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数），远端重试尚未推送。该工程例外不新增产品样机层，也不替代真机/生产验证；接下来仍须按 [REL-01 当前执行顺序](13_DELIVERY_ROADMAP.md#3-当前执行顺序)关闭生产门禁。
 - [GOV-01 GATE-02 决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) 已准备好供具名责任人填写和书面批准；在其关闭前保持内部原型边界。
 - [FEAT-COMP-01](25_CONVERSATIONAL_RECOVERY_COMPANION.md) 已附 P1I“情境 → 单一确定性追问”评审输入：当前按 CONFLICT-002 的保守临时行为由 Application Service 决定未来普通题选择权，模型只可处理当前计划的回答；它不构成 API、Schema、临床题目或实现授权。
 
@@ -67,7 +67,7 @@ flowchart TD
 - [UX-COMP-01 对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md)：上述主闭环的评审级屏幕、来源标签、安全替代、无障碍与六个走查场景；不新增契约或实现授权。
 - [TEST-COMP-01 对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)：上述主闭环的安全、隐私、无障碍、可用性和发布门禁；未执行。
 - [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
-- [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的 Simulator App Host、显式关闭能力集、默认 P0 UI smoke、专用候选 3D probe 与局部 accessibility-size 结构 smoke；基础 smoke、候选 probe 与完整感觉入口均已在本地及 run `31307042209` 的远端 CI 重建。`31311301360`、`31312416395` 和 `31313515662` 均只在 HOST-T-015 失败；测试专用修复 `0ed0563` 已在本地复测完整 suite、单测与 Swift Core 94/94，远端复测尚未推送，internal only。
+- [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的 Simulator App Host、显式关闭能力集、默认 P0 UI smoke、专用候选 3D probe 与局部 accessibility-size 结构 smoke；基础 smoke、候选 probe 与完整感觉入口均已在本地及 run `31307042209` 的远端 CI 重建。最新 `31314859140`（SHA `98a4200`）仅在 HOST-T-015 失败，`body-map.next` 存在但不可点击；最后新增两条“情境卡为非操作元素”UI 断言后的当前修复已在本地定向（1/0/0，86.0s）复测，完整 Host 脚本已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数），远端 retry 尚未推送，internal only。
 - [TEST-IOS-P0-RUNTIME-01 内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)：构建、安装、启动、2D/列表回退、无网络/权限/持久化负向检查、候选 Scene loader-entry/终态、完整感觉/unknown 入口和局部 accessibility-size 结构回归；本地和远端 CI 均只形成 Simulator 证据。
 
 实现入口：
@@ -96,7 +96,7 @@ flowchart TD
 | REL-01 | [交付路线图](13_DELIVERY_ROADMAP.md) | 当前生产门禁、依赖和退出条件 | Active roadmap |
 | GOV-01 | [GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) | 具名责任、地区、外测与宣传边界的书面决策和退出条件 | Pending written approval |
 | FEAT-IOS-P0-RUNTIME-01 | [内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md) | 仅限内部 Simulator 的可安装 App Host、显式能力关闭和 UI smoke | Implemented / Simulator verified / internal only |
-| TEST-IOS-P0-RUNTIME-01 | [内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) | Host 的 Simulator 构建、启动、P0 路径及负向能力检查 | Executed locally: HOST-T-001～015；`31311301360`、`31312416395` 与 `31313515662` 均仅 HOST-T-015 failed，测试专用修复 `0ed0563` local retry passed / remote retry not yet pushed / Simulator-only evidence |
+| TEST-IOS-P0-RUNTIME-01 | [内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) | Host 的 Simulator 构建、启动、P0 路径及负向能力检查 | Historical local HOST-T-001～015 evidence；latest remote `31314859140` (SHA `98a4200`) only HOST-T-015 failed because `body-map.next` existed but was not hittable; after the final two display-card non-action UI assertions, current local targeted 1/0/0 (86.0s), full Host script exit 0 (402.313s; quiet output, no exact XCTest count), remote retry not yet pushed / Simulator-only evidence |
 | TRACE-01 | [追踪矩阵](14_TRACEABILITY_MATRIX.md) | 当前需求到实现/验证/门禁的追踪 | Active traceability |
 | TERM-01 | [统一术语](15_GLOSSARY.md) | 唯一名词和字段语义真源 | Baseline Draft |
 | EVIDENCE-01 | [当前工程样机验证记录](16_EXECUTION_EVIDENCE.md) | 可复现命令、已证明边界与未证明能力 | Evidence snapshot / Prototype-only |

@@ -628,11 +628,13 @@ public struct SignalIntakeScreen: View {
             VStack(alignment: .leading, spacing: 8) {
                 content()
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("\(identifier).vertical")
         } else {
             HStack(spacing: 12) {
                 content()
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("\(identifier).horizontal")
         }
     }
