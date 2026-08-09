@@ -361,13 +361,19 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // than treating off-screen content as absent.
         scrollUntilHittable(leftKnee, in: app)
         leftKnee.tap()
-        assertExists(app.buttons["body-map.next"])
         assertExists(app.staticTexts["已添加待确认位置：左膝附近"])
         XCTAssertFalse(app.buttons["body-map.mark-editor-done"].exists)
 
         let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
         done.tap()
+
+        // The map's next action belongs to the sheet's background. On older
+        // simulator runtimes it is not materialized for XCTest until the
+        // system sheet has dismissed, so verify it only after the same
+        // explicit completion action a user takes.
+        let next = app.buttons["body-map.next"]
+        scrollUntilHittable(next, in: app)
     }
 
     @MainActor
