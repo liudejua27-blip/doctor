@@ -361,12 +361,23 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // than treating off-screen content as absent.
         scrollUntilHittable(leftKnee, in: app)
         leftKnee.tap()
-        assertExists(app.staticTexts["已添加待确认位置：左膝附近"])
-        XCTAssertFalse(app.buttons["body-map.mark-editor-done"].exists)
+        // The selection notice is transient view feedback inside a lazy List,
+        // not the selected-location fact. Verify the stable interaction
+        // boundary instead: text selection must not open a competing editor.
+        XCTAssertFalse(
+            app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
+            "Text selection must not present a competing mark editor."
+        )
 
         let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
+        XCTAssertTrue(done.isHittable)
         done.tap()
+
+        XCTAssertFalse(
+            done.waitForExistence(timeout: 5),
+            "Expected the text-region picker to dismiss after the explicit completion action."
+        )
 
         // The map's next action belongs to the sheet's background. On older
         // simulator runtimes it is not materialized for XCTest until the
@@ -396,12 +407,23 @@ final class BodyCompanionInternalUITests: XCTestCase {
         leftKnee.tap()
         scrollUntilHittable(rightKnee, in: app)
         rightKnee.tap()
-        assertExists(app.staticTexts["已添加待确认位置：右膝附近"])
+        XCTAssertFalse(
+            app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
+            "Text selection must not present a competing mark editor."
+        )
 
         let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
+        XCTAssertTrue(done.isHittable)
         done.tap()
-        assertExists(app.buttons["body-map.next"])
+
+        XCTAssertFalse(
+            done.waitForExistence(timeout: 5),
+            "Expected the text-region picker to dismiss after the explicit completion action."
+        )
+        let next = app.buttons["body-map.next"]
+        assertExists(next)
+        scrollUntilHittable(next, in: app)
     }
 
     @MainActor
