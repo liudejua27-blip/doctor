@@ -20,10 +20,10 @@
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=60 checked_links=328 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=61 checked_links=345 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `80 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 位置状态、Zone + Pin 合计 20 个位置上限且超限不截断、地图仅同步位置、typed facts 不被地图覆盖、R2 普通 Agent 抑制及反序列化/恢复拒绝、多位置感觉显式关联、位置变更（包括同 ID 语义替换）使感觉复核/安全/普通 Agent 失效、恢复时地图投影一致性、P4 1.1 感觉—位置关系/唯一 ID/旧 code-only 版本拒绝、地图/草稿同步和草稿进入策略；不证明真机/签名/生产资产 |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `82 tests, 0 failures` | Swift Core 样机；包含 V2 Zone/Pin 位置状态、Zone + Pin 合计 20 个位置上限且超限不截断、地图仅同步位置、typed facts 不被地图覆盖、同 ID 位置语义替换的地图投影与感觉复核、删除最后一个关联位置时移除空感觉关系、R2 普通 Agent 抑制及反序列化/恢复拒绝、多位置感觉显式关联、位置变更使安全/普通 Agent/审批失效、恢复时地图投影一致性、P4 1.1 感觉—位置关系/唯一 ID/旧 code-only 版本拒绝、地图/草稿同步和草稿进入策略；不证明真机/签名/生产资产 |
 | EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `194 passed` | 后端合成/内存样机全量绿色；包含 R2 许可与 JSON Schema 负例回归；不证明生产依赖 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
@@ -34,7 +34,7 @@
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 | EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
 | EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核 | `5dddd83` 已解除“无 Simulator App target”阻塞：本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 与远端 iPhone 16 / iOS 18.5 的同一脚本均成功；两部登记 iPhone 仍 Offline/unavailable；USDZ `usdchecker`/ZIP/哈希及 CollisionGroup、triangle/barycentric、下背实体、根变换发现仍在 | 证明 Simulator Host 与候选文件结构；不证明 Sheet 的真机体验、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集、签名或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
-| EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | `5dddd83` 的 80 项 Swift Core、iPhoneOS SDK build 和 7 项本地 UI smoke 绿色。今天/记录/AI 身体助手入口统一显示进程内未确认草稿的继续或确认放弃后新建；3D 默认显式关闭并回退 2D；位置 Inspector 不含感觉/程度/动作线索；多位置感觉不自动复制；位置变更会清除旧 safety/普通 Agent/审批阶段；R2 不进入普通 Agent；P4 1.1 保留感觉与位置关系 | 证明 P0 路由、草稿状态、地图—结构化事实边界、列表回退、安全门和内部可运行壳未破坏；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI 或医疗能力 |
+| EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | 本轮 `swift test` 的 82 项 Swift Core、既有 iPhoneOS SDK build 和 7 项本地 UI smoke 绿色。今天/记录/AI 身体助手入口统一显示进程内未确认草稿的继续或确认放弃后新建；3D 默认显式关闭并回退 2D；位置 Inspector 不含感觉/程度/动作线索；多位置感觉不自动复制；canonical location 保持地图与 typed draft 同步，同 ID 语义替换重新复核感觉，删除不保留空感觉关联；位置变更会清除旧 safety/普通 Agent/审批阶段；R2 不进入普通 Agent；P4 1.1 保留感觉与位置关系 | 证明 P0 路由、草稿状态、地图—结构化事实边界、列表回退、安全门和内部可运行壳未破坏；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI 或医疗能力 |
 | EV-CURRENT-016 | 内部 iOS App Host | `xcodebuild -list` 发现 App target、UI test target 与共享 scheme；`check_internal_ios_host.py` 通过；本地 `bash scripts/run_internal_ios_host_tests.sh` 在 iPhone 17 Pro / iOS 26.5 产生 `7 passed, 0 failures`；远端 run `31295533318` 成功运行同一脚本 | 只证明无网络/Provider/权限/持久化/遥测入口的内部 Simulator UI smoke；不证明系统权限弹窗、网络抓包、真机、无障碍、性能、资产许可或发布 |
 
 ## 3. 当前已证明

@@ -53,7 +53,7 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 
 ## 6. 结果与签字
 
-- 本地 Core 全量：80 tests、0 failures；`scripts/check_baseline.py`：56 Markdown、16 Schema、1 候选资产清单、禁止源码引用 0；
+- 本地 Core 全量：82 tests、0 failures；其中 V2.5 覆盖 canonical location 投影、同 ID 位置语义替换后的感觉复核，以及删除最后一个关联位置时不保留空感觉关系；`scripts/check_baseline.py`：61 Markdown、345 links、16 Schema、36 OpenAPI paths、1 候选资产清单、禁止源码引用 0；
 - iOS `BodyCompanionIOS` 与 `BodyCompanionPrototype` generic iOS Debug build：绿色（无签名）；
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；

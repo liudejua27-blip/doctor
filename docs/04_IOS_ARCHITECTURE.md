@@ -149,7 +149,7 @@ flowchart TB
 
 `BodyAssetManifest` 是本地/发布流水线提供的版本化 metadata 清单；`BodyAssetRuntimeGate` 在 `BodyMapScreen` 请求 RealityKit 前执行。当前实现只解析和校验清单，不读取、下载、哈希或加载模型文件；`candidate/blocked/retired`、未知版本、请求变体不匹配或任何交叉约束失败都返回 2D/列表回退。只有未来的文件签名/哈希流水线、法务/解剖审核、设备性能和无障碍证据全部满足后，才能把 gate decision 接到真正的 loader。
 
-P0 中的 `IntakeEntryPolicy` 仅针对内存中的 `SignalIntakeDraft`：有位置、已经离开 `choosingLocation`，或仍有任一未确认事实/复核状态的草稿可继续；`choosingLocation` 回到 `BodyMapScreen`，其他阶段直达 `SignalIntakeScreen`。任何“新建”必须经过用户可见的放弃确认并调用本地 reset；取消不改变 draft。它不读写文件、不声称恢复成功，也不创建正式资源。`SignalIntakeModel` 是当前会话中位置集合的写入协调点：结构化描述页删除某个 location 时，必须同步移除 `BodyMapModel` 的同 ID 草稿标记；地图后续只能写入 `BodyLocation` 集合，绝不能把已删 Marker、感觉、程度、因素或感觉关联写回 draft。只要位置集合的值发生变化（即使 Marker ID 相同但区域、侧别或表面改变），P0 都立即清除本地 safety 状态、普通 Agent/审批阶段和全局未知感觉答案，并使感觉组回到待复核，退回 `collectingFacts`（无位置则 `choosingLocation`）；生产实现还必须在服务端完整重跑安全规则。
+P0 中的 `IntakeEntryPolicy` 仅针对内存中的 `SignalIntakeDraft`：有位置、已经离开 `choosingLocation`，或仍有任一未确认事实/复核状态的草稿可继续；`choosingLocation` 回到 `BodyMapScreen`，其他阶段直达 `SignalIntakeScreen`。任何“新建”必须经过用户可见的放弃确认并调用本地 reset；取消不改变 draft。它不读写文件、不声称恢复成功，也不创建正式资源。`SignalIntakeModel` 是当前会话中位置集合的写入协调点：任何被它接受的完整 `BodyLocation` 集合都必须与 `BodyMapModel` 的同一组 marker ID 保持一致；结构化描述页删除某个 location 时，必须同步移除地图的同 ID 草稿标记，而同 ID 的位置内容替换必须更新地图投影但保留纯视觉 `kind`/颜色。地图后续只能写入 `BodyLocation` 集合，绝不能把已删 Marker、感觉、程度、因素或感觉关联写回 draft。只要位置集合的值发生变化（即使 Marker ID 相同但区域、侧别、表面或锚点改变），P0 都立即清除本地 safety 状态、普通 Agent/审批阶段和全局未知感觉答案，并使感觉组回到待复核；若删除后某感觉不再关联任何活动 marker，必须移除该未确认感觉而非留下空关联。流程退回 `collectingFacts`（无位置则 `choosingLocation`）；生产实现还必须在服务端完整重跑安全规则。
 
 #### 5.1.1 内部 P0 App Host 与 Simulator 边界
 

@@ -773,6 +773,7 @@ public final class SignalIntakeModel {
         guard locations.count <= BodyMapModel.maximumMarkerCount,
               Set(locations.map(\.id)).count == locations.count
         else { return false }
+        guard bodyMapModel.synchronizeLocationProjection(locations) else { return false }
         guard locations != draft.locations else { return true }
 
         draft.locations = locations
@@ -788,7 +789,6 @@ public final class SignalIntakeModel {
         // The map is an editor projection for this same in-memory draft. A
         // location removed from the structured form must not reappear when
         // the user returns to the map and edits another marker.
-        bodyMapModel.removeDraft(id: id)
         _ = setLocations(remainingLocations)
     }
 

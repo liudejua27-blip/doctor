@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | FEAT-BODY-MAP-V2 |
-| 版本 | 1.4.0-draft |
+| 版本 | 1.5.0-draft |
 | 状态 | Active implementation spec / Prototype release gate open |
 | 负责人 | iOS + 产品交互 + 3D 资产 |
 | 关联需求 | PRD-F01、PRD-F03A、PRD-F04、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001、NFR-PERF-002 |
@@ -70,6 +70,7 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | BODY-V2-AC-011 | Given 窄屏选中一个 mark，When 打开编辑，Then 使用系统 Sheet/Detent 展示编辑器；大屏保持内联编辑；删除或清空后 Sheet 安全关闭。 |
 | BODY-V2-AC-012 | Given Zone 与 Pin 已合计达到 20 个或 3D 发生回退，When 用户再次操作，Then 显示明确原因，VoiceOver 能读出，且不丢失已有未确认 marks。 |
 | BODY-V2-AC-013 | Given 用户切换 2D/3D 或编辑位置 mark，When 状态同步到 Signal Intake，Then 每个用户动作只产生一次位置草稿修订，不覆盖结构化页已填写的感觉、程度、因素或感觉—位置关系。 |
+| BODY-V2-AC-014 | Given `SignalIntakeModel` 接受一个保留原 `marker_id` 的位置内容替换，When 区域、侧别、表面或锚点改变，Then `BodyMapModel` 同步该位置投影并保留纯视觉 Zone/Pin 表现；感觉只保留显式有效关联、感觉复核/全局未知状态失效，且不能留下空 `location_marker_ids`。 |
 
 ## 4. 客户端状态契约
 
@@ -88,6 +89,8 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 - RealityKit 只能发出 `BodyHitEvidence`，不能直接改 `BodyMark` 或档案；
 - `BodyMapModel` 是状态唯一所有者，Scene 只是镜像；
 - `BodyMapModel` 只能新增、选择和删除位置候选；不得拥有感觉、程度、动作/功能线索、因素或安全字段，也不得把它们投影回 `SignalIntakeDraft`；
+- `SignalIntakeModel` 接受位置集合后，必须把同一组 canonical `BodyLocation` 反向投影到 `BodyMapModel`，避免地图与 typed draft 分叉；该投影只能更新位置内容，保留已有 mark 的纯视觉 `kind`/颜色，不读取、复制或重写任何感觉、程度、因素或感觉—位置关系；
+- 即使 `marker_id` 不变，区域、侧别、表面或锚点发生替换也属于位置语义变更：必须使感觉复核与全局未知状态失效；删除某 marker 后若一个感觉无剩余显式关联，必须删除该未确认感觉而非保留空数组；
 - 删除/清空只删除未确认草稿；正式 Event 的删除/修正继续走 DATA-01/API-01；
 - 清空最后一个位置不隐式删除结构化页已填写的其他未确认事实；流程必须回到位置步骤、使旧安全失效，并把保留事实明确显示为可继续或经确认放弃的当前会话草稿；
 - 任何未知资产、未知区域或低置信映射都回退到 2D/列表并要求用户复核。
@@ -158,3 +161,4 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | 2026-08-09 | V2.2 删除与 BODY-01/IOS-01 冲突的 Zone 三态点击循环：重复点击只选中已有草稿，删除改为显式动作。 |
 | 2026-08-09 | V2.3 清除地图内感觉/程度/动作线索与 typed draft 覆盖路径：Body Map 只写 `BodyLocation`，多位置事实关系只在结构化录入页创建。 |
 | 2026-08-09 | V2.4 统一 Zone + Pin 的 20 个位置总上限；地图和 typed draft 共享同一上限，超限显式拒绝且不截断。 |
+| 2026-08-09 | V2.5 固定 `SignalIntakeModel` 与 `BodyMapModel` 的 canonical location 双向投影：同 ID 内容替换仍触发感觉复核，删除不保留空感觉关联；地图仍只处理位置。 |

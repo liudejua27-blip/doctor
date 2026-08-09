@@ -105,24 +105,53 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
     }
 
-    func testSameMarkerIDLocationReplacementRequiresSensationReviewAgain() throws {
+    func testSameMarkerIDLocationReplacementSynchronizesMapAndRequiresSensationReviewAgain() throws {
         let first = makeLocation()
         let replacement = makeLocation(
             regionID: "body.shoulder.general",
             laterality: .right,
             markerID: first.id
         )
-        let model = SignalIntakeModel()
-        XCTAssertTrue(model.setLocations([first]))
+        let map = BodyMapModel()
+        map.markingMode = .zone
+        _ = map.applySelection(first)
+        XCTAssertEqual(map.marks.count, 1)
+        let model = SignalIntakeModel(bodyMapModel: map)
+        XCTAssertTrue(model.setLocations(map.markerDrafts))
         try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
         XCTAssertTrue(model.markReviewed(.sensation))
 
         XCTAssertTrue(model.setLocations([replacement]))
 
         XCTAssertEqual(model.draft.locations.first?.regionID, "body.shoulder.general")
+        XCTAssertEqual(map.markerDrafts, [replacement])
+        XCTAssertEqual(map.marks.first?.kind, .zone)
         XCTAssertEqual(model.draft.facts.sensations.first?.locationMarkerIDs, [first.id])
         XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
         XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
+    }
+
+    func testCanonicalLocationDeletionProjectsToMapAndRemovesEmptySensationRelation() throws {
+        let first = makeLocation()
+        let second = makeLocation(regionID: "body.shoulder.general", laterality: .right)
+        let map = BodyMapModel()
+        map.markingMode = .zone
+        _ = map.applySelection(first)
+        map.markingMode = .pin
+        _ = map.applySelection(second)
+        XCTAssertEqual(map.marks.count, 2)
+        let model = SignalIntakeModel(bodyMapModel: map)
+        XCTAssertTrue(model.setLocations(map.markerDrafts))
+        try model.setSensation(.stiffness, selected: true, locationMarkerIDs: [first.id])
+        XCTAssertTrue(model.markReviewed(.sensation))
+
+        XCTAssertTrue(model.setLocations([second]))
+
+        XCTAssertEqual(map.markerDrafts, [second])
+        XCTAssertTrue(model.draft.facts.sensations.isEmpty)
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertFalse(model.draft.unknownGroups.contains(.sensation))
+        XCTAssertNoThrow(try model.draft.validate())
     }
 
     func testDecodedOrRestoredAgentDraftMustCarryNormalAgentSafety() throws {

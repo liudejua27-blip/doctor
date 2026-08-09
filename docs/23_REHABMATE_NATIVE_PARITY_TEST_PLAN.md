@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / V2.4 Core automated slice implemented / device run blocked |
+| 状态 | Active implementation spec / V2.5 Core automated slice implemented / device run blocked |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -44,6 +44,7 @@
 | TEST-BODY-V2-016 | UI | 窄屏编辑器 | 选中 mark 自动打开系统 Sheet；中/大屏保持可访问的内联编辑；删除后安全关闭 |
 | TEST-BODY-V2-017 | UI | 上限/回退反馈 | 第 21 个 Zone 或 Pin、3D gate 失败和无稳定命中都有固定文本/VoiceOver 反馈；已有 marks 保留 |
 | TEST-BODY-V2-018 | Unit | 单次位置同步 | 一次 mark 变化只触发一次 typed draft revision；地图只同步位置，不能重写感觉与位置关系 |
+| TEST-BODY-V2-019 | Unit | 同 ID 位置替换与删除关系收敛 | `SignalIntakeModel` 接受的 canonical location 必须投影回地图；同 `marker_id` 的内容替换使感觉复核/全局未知失效但不复制感觉；删除最后一个关联 marker 时移除该未确认感觉，不留下空关系 |
 
 ## 3. 真机与无障碍矩阵
 

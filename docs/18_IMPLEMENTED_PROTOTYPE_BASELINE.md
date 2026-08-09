@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | BASELINE-01 |
-| 版本 | 1.7.0 |
+| 版本 | 1.8.0 |
 | 状态 | Current prototype snapshot |
 | 快照日期 | 2026-08-09 |
 | 作用 | 取代已完成切片的独立 Feature Spec 与 Test Plan；记录现有代码边界、契约、测试和未证明范围 |
@@ -19,7 +19,7 @@
 
 | 能力组 | 当前实现 | 已证明 | 未证明/保持关闭 |
 |---|---|---|---|
-| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；重复 Zone 点击只选中同一草稿、删除为显式动作；结构化描述页删除位置会同步删除地图草稿标记；位置语义变更会使感觉重新待复核；结构化程度未填写不会视觉上冒充 0；禁止保存世界坐标；80 项 Core、iPhoneOS build、本地/远端 Simulator Host UI smoke 有证据；Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中、CollisionGroup/triangle 证据、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现 |
+| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；canonical location 投影保持地图与 typed draft 一致，同 ID 位置语义替换会使感觉重新待复核，删除最后一个关联位置不会留下空感觉关系；重复 Zone 点击只选中同一草稿、删除为显式动作；结构化程度未填写不会视觉上冒充 0；禁止保存世界坐标；82 项 Core、iPhoneOS build、本地/远端 Simulator Host UI smoke 有证据；Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中、CollisionGroup/triangle 证据、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现 |
 | 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；内部 prototype 可显式展示候选状态；USDZ 容器和哈希读回通过 | 真实生产文件哈希/签名、商用权、App Store 分发、解剖与性能、下背实体/根变换/碰撞复核 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系；多位置时新增感觉必须显式选择 Marker | 未确认事实不会静默升级；新增位置不会复制既有感觉；空、重复或非活动 Marker 关联被拒绝；显式未知和安全回退存在 | 真实用户 30 秒完成率、公开 API 联调、生产持久化 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机；P4 1.1 未确认感觉保留 code/可选标签/显式位置关联 | 所有者隔离、篡改失败、幂等/冲突状态；重复位置 ID、悬空感觉关联和旧 code-only 1.0 恢复被拒绝 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |
@@ -50,10 +50,10 @@
 
 | 检查 | 当前结果 | 解释 |
 |---|---|---|
-| Markdown | 60 files、0 断链、0 尾随空白 | 只证明清理后的文档结构完整 |
+| Markdown | 61 files、0 断链、0 尾随空白 | 只证明清理后的文档结构完整 |
 | JSON Schema | 16 个可解析 | 只证明 Schema 结构有效 |
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
-| iOS Swift | 80 tests、0 failures；iOS `BodyCompanionIOS` SDK build、`BodyCompanionInternal` 本地 7 项 UI smoke 与远端 CI Host smoke 绿色 | 证明内部 Simulator 可安装/启动的 P0 壳和回退路径；不能替代真机 UI 验收 |
+| iOS Swift | 82 tests、0 failures；iOS `BodyCompanionIOS` SDK build、`BodyCompanionInternal` 本地 7 项 UI smoke 与远端 CI Host smoke 绿色 | 证明内部 Simulator 可安装/启动的 P0 壳和回退路径；不能替代真机 UI 验收 |
 | 后端 Python | 194 tests、0 failures；P2A 聚焦 19 tests | 受控时钟回归已修复；只证明合成/内存样机 |
 | Git/CI | `codex/initial-git-ci-baseline` 受保护默认分支合并提交 `2bb8e8a`；本轮复刻切片提交 `6f232b4`、内部 Host `5dddd83`；双作业 workflow；Python 3.11 constraints | run `31295533318` 已在远端完成后端/契约与 iOS package/Host smoke；不等于真机或发布验收 |
 

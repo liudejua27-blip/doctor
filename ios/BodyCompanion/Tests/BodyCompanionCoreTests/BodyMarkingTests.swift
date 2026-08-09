@@ -80,6 +80,18 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertNil(model.lastMutation)
     }
 
+    func testCanonicalLocationProjectionRejectsOverLimitWithoutTruncatingMarks() {
+        let existing = location()
+        let model = BodyMapModel(markerDrafts: [existing])
+        let overLimit = (0...BodyMapModel.maximumMarkerCount).map { index in
+            location("body.test.region.\(index)", laterality: index.isMultiple(of: 2) ? .left : .right)
+        }
+
+        XCTAssertFalse(model.synchronizeLocationProjection(overLimit))
+        XCTAssertEqual(model.markerDrafts, [existing])
+        XCTAssertEqual(model.lastMutation, .rejectedMarkerLimit)
+    }
+
     func testDuplicateLocationIDIsRejectedBeforeMapAndDraftCanFork() {
         let firstLocation = location()
         let model = BodyMapModel()

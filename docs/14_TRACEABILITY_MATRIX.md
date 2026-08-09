@@ -21,7 +21,7 @@
 |---|---|---|---|---|---|
 | PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified | GATE-06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001 | `agent-turn`、内部 handoff schemas | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3 | Prototype verified; 情境化产品能力未实现 | GATE-03/04/07/08 |
-| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
+| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
 | PRD-F05 复查与趋势 | UX-01、DATA-01、API-01 | Event/CheckIn operations | 未形成正式数据闭环 | Planned | GATE-05/07 |

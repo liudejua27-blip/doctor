@@ -157,6 +157,61 @@ public final class BodyMapModel {
         lastMutation = nil
     }
 
+    /// Mirrors an already validated canonical location collection without
+    /// importing any SignalIntake fact into the map. Existing marks keep their
+    /// visual-only kind, colour token, and selection identity; only their
+    /// `BodyLocation` candidate is replaced. New locations use the same
+    /// neutral Pin projection as restoration because a BodyLocation does not
+    /// encode a Zone/Pin presentation choice.
+    ///
+    /// This is intentionally the only reverse projection used by
+    /// `SignalIntakeModel`: it prevents a same-ID location edit from leaving
+    /// the map rendering stale while keeping sensation, intensity, factors,
+    /// and safety outside the map boundary.
+    @discardableResult
+    public func synchronizeLocationProjection(_ locations: [BodyLocation]) -> Bool {
+        guard locations.count <= Self.maximumMarkerCount else {
+            lastMutation = .rejectedMarkerLimit
+            return false
+        }
+        guard Set(locations.map(\.id)).count == locations.count else {
+            lastMutation = .rejectedDuplicateLocation
+            return false
+        }
+        guard markerDrafts != locations else { return true }
+
+        let existingMarksByLocationID = Dictionary(
+            uniqueKeysWithValues: marks.map { ($0.location.id, $0) }
+        )
+        var nextPinColorToken = marks
+            .filter { $0.kind == .pin }
+            .map(\.colorToken)
+            .max()
+            .map { $0 + 1 } ?? 0
+
+        marks = locations.map { location in
+            if var existing = existingMarksByLocationID[location.id] {
+                existing.location = location
+                return existing
+            }
+            defer { nextPinColorToken += 1 }
+            return BodyMark(kind: .pin, location: location, colorToken: nextPinColorToken)
+        }
+
+        if let selectedMarkID,
+           let selected = marks.first(where: { $0.id == selectedMarkID || $0.location.id == selectedMarkID }) {
+            self.selectedMarkID = selected.id
+            focusedRegionID = selected.location.regionID
+        } else {
+            selectedMarkID = nil
+            if let focusedRegionID,
+               !marks.contains(where: { $0.location.regionID == focusedRegionID && $0.isVisible }) {
+                self.focusedRegionID = nil
+            }
+        }
+        return true
+    }
+
     /// Restores the last known-good visual projection if the canonical typed
     /// draft rejects a map change. This prevents the map from showing a
     /// location that the structured record, safety review, and later handoff

@@ -63,6 +63,7 @@ flowchart TD
 - [TEST-BODY-MAP-V2 原生行为等价测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)：状态、回退、无障碍、性能和供应链门禁。
 - [EVIDENCE-DEVICE-01 真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md)：本轮设备可用性、Sheet/VoiceOver/Dynamic Type/Reduce Motion、3D 性能、碰撞命中和候选资产审核结果；Blocked 不得外推为通过。
 - [FEAT-COMP-01 对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md)：运动/工作不适的主闭环、AI 对话、资料可见性、审核行动和沟通摘要的产品/交互真源；Draft，未实现。
+- [UX-COMP-01 对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md)：上述主闭环的评审级屏幕、来源标签、安全替代、无障碍与六个走查场景；不新增契约或实现授权。
 - [TEST-COMP-01 对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md)：上述主闭环的安全、隐私、无障碍、可用性和发布门禁；未执行。
 - [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
 - [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的 Simulator App Host、显式关闭能力集和 P0 UI smoke；已在本地与远端 CI 验证，internal only。
@@ -106,6 +107,7 @@ flowchart TD
 | TEST-BODY-MAP-V2 | [原生身体地图交互测试计划](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) | 行为状态、回退、无障碍和供应链测试 | Automated slice implemented / device run blocked |
 | EVIDENCE-DEVICE-01 | [真机与资产审核证据](24_DEVICE_VALIDATION_EVIDENCE.md) | 真机可用性、无障碍、3D 性能、碰撞命中和候选资产生产审核 | Simulator Host passed / physical device and production approval blocked |
 | FEAT-COMP-01 | [对话式恢复决策核心](25_CONVERSATIONAL_RECOVERY_COMPANION.md) | 运动/工作不适的情境化 AI 追问、审核行动、复查和沟通摘要 | Draft / P0 visual prototype only |
+| UX-COMP-01 | [对话式身体评估界面交付说明](30_CONVERSATIONAL_ASSESSMENT_SCREEN_SPEC.md) | 将既有对话式评估真源转为屏幕、来源、替代安全、无障碍与走查交付；不定义新能力 | Draft / Review-only / GATE-02 + ADR-0019 blocked |
 | TEST-COMP-01 | [对话式恢复决策核心测试计划](26_CONVERSATIONAL_RECOVERY_COMPANION_TEST_PLAN.md) | 主闭环的产品、安全、隐私、无障碍与可用性验证 | Draft / P0 build passed; full plan not executed |
 
 ## 机器可读契约
