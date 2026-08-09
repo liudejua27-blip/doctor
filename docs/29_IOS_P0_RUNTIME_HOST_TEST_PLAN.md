@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.4.2-draft |
-| 状态 | Executed local smoke including candidate 3D probe and text-list Area-safe flow / internal-only evidence |
+| 版本 | 0.4.3-draft |
+| 状态 | Partially executed: HOST-T-001～013 have internal-only evidence; HOST-T-014 is planned |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -42,6 +42,7 @@
 | HOST-T-011 | 存储负向 | 无 UserDefaults/Keychain/文件/数据库健康草稿写入；重启不宣称恢复 | 静态 + UI |
 | HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；文字入口、搜索框、无结果状态和选项使用稳定目录 ID（不能使用过滤后的序号或用户输入）；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
 | HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留共享文字列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留同一入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
+| HOST-T-014 | 更多感觉与未知边界 | 从结构化描述页展开具有稳定、非健康内容 identifier `sensation-picker.more-open` 的“更多感觉”，以固定内部中文标签“麻木”选中既有稳定枚举中的扩展项（不依赖用户输入或过滤序号）；它沿用显式位置关联、只形成未确认草稿，不显示 AI 建议、网络、保存成功或医学结论。两个位置时还必须分别呈现“部分位置的感觉说不清”和“这些位置的感觉都说不清”，不能再出现重复的单位置同义入口 | Simulator UI + Core |
 
 ### 3.1 候选 3D probe 的可接受结果
 
@@ -76,7 +77,7 @@ Simulator smoke 可以证明 accessibility identifier、可见文案、无 3D �
 
 ## 6. 通过条件与停止规则
 
-通过 Simulator Host smoke 的最低条件：HOST-T-001～013 均有自动化或静态覆盖、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。系统 confirmationDialog 的取消/确认状态转换必须由 UI black-box 回归与 Core 回归共同锁定，避免把当前 XCTest 对原生系统按钮层级的可见性差异误写为功能缺口。
+通过 Simulator Host smoke 的最低条件：HOST-T-001～014 均有自动化或静态覆盖、原有回归不退化、无新增 API/Schema/健康字段，且输出证据明确标记为内部 Simulator。系统 confirmationDialog 的取消/确认状态转换必须由 UI black-box 回归与 Core 回归共同锁定，避免把当前 XCTest 对原生系统按钮层级的可见性差异误写为功能缺口。语义感觉变更后的安全失效与高风险拒绝还必须由 Core 覆盖，不能由 Host UI 替代。
 
 以下任一项失败即停止：2D/列表不能完成、草稿被静默丢弃或误称保存、普通 AI/建议被伪造、检测到网络/Provider/权限/持久化/分析入口、候选 3D 没有回退、或文档把 Simulator 外推为真机/生产。
 
@@ -130,3 +131,4 @@ not proven: 不点击人体；不证明真实 VoiceOver、最大 Dynamic Type、
 | 2026-08-09 | 0.4.0-draft | 规定 HOST-T-005/013 使用共享的本地文字部位入口；实现后必须证明搜索选择只生成 Area/Zone，且不将 Simulator 外推为 VoiceOver 或真机通过。 |
 | 2026-08-09 | 0.4.1-draft | 已实现本地文字入口、稳定目录项与 Area/Zone-only 写入路径；Core 与本地 Simulator 执行收据由 EVIDENCE-01 归档，VoiceOver/真机门禁不变。 |
 | 2026-08-09 | 0.4.2-draft | 归档 `9fc54d4` 的 87 项 Core 与 10 项本地 Host UI 收据；候选 ready/fallback 共享入口和 Area-only 边界均经 Simulator 自动化覆盖，远端 CI run `31303340128` 已成功。 |
+| 2026-08-09 | 0.4.3-draft | 新增 HOST-T-014：完整感觉词典的“更多感觉”内部入口；实现前先按 CONFLICT-003 锁定修订后的安全失效与高风险 P0 拒绝边界。 |

@@ -91,12 +91,12 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertNoThrow(try model.draft.validate())
     }
 
-    func testAddingLocationInvalidatesGlobalUnknownSensationAnswer() {
+    func testAddingLocationInvalidatesGlobalUnknownSensationAnswer() throws {
         let first = makeLocation()
         let second = makeLocation()
         let model = SignalIntakeModel()
         model.setLocations([first])
-        model.markUnknown(.sensation)
+        try model.markUnknown(.sensation)
         XCTAssertTrue(model.draft.unknownGroups.contains(.sensation))
 
         model.setLocations([first, second])
@@ -264,7 +264,7 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertFalse(model.markReviewed(.sensation))
         XCTAssertThrowsError(try model.beginSafetyReview())
         for group in SignalIntakeDraft.requiredFactGroups {
-            model.markUnknown(group)
+            try model.markUnknown(group)
         }
 
         try model.beginSafetyReview()
@@ -383,10 +383,10 @@ final class SignalIntakeTests: XCTestCase {
 
         let model = SignalIntakeModel()
         model.setLocations([makeLocation()])
-        model.markUnknown(.sensation)
-        model.markUnknown(.intensity)
-        model.markUnknown(.temporal)
-        model.markUnknown(.functionalImpact)
+        try model.markUnknown(.sensation)
+        try model.markUnknown(.intensity)
+        try model.markUnknown(.temporal)
+        try model.markUnknown(.functionalImpact)
         let offline = model.offlineFacts()
         XCTAssertTrue(offline.sensationCodes.isEmpty)
         XCTAssertNil(offline.intensity)
@@ -435,6 +435,163 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertTrue(model.draft.facts.sensations.isEmpty)
     }
 
+    func testSensationCatalogDerivesCompleteAdditionalCasesWithoutDuplicates() {
+        let common = SignalSensationCode.commonCases
+        let additional = SignalSensationCode.additionalCases
+        let singleLocationChoices = SignalSensationCode.commonCases(forLocationCount: 1)
+        let multiLocationChoices = SignalSensationCode.commonCases(forLocationCount: 2)
+
+        XCTAssertEqual(common.count, 10)
+        XCTAssertEqual(additional.count, 22)
+        XCTAssertEqual(Set(common).intersection(additional), [])
+        XCTAssertEqual(Set(common).union(additional), Set(SignalSensationCode.allCases))
+        XCTAssertFalse(additional.contains(.other))
+        XCTAssertFalse(additional.contains(.unknown))
+        XCTAssertFalse(singleLocationChoices.contains(.unknown))
+        XCTAssertEqual(multiLocationChoices, common)
+    }
+
+    func testAdditionalSensationCodesKeepExplicitMarkerRelations() throws {
+        let first = makeLocation()
+        let second = makeLocation(regionID: "body.shoulder.general", laterality: .right)
+        let model = SignalIntakeModel()
+        model.setLocations([first, second])
+
+        try model.setSensation(.numbness, selected: true, locationMarkerIDs: [first.id])
+        try model.setSensation(.burning, selected: true, locationMarkerIDs: [second.id])
+        try model.setSensation(.radiating, selected: true, locationMarkerIDs: [first.id, second.id])
+
+        XCTAssertEqual(
+            model.draft.facts.sensations.first(where: { $0.code == .numbness })?.locationMarkerIDs,
+            [first.id]
+        )
+        XCTAssertEqual(
+            model.draft.facts.sensations.first(where: { $0.code == .burning })?.locationMarkerIDs,
+            [second.id]
+        )
+        XCTAssertEqual(
+            model.draft.facts.sensations.first(where: { $0.code == .radiating })?.locationMarkerIDs,
+            [first.id, second.id]
+        )
+    }
+
+    func testNoRuleSensationMutationInvalidatesAgentAndApprovalFlow() throws {
+        let model = try readyForSafetyWithSensation(.stiffness)
+        try model.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        try model.finishAgentDraft()
+        try model.requestApproval()
+        let revisionBefore = model.draft.draftRevision
+
+        try model.setSensation(.numbness, selected: true, locationMarkerIDs: [model.draft.locations[0].id])
+
+        XCTAssertEqual(model.phase, .collectingFacts)
+        XCTAssertEqual(model.safety.status, .notRun)
+        XCTAssertFalse(model.safety.ordinaryAgentAllowed)
+        XCTAssertFalse(model.draft.reviewedGroups.contains(.sensation))
+        XCTAssertEqual(model.draft.draftRevision, revisionBefore + 1)
+        XCTAssertEqual(Set(model.draft.facts.sensations.map(\.code)), [.stiffness, .numbness])
+        XCTAssertThrowsError(try model.finishAgentDraft()) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .wrongPhase)
+        }
+        XCTAssertThrowsError(try model.requestApproval()) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .wrongPhase)
+        }
+    }
+
+    func testOtherLabelAndUnknownSensationInvalidateNoRuleSafety() throws {
+        let labelModel = try readyForSafetyWithSensation(.other, otherLabel: "紧绷发沉")
+        try labelModel.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        try labelModel.setOtherSensationLabel("紧绷伴发热")
+
+        XCTAssertEqual(labelModel.phase, .collectingFacts)
+        XCTAssertEqual(labelModel.safety.status, .notRun)
+        XCTAssertEqual(labelModel.draft.facts.sensations.first?.userLabel, "紧绷伴发热")
+        XCTAssertFalse(labelModel.draft.reviewedGroups.contains(.sensation))
+
+        let unknownModel = try readyForSafetyWithSensation(.stiffness)
+        try unknownModel.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        XCTAssertTrue(try unknownModel.markUnknown(.sensation))
+
+        XCTAssertEqual(unknownModel.phase, .collectingFacts)
+        XCTAssertEqual(unknownModel.safety.status, .notRun)
+        XCTAssertTrue(unknownModel.draft.facts.sensations.isEmpty)
+        XCTAssertTrue(unknownModel.draft.reviewedGroups.contains(.sensation))
+        XCTAssertTrue(unknownModel.draft.unknownGroups.contains(.sensation))
+    }
+
+    func testElevatedSafetyRejectsSemanticSensationMutationsWithoutChangingDraft() throws {
+        for status in [SignalSafetyStatus.r0, .r1, .r2, .undetermined] {
+            let model = try readyForSafetyWithSensation(.other, otherLabel: "紧绷发沉")
+            try model.applySafety(SignalSafetyState(status: status, ordinaryAgentAllowed: false))
+            let originalDraft = model.draft
+
+            XCTAssertTrue(model.isSensationEditingBlockedBySafetyAction)
+            XCTAssertThrowsError(
+                try model.setSensation(.numbness, selected: true, locationMarkerIDs: [model.draft.locations[0].id])
+            ) { error in
+                XCTAssertEqual(error as? SignalIntakeTransitionError, .sensationRevisionRequiresServer)
+            }
+            XCTAssertEqual(model.draft, originalDraft)
+
+            XCTAssertThrowsError(try model.setOtherSensationLabel("不同的描述")) { error in
+                XCTAssertEqual(error as? SignalIntakeTransitionError, .sensationRevisionRequiresServer)
+            }
+            XCTAssertEqual(model.draft, originalDraft)
+
+            XCTAssertThrowsError(try model.markUnknown(.sensation)) { error in
+                XCTAssertEqual(error as? SignalIntakeTransitionError, .sensationRevisionRequiresServer)
+            }
+            XCTAssertEqual(model.draft, originalDraft)
+        }
+    }
+
+    func testSafetyActionPhaseRejectsSensationMutationEvenWithMalformedSafetyStatus() throws {
+        let location = makeLocation()
+        let draft = SignalIntakeDraft(
+            phase: .safetyAction,
+            locations: [location],
+            facts: SignalIntakeFacts(
+                sensations: [SignalSensation(code: .stiffness, locationMarkerIDs: [location.id])]
+            )
+        )
+        let model = try SignalIntakeModel(
+            restoring: draft,
+            bodyMapModel: BodyMapModel(markerDrafts: [location])
+        )
+        let originalDraft = model.draft
+
+        XCTAssertTrue(model.isSensationEditingBlockedBySafetyAction)
+        XCTAssertThrowsError(
+            try model.setSensation(.numbness, selected: true, locationMarkerIDs: [location.id])
+        ) { error in
+            XCTAssertEqual(error as? SignalIntakeTransitionError, .sensationRevisionRequiresServer)
+        }
+        XCTAssertEqual(model.draft, originalDraft)
+    }
+
+    func testNoOpSensationMutationsKeepSafetyAndRevisionUntouched() throws {
+        let selectedModel = try readyForSafetyWithSensation(.stiffness)
+        try selectedModel.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        let selectedOriginal = selectedModel.draft
+
+        try selectedModel.setSensation(.stiffness, selected: true, locationMarkerIDs: [selectedModel.draft.locations[0].id])
+        XCTAssertEqual(selectedModel.draft, selectedOriginal)
+
+        let otherModel = try readyForSafetyWithSensation(.other, otherLabel: "紧绷发沉")
+        try otherModel.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        let otherOriginal = otherModel.draft
+
+        try otherModel.setOtherSensationLabel("  紧绷发沉  ")
+        XCTAssertEqual(otherModel.draft, otherOriginal)
+
+        let unknownModel = readyForSafety()
+        try unknownModel.applySafety(SignalSafetyState(status: .noRuleTriggered, ordinaryAgentAllowed: true))
+        let unknownOriginal = unknownModel.draft
+
+        XCTAssertFalse(try unknownModel.markUnknown(.sensation))
+        XCTAssertEqual(unknownModel.draft, unknownOriginal)
+    }
+
     func testDraftDecoderRejectsUnknownTopLevelField() throws {
         let encoded = try JSONEncoder().encode(SignalIntakeDraft())
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
@@ -452,9 +609,28 @@ final class SignalIntakeTests: XCTestCase {
         let model = SignalIntakeModel()
         model.setLocations([makeLocation()])
         for group in SignalIntakeDraft.requiredFactGroups {
-            model.markUnknown(group)
+            try! model.markUnknown(group)
         }
         try! model.beginSafetyReview()
+        return model
+    }
+
+    private func readyForSafetyWithSensation(
+        _ code: SignalSensationCode,
+        otherLabel: String? = nil
+    ) throws -> SignalIntakeModel {
+        let model = SignalIntakeModel()
+        let location = makeLocation()
+        model.setLocations([location])
+        try model.setSensation(code, selected: true, locationMarkerIDs: [location.id])
+        if code == .other {
+            try model.setOtherSensationLabel(try XCTUnwrap(otherLabel))
+        }
+        XCTAssertTrue(model.markReviewed(.sensation))
+        for group in SignalIntakeDraft.requiredFactGroups.subtracting([.sensation]) {
+            try model.markUnknown(group)
+        }
+        try model.beginSafetyReview()
         return model
     }
 

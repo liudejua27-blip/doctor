@@ -180,6 +180,9 @@ v1 感觉代码的唯一序列化集合如下；显示文案、分组顺序和�
 
 `choosing_location → collecting_facts → safety_review → safety_action / agent_draft → review_facts → awaiting_approval`。规则不可用进入 `offline_draft`，错误进入 `failed`；`awaiting_approval` 仅表示准备服务端批准，不表示已创建正式 Event。
 
+- `SignalIntakeDraft.draft_revision`：同一 P1D 未确认客户端草稿的本地编辑版本；它不等于服务端 `DraftRevision`，不创建新的 Session/Turn 或 `ApprovalIntent`，也不具备 `retained_safety_action`。
+- `SemanticSensationMutation` / 语义感觉变更：新增或删除感觉、改变感觉—位置关联、改变规范化 `other` 标签，或在具体感觉与全组感觉未知间切换；完全相同的提交是 no-op。P0 仅为该类变更定义本地安全失效/高风险拒绝，其他安全相关事实见 CONFLICT-004。
+
 ### Episode
 
 Episode 生命周期只使用 `open | monitoring | resolved | closed`。允许转换为：`open→monitoring/resolved/closed`、`monitoring→open/resolved/closed`、`resolved→open/closed`、`closed→open`；表外转换拒绝，`resolved/closed→open` 必须由用户明确选择并审计。`improving | stable | worsening | fluctuating | unknown` 是某次 `BodySignalEvent.trend`，不是 Episode 状态。再次出现时默认创建带 `recurrence_of_episode_id` 的新 Episode（或由用户明确选择按 DATA-01 重开原 Episode），`recurrence` 不是覆盖旧 Episode 的状态值。

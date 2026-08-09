@@ -96,7 +96,7 @@ flowchart TD
 | REL-01 | [交付路线图](13_DELIVERY_ROADMAP.md) | 当前生产门禁、依赖和退出条件 | Active roadmap |
 | GOV-01 | [GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) | 具名责任、地区、外测与宣传边界的书面决策和退出条件 | Pending written approval |
 | FEAT-IOS-P0-RUNTIME-01 | [内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md) | 仅限内部 Simulator 的可安装 App Host、显式能力关闭和 UI smoke | Implemented / Simulator verified / internal only |
-| TEST-IOS-P0-RUNTIME-01 | [内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) | Host 的 Simulator 构建、启动、P0 路径及负向能力检查 | Executed / Simulator-only evidence |
+| TEST-IOS-P0-RUNTIME-01 | [内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) | Host 的 Simulator 构建、启动、P0 路径及负向能力检查 | Partially executed: HOST-T-001～013 / Simulator-only evidence |
 | TRACE-01 | [追踪矩阵](14_TRACEABILITY_MATRIX.md) | 当前需求到实现/验证/门禁的追踪 | Active traceability |
 | TERM-01 | [统一术语](15_GLOSSARY.md) | 唯一名词和字段语义真源 | Baseline Draft |
 | EVIDENCE-01 | [当前工程样机验证记录](16_EXECUTION_EVIDENCE.md) | 可复现命令、已证明边界与未证明能力 | Evidence snapshot / Prototype-only |
@@ -156,6 +156,8 @@ flowchart TD
 - [ADR-0019：情境化行动建议与沟通摘要边界](decisions/ADR-0019-contextual-guidance-and-communication-summary.md)
 - [CONFLICT-001：R2 普通 Agent 门禁语义](decisions/CONFLICT-001-r2-ordinary-agent-gate.md)（开放；当前按更保守的 R3-only 行为执行）
 - [CONFLICT-002：普通问题选择权与 PydanticAI 职责](decisions/CONFLICT-002-question-selection-authority.md)（开放；当前不实施 P1I，并按保守临时行为由 Application Service 决定未来普通题选择权）
+- [CONFLICT-003：P1D 感觉修订与安全失效边界](decisions/CONFLICT-003-sensation-revision-safety-invalidation.md)（开放；当前普通路径修订必须重新安全检查，高风险安全行动中的直接本地修订保持拒绝）
+- [CONFLICT-004：P1D 非感觉事实修订与安全行动保留](decisions/CONFLICT-004-p1d-non-sensation-revision-safety-boundary.md)（开放；高风险位置及其他事实修订尚未形成 retained-action/revision 闭环，受影响能力不得外部发布）
 
 FRAME-01 是参考采用和模块落地真源；它不替代产品、数据、安全、隐私、契约或 ADR。上游项目只在 OSS-01 与 FRAME-01 明确的分类、版本和禁止清单内使用。
 

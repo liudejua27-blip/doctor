@@ -21,6 +21,55 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
+    func testMoreSensationsKeepsStructuredInternalDraftFlow() {
+        let app = launchApp()
+        selectKneeFromTextPicker(in: app)
+        app.buttons["body-map.next"].tap()
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
+
+        let moreSensations = app.descendants(matching: .any)
+            .matching(identifier: "sensation-picker.more-open")
+            .firstMatch
+        scrollUntilHittable(moreSensations, in: app)
+        moreSensations.tap()
+
+        let numbness = app.switches["麻木"]
+        scrollUntilHittable(numbness, in: app)
+        // A Form Toggle exposes a full-width accessibility row, while the
+        // native switch occupies its trailing edge. Hit the native control so
+        // this smoke test verifies a real user toggle instead of tapping only
+        // the label portion of the row.
+        numbness.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        // Assert the platform UISwitch state here. The standard Toggle
+        // semantics provide VoiceOver's localized on/off announcement, while
+        // XCTest exposes that state as the stable 0/1 string.
+        let selected = expectation(
+            for: NSPredicate(format: "value == %@", "1"),
+            evaluatedWith: numbness
+        )
+        wait(for: [selected], timeout: 5)
+        XCTAssertFalse(app.staticTexts["行动计划"].exists)
+        XCTAssertFalse(app.staticTexts["已保存"].exists)
+    }
+
+    @MainActor
+    func testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown() {
+        let app = launchApp()
+        selectBothKneesFromTextPicker(in: app)
+        app.buttons["body-map.next"].tap()
+        assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
+
+        let perLocationUnknown = app.switches["部分位置的感觉说不清"]
+        scrollUntilHittable(perLocationUnknown, in: app)
+        assertExists(perLocationUnknown)
+
+        let groupUnknown = app.buttons["这些位置的感觉都说不清"]
+        scrollUntilHittable(groupUnknown, in: app)
+        assertExists(groupUnknown)
+        XCTAssertFalse(app.switches["说不清/不想回答"].exists)
+    }
+
+    @MainActor
     func testTextPickerNoResultDoesNotCreateLocationDraft() {
         let app = launchApp()
         openBodyMap(in: app)
@@ -240,6 +289,33 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
+    private func selectBothKneesFromTextPicker(in app: XCUIApplication) {
+        openBodyMap(in: app)
+        let textPicker = app.buttons["body-map.text-picker-open"]
+        assertExists(textPicker)
+        textPicker.tap()
+
+        let search = app.textFields["body-map.text-picker.search"]
+        assertExists(search)
+        search.tap()
+        search.typeText("膝")
+        dismissKeyboard(in: app)
+
+        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
+        let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right"]
+        assertExists(leftKnee)
+        leftKnee.tap()
+        scrollUntilHittable(rightKnee, in: app)
+        rightKnee.tap()
+        assertExists(app.staticTexts["已添加待确认位置：右膝附近"])
+
+        let done = app.buttons["body-map.text-picker-done"]
+        assertExists(done)
+        done.tap()
+        assertExists(app.buttons["body-map.next"])
+    }
+
+    @MainActor
     private func assertTextPickerCanOpen(in app: XCUIApplication) {
         let textPicker = app.buttons["body-map.text-picker-open"]
         assertExists(textPicker)
@@ -264,6 +340,20 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(returnKey)
         returnKey.tap()
         XCTAssertFalse(app.keyboards.element.waitForExistence(timeout: 1), "Expected the search keyboard to dismiss before choosing a body region")
+    }
+
+    @MainActor
+    private func scrollUntilHittable(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        maxSwipes: Int = 6,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0..<maxSwipes where !element.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.isHittable, "Expected element to become hittable: \(element)", file: file, line: line)
     }
 
     @MainActor

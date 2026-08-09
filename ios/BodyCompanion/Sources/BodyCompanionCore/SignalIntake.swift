@@ -138,6 +138,24 @@ public enum SignalSensationCode: String, Codable, CaseIterable, Hashable, Sendab
     public static var commonCases: [SignalSensationCode] {
         [.aching, .dullPain, .sharpPain, .stabbing, .tightness, .stiffness, .swelling, .weakness, .other, .unknown]
     }
+
+    /// The rest of the stable ontology is intentionally derived instead of
+    /// copied into a second UI-only list. This keeps the explicit “更多感觉”
+    /// path complete when the shared enum changes.
+    public static var additionalCases: [SignalSensationCode] {
+        allCases.filter { !commonCases.contains($0) }
+    }
+
+    /// A single marked position has one unambiguous group-unknown action in
+    /// the P1D form. With multiple positions, the stable `unknown` code is
+    /// also selectable so the user can explicitly associate uncertainty with
+    /// only some of them rather than silently applying it to every marker.
+    public static func commonCases(forLocationCount locationCount: Int) -> [SignalSensationCode] {
+        guard locationCount > 1 else {
+            return commonCases.filter { $0 != .unknown }
+        }
+        return commonCases
+    }
 }
 
 public enum SignalIntensityContext: String, Codable, CaseIterable, Sendable {
@@ -295,6 +313,7 @@ public enum SignalIntakeTransitionError: String, Error, Equatable, Sendable {
     case invalidIntensity
     case invalidValue
     case unknownField
+    case sensationRevisionRequiresServer
 
     public var errorDescription: String? {
         switch self {
@@ -307,6 +326,7 @@ public enum SignalIntakeTransitionError: String, Error, Equatable, Sendable {
         case .invalidIntensity: "程度必须在 0 到 10 之间。"
         case .invalidValue: "输入内容不符合当前字段要求。"
         case .unknownField: "收到未支持的字段。"
+        case .sensationRevisionRequiresServer: "当前安全行动优先；此内部原型暂不支持直接修改感觉。"
         }
     }
 }
@@ -740,6 +760,18 @@ public final class SignalIntakeModel {
     public var phase: SignalIntakePhase { draft.phase }
     public var safety: SignalSafetyState { draft.safety }
     public var hasLocations: Bool { !draft.locations.isEmpty }
+    /// P0 cannot retain a historical safety action separately from the current
+    /// local snapshot. Editing a sensation while an elevated action is active
+    /// would therefore risk hiding that action. A server-side revision flow is
+    /// required before such edits can be supported.
+    public var isSensationEditingBlockedBySafetyAction: Bool {
+        switch draft.safety.status {
+        case .r0, .r1, .r2, .undetermined:
+            true
+        case .notRun, .noRuleTriggered, .unavailable:
+            draft.phase == .safetyAction
+        }
+    }
     /// P0 only keeps drafts in memory. A non-initial draft can be explicitly
     /// continued, but must never be presented as a persisted record.
     public var hasResumableDraft: Bool {
@@ -778,7 +810,7 @@ public final class SignalIntakeModel {
 
         draft.locations = locations
         reconcileSensationsAfterLocationChange(activeMarkerIDs: Set(locations.map(\.id)))
-        invalidateSafetyAndDependentFlowAfterLocationChange()
+        invalidateSafetyAndDependentFlow()
         touch()
         return true
     }
@@ -801,6 +833,7 @@ public final class SignalIntakeModel {
     ) throws {
         if !selected {
             guard let index = draft.facts.sensations.firstIndex(where: { $0.code == code }) else { return }
+            try prepareSemanticSensationMutation()
             draft.facts.sensations.remove(at: index)
             invalidateSensationReview()
             touch()
@@ -810,8 +843,10 @@ public final class SignalIntakeModel {
         let explicitMarkerIDs = try validatedSensationMarkerIDs(locationMarkerIDs)
         if let index = draft.facts.sensations.firstIndex(where: { $0.code == code }) {
             guard draft.facts.sensations[index].locationMarkerIDs != explicitMarkerIDs else { return }
+            try prepareSemanticSensationMutation()
             draft.facts.sensations[index].locationMarkerIDs = explicitMarkerIDs
         } else {
+            try prepareSemanticSensationMutation()
             draft.facts.sensations.append(
                 SignalSensation(code: code, locationMarkerIDs: explicitMarkerIDs)
             )
@@ -867,10 +902,22 @@ public final class SignalIntakeModel {
     /// therefore invalidates a local safety snapshot and every downstream
     /// Agent or approval phase; a production client must then ask the server
     /// to run the complete deterministic safety evaluation again.
-    private func invalidateSafetyAndDependentFlowAfterLocationChange() {
+    private func invalidateSafetyAndDependentFlow() {
         draft.safety = SignalSafetyState()
         draft.lastErrorCode = nil
         draft.phase = draft.locations.isEmpty ? .choosingLocation : .collectingFacts
+    }
+
+    /// A sensation is a safety-relevant fact. In the ordinary/local paths the
+    /// only safe response to a real mutation is to discard the stale local
+    /// assessment and all of its downstream privileges. Elevated actions are
+    /// deliberately not cleared because P0 has no retained action/revision
+    /// model; the caller must use the future server revision boundary instead.
+    private func prepareSemanticSensationMutation() throws {
+        guard !isSensationEditingBlockedBySafetyAction else {
+            throw SignalIntakeTransitionError.sensationRevisionRequiresServer
+        }
+        invalidateSafetyAndDependentFlow()
     }
 
     private func invalidateSensationReview() {
@@ -884,13 +931,23 @@ public final class SignalIntakeModel {
         guard let index = draft.facts.sensations.firstIndex(where: { $0.code == .other }) else {
             throw SignalIntakeTransitionError.invalidValue
         }
+        guard draft.facts.sensations[index].userLabel != normalized else { return }
+        try prepareSemanticSensationMutation()
         draft.facts.sensations[index].userLabel = normalized
         draft.reviewedGroups.remove(.sensation)
         draft.unknownGroups.remove(.sensation)
         touch()
     }
 
-    public func markUnknown(_ group: SignalFactGroup) {
+    @discardableResult
+    public func markUnknown(_ group: SignalFactGroup) throws -> Bool {
+        if group == .sensation {
+            let isNoOp = draft.reviewedGroups.contains(.sensation) &&
+                draft.unknownGroups.contains(.sensation) &&
+                draft.facts.sensations.isEmpty
+            guard !isNoOp else { return false }
+            try prepareSemanticSensationMutation()
+        }
         draft.reviewedGroups.insert(group)
         draft.unknownGroups.insert(group)
         if group == .sensation { draft.facts.sensations = [] }
@@ -898,6 +955,7 @@ public final class SignalIntakeModel {
         if group == .temporal { draft.facts.temporal = nil }
         if group == .functionalImpact { draft.facts.functionalImpacts = [] }
         touch()
+        return true
     }
 
     @discardableResult

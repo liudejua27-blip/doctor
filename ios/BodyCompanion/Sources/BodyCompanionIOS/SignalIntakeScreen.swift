@@ -20,6 +20,7 @@ public struct SignalIntakeScreen: View {
     @State private var rawUserText = ""
     @State private var otherSensationText = ""
     @State private var selectedSensationMarkerIDs: Set<UUID> = []
+    @State private var isMoreSensationsExpanded = false
     @State private var inlineError: String?
 
     public init(model: SignalIntakeModel) {
@@ -124,6 +125,15 @@ public struct SignalIntakeScreen: View {
 
     private var sensationSection: some View {
         Section {
+            if model.isSensationEditingBlockedBySafetyAction {
+                Label(
+                    "当前安全行动优先；此内部原型暂不支持直接修改感觉。",
+                    systemImage: "exclamationmark.shield"
+                )
+                .font(.footnote)
+                .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                .accessibilityIdentifier("sensation-picker.safety-editing-locked")
+            }
             if requiresExplicitSensationLocationSelection {
                 Text("先选择接下来要添加的感觉对应哪些位置。已存在的感觉可在各自下方单独调整。")
                     .font(.footnote)
@@ -142,18 +152,25 @@ public struct SignalIntakeScreen: View {
                     .frame(minHeight: 44)
                     .accessibilityHint("选择后，新添加的感觉只会关联到这个位置。")
                 }
+                .disabled(model.isSensationEditingBlockedBySafetyAction)
             }
-            ForEach(SignalSensationCode.commonCases, id: \.self) { code in
-                VStack(alignment: .leading, spacing: 8) {
-                    Toggle(code.displayName, isOn: Binding(
-                        get: { isSensationSelected(code) },
-                        set: { selected in setSensationSelection(code, selected: selected) }
-                    ))
-                    .frame(minHeight: 44)
-                    if isSensationSelected(code), requiresExplicitSensationLocationSelection {
-                        sensationAssociationPicker(for: code)
-                    }
-                }
+            sensationChoices(displayedCommonSensationCodes)
+            Button {
+                isMoreSensationsExpanded.toggle()
+            } label: {
+                Label(
+                    isMoreSensationsExpanded
+                        ? "收起更多感觉"
+                        : "更多感觉（\(SignalSensationCode.additionalCases.count) 项）",
+                    systemImage: isMoreSensationsExpanded ? "chevron.up.circle" : "chevron.down.circle"
+                )
+            }
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("sensation-picker.more-open")
+            .accessibilityLabel(isMoreSensationsExpanded ? "收起更多感觉" : "更多感觉，共 \(SignalSensationCode.additionalCases.count) 项")
+            .accessibilityValue(isMoreSensationsExpanded ? "已展开" : "已收起")
+            if isMoreSensationsExpanded {
+                sensationChoices(SignalSensationCode.additionalCases)
             }
             if model.draft.unknownGroups.contains(.sensation) {
                 Text("已记录为：说不清/不想回答")
@@ -163,20 +180,27 @@ public struct SignalIntakeScreen: View {
             if model.draft.facts.sensations.contains(where: { $0.code == .other }) {
                 TextField("请补充其他感觉（必填）", text: $otherSensationText, axis: .vertical)
                     .lineLimit(2...4)
+                    .disabled(model.isSensationEditingBlockedBySafetyAction)
                 Button("保存其他感觉") {
                     perform {
                         try model.setOtherSensationLabel(otherSensationText)
                     }
                 }
-                .disabled(otherSensationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(
+                    model.isSensationEditingBlockedBySafetyAction ||
+                        otherSensationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
                 .frame(minHeight: 44)
             }
             HStack {
                 Button("确认感觉") { model.markReviewed(.sensation) }
                     .frame(minHeight: 44)
-                Button(unknownSensationButtonTitle) { model.markUnknown(.sensation) }
+                Button(unknownSensationButtonTitle) {
+                    perform { try model.markUnknown(.sensation) }
+                }
                     .frame(minHeight: 44)
             }
+            .disabled(model.isSensationEditingBlockedBySafetyAction)
         } header: {
             Text("感觉")
         } footer: {
@@ -192,8 +216,44 @@ public struct SignalIntakeScreen: View {
         requiresExplicitSensationLocationSelection ? "这些位置的感觉都说不清" : "说不清/不想回答"
     }
 
+    /// Keep the single-location unknown action unambiguous. If an older or
+    /// adapter-provided per-marker unknown is already present, show it only as
+    /// an editable existing answer rather than adding a second initial choice.
+    private var displayedCommonSensationCodes: [SignalSensationCode] {
+        var codes = SignalSensationCode.commonCases(forLocationCount: model.draft.locations.count)
+        if !requiresExplicitSensationLocationSelection, isSensationSelected(.unknown) {
+            codes.append(.unknown)
+        }
+        return codes
+    }
+
+    @ViewBuilder
+    private func sensationChoices(_ codes: [SignalSensationCode]) -> some View {
+        ForEach(codes, id: \.self) { code in
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(sensationDisplayName(for: code), isOn: Binding(
+                    get: { isSensationSelected(code) },
+                    set: { selected in setSensationSelection(code, selected: selected) }
+                ))
+                .frame(minHeight: 44)
+                if isSensationSelected(code), requiresExplicitSensationLocationSelection {
+                    sensationAssociationPicker(for: code)
+                }
+            }
+            .disabled(model.isSensationEditingBlockedBySafetyAction)
+        }
+    }
+
     private func isSensationSelected(_ code: SignalSensationCode) -> Bool {
         model.draft.facts.sensations.contains { $0.code == code }
+    }
+
+    private func sensationDisplayName(for code: SignalSensationCode) -> String {
+        guard code == .unknown else { return code.displayName }
+        if requiresExplicitSensationLocationSelection {
+            return "部分位置的感觉说不清"
+        }
+        return "已记录：说不清/不想回答（可关闭）"
     }
 
     private func selectedMarkerIDsForNewSensation() -> [UUID] {
@@ -209,7 +269,7 @@ public struct SignalIntakeScreen: View {
 
     @ViewBuilder
     private func sensationAssociationPicker(for code: SignalSensationCode) -> some View {
-        Text("“\(code.displayName)”对应的位置")
+        Text("“\(sensationDisplayName(for: code))”对应的位置")
             .font(.footnote.weight(.medium))
             .foregroundStyle(BodyCompanionTheme.secondaryInk)
         ForEach(model.draft.locations) { location in
@@ -297,7 +357,9 @@ public struct SignalIntakeScreen: View {
                 }
                 .frame(minHeight: 44)
             }
-            Button("程度说不清/不想回答") { model.markUnknown(.intensity) }
+            Button("程度说不清/不想回答") {
+                perform { try model.markUnknown(.intensity) }
+            }
                 .frame(minHeight: 44)
         } header: {
             Text("程度")
@@ -326,7 +388,7 @@ public struct SignalIntakeScreen: View {
                     model.markReviewed(.temporal)
                 }
                 .frame(minHeight: 44)
-                Button("未知") { model.markUnknown(.temporal) }
+                Button("未知") { perform { try model.markUnknown(.temporal) } }
                     .frame(minHeight: 44)
             }
         } header: {
@@ -385,7 +447,9 @@ public struct SignalIntakeScreen: View {
                 model.markReviewed(.functionalImpact)
             }
             .frame(minHeight: 44)
-            Button("功能影响说不清/不想回答") { model.markUnknown(.functionalImpact) }
+            Button("功能影响说不清/不想回答") {
+                perform { try model.markUnknown(.functionalImpact) }
+            }
                 .frame(minHeight: 44)
         } header: {
             Text("功能影响")

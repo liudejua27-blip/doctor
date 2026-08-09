@@ -15,6 +15,8 @@ PROJECT = HOST / "BodyCompanionInternal.xcodeproj"
 APP_SOURCE = HOST / "BodyCompanionInternal"
 UI_TEST_SOURCE = HOST / "BodyCompanionInternalUITests" / "BodyCompanionInternalUITests.swift"
 BODY_MAP_SCREEN_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "BodyMapScreen.swift"
+SIGNAL_INTAKE_SCREEN_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "SignalIntakeScreen.swift"
+SIGNAL_INTAKE_CORE_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionCore" / "SignalIntake.swift"
 
 
 def fail(message: str) -> None:
@@ -43,6 +45,8 @@ def main() -> int:
         APP_SOURCE / "Info.plist",
         UI_TEST_SOURCE,
         BODY_MAP_SCREEN_SOURCE,
+        SIGNAL_INTAKE_SCREEN_SOURCE,
+        SIGNAL_INTAKE_CORE_SOURCE,
         HOST / "Config" / "Base.xcconfig",
         HOST / "Config" / "DebugInternal.xcconfig",
         HOST / "Config" / "ReleaseInternal.xcconfig",
@@ -118,6 +122,12 @@ def main() -> int:
         '"body-map.candidate-3d-load-attempted"',
         '"screen.records"',
         '"analysis.standard-chat-unavailable"',
+        '"sensation-picker.more-open"',
+        '"麻木"',
+        '"部分位置的感觉说不清"',
+        '"这些位置的感觉都说不清"',
+        "testMoreSensationsKeepsStructuredInternalDraftFlow",
+        "testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown",
         "launchCandidateThreeDProbe",
     ):
         if expected not in ui_test:
@@ -136,6 +146,26 @@ def main() -> int:
     ):
         if expected not in body_map_screen:
             fail(f"missing_candidate_probe_boundary:{expected}")
+
+    signal_intake_screen = require_text(SIGNAL_INTAKE_SCREEN_SOURCE, '"sensation-picker.more-open"')
+    for expected in (
+        '"sensation-picker.safety-editing-locked"',
+        "SignalSensationCode.additionalCases",
+        "displayedCommonSensationCodes",
+        "model.isSensationEditingBlockedBySafetyAction",
+    ):
+        if expected not in signal_intake_screen:
+            fail(f"missing_sensation_entry_boundary:{expected}")
+
+    signal_intake_core = require_text(SIGNAL_INTAKE_CORE_SOURCE, "sensationRevisionRequiresServer")
+    for expected in (
+        "public static var additionalCases",
+        "commonCases(forLocationCount",
+        "prepareSemanticSensationMutation",
+        "isSensationEditingBlockedBySafetyAction",
+    ):
+        if expected not in signal_intake_core:
+            fail(f"missing_sensation_core_boundary:{expected}")
 
     info = plistlib.loads((APP_SOURCE / "Info.plist").read_bytes())
     restricted_info_keys = {

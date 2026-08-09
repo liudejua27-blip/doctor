@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.6.1-draft |
+| 版本 | 1.6.2-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
 | 变更级别 | B；涉及安全、隐私或身体位置语义时为 A |
 | 适用范围 | AI Body Companion iOS 客户端 |
 | 依赖 | DOC-00、TERM-01、PROD-01、UX-01、ARCH-01、DATA-01、BODY-01、SAFE-01、PRIV-01、FRAME-01、ADR-0019 |
-| 关联决策 | [ADR-0003](decisions/ADR-0003-canonical-body-location.md)、[ADR-0004](decisions/ADR-0004-ios-3d-rendering-boundary.md)、[ADR-0006](decisions/ADR-0006-ios-offline-draft-encryption-boundary.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md) |
+| 关联决策 | [ADR-0003](decisions/ADR-0003-canonical-body-location.md)、[ADR-0004](decisions/ADR-0004-ios-3d-rendering-boundary.md)、[ADR-0006](decisions/ADR-0006-ios-offline-draft-encryption-boundary.md)、[ADR-0018](decisions/ADR-0018-body-asset-manifest-runtime-gate.md)、[CONFLICT-003](decisions/CONFLICT-003-sensation-revision-safety-invalidation.md)、[CONFLICT-004](decisions/CONFLICT-004-p1d-non-sensation-revision-safety-boundary.md) |
 | 机器契约 | [BodyLocation JSON Schema](contracts/body-location.schema.json)、[BodyAssetManifest JSON Schema](contracts/body-asset-manifest.schema.json) |
 
 文中的“必须 / 不得”是发布约束，“应”是默认实现，“可以”是受控扩展。
@@ -203,12 +203,12 @@ Agent 不得直接操作 RealityKit Entity，不得直接将模型输出写入�
 P1D 的当前原生实现入口是 `ios/BodyCompanion/Sources/BodyCompanionCore/SignalIntake.swift` 与 `BodyCompanionIOS/SignalIntakeScreen.swift`：
 
 - `SignalIntakeScreen` 使用 SwiftUI `Form` 分区展示位置、感觉、程度、时间、因素、功能影响、背景和安全状态；
-- `SignalIntakeModel` 只允许从位置 → 事实 → 安全复核 → 安全行动/候选 → 事实复核 → 审批准备或离线草稿的明确转换；其中 R0/R1/R2 进入 `safetyAction`，只有 R3/`noRuleTriggered` 可进入普通 `agentDraft`；任一位置集合变更都会使安全与 Agent/审批阶段失效并退回事实收集；
+- `SignalIntakeModel` 只允许从位置 → 事实 → 安全复核 → 安全行动/候选 → 事实复核 → 审批准备或离线草稿的明确转换；其中 R0/R1/R2 进入 `safetyAction`，只有 R3/`noRuleTriggered` 可进入普通 `agentDraft`；普通路径的位置集合变更会使本地安全与 Agent/审批阶段失效并退回事实收集；高风险安全行动后的位置与非感觉事实修订尚未由 P1D 安全闭环支持，受 [CONFLICT-004](decisions/CONFLICT-004-p1d-non-sensation-revision-safety-boundary.md) 阻断；语义感觉变更必须遵循 [CONFLICT-003](decisions/CONFLICT-003-sensation-revision-safety-invalidation.md) 的原子失效或高风险拒绝行为；
 - `SignalFactSource`、`SignalFactStatus` 分开保存来源和用户确认状态；Agent/资料候选永远不会被 UI 自动升级为 `confirmed`；
 - iOS 端没有安全规则或 Provider 的本地默认结果。样机的“运行服务端安全检查”在无网络实现下明确进入 `unavailable → offlineDraft`，而不是伪造 `NoRuleTriggered`；
 - `SignalIntakeDraft` 通过 [`ios-signal-intake.schema.json`](contracts/ios-signal-intake.schema.json) 作为客户端投影；映射到 P4 `DraftEnvelope` 时可降维为 `UnconfirmedDraftFacts`，但必须保留每个感觉的 code、可选用户标签和 `location_marker_ids`，不得把关系压成无归属字符串数组；P4 当前契约为 `1.1`，旧 `1.0` 因缺少关系而不自动迁移；
 - `BodyMapModel` 只维护 Zone/Pin 选择、位置候选和纯视觉状态；地图不能保存或投影感觉、程度、诱发因素、缓解因素、功能影响、背景或安全答案。以上事实只能由 `SignalIntakeScreen` 的显式结构化控件写入；
-- 每个 `SignalSensation` 必须保存用户当前关联的 `location_marker_ids`；当有多个位置时，新增感觉必须由用户显式选定一个或多个 Marker，既有感觉可逐个调整关联；新增位置不得复制既有感觉，位置变化会使感觉组重新进入待复核，避免服务端猜测空间关系。反序列化或恢复的草稿必须先验证位置 ID 唯一、感觉关联完整和 phase—safety 组合；`agent_draft` 只接受 `no_rule_triggered + ordinary_agent_allowed=true`；当前契约版本为 `1.1`；
+- 每个 `SignalSensation` 必须保存用户当前关联的 `location_marker_ids`；当有多个位置时，新增感觉必须由用户显式选定一个或多个 Marker，既有感觉可逐个调整关联；新增位置不得复制既有感觉，位置变化会使感觉组重新进入待复核，避免服务端猜测空间关系。`commonCases` 与“更多感觉”必须从同一个 `SignalSensationCode.allCases` 派生：前者固定 10 项，后者是排除前者后的稳定剩余项，不得新建 UI-only code。反序列化或恢复的草稿必须先验证位置 ID 唯一、感觉关联完整和 phase—safety 组合；`agent_draft` 只接受 `no_rule_triggered + ordinary_agent_allowed=true`；当前契约版本为 `1.1`；
 - P1D `saveOfflineDraft()` 只切换到未确认离线状态；持久化必须由 P4 的加密适配器在应用层显式调用，当前页面不宣称已完成文件写入/杀进程恢复；
 - `awaitingApproval` 仅表示准备服务端审批，不产生 Event、Episode、Report 或长期档案引用。
 

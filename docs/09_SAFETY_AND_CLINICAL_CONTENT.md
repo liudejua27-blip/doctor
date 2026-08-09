@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | SAFE-01 |
-| 版本 | 1.1.1-draft |
+| 版本 | 1.1.2-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 临床安全负责人 |
 | 审核角色 | 产品、急诊/全科、运动医学、康复、AI、iOS、后端、隐私法务、QA |
 | 批准角色 | 产品负责人、临床安全负责人、隐私法务负责人 |
 | 适用地区 | 中国大陆、App Store |
 | 变更级别 | A |
-| 依赖 | DOC-00、TERM-01、PROD-01、AGENT-01、PRIV-01、QA-01、ADR-0002、ADR-0018、ADR-0019、CONFLICT-001、CONFLICT-002 |
+| 依赖 | DOC-00、TERM-01、PROD-01、AGENT-01、PRIV-01、QA-01、ADR-0002、ADR-0018、ADR-0019、CONFLICT-001、CONFLICT-002、CONFLICT-003 |
 | 生效条件 | 责任角色完成评审并形成批准记录；每条医学规则和内容仍须独立临床批准 |
 | 下次复审 | 首个代码脚手架创建前；之后每季度、严重事件或 A 类变更时复审 |
 
@@ -378,6 +378,8 @@ R0–R3 表示产品行动优先级，不是疾病严重程度，也不是诊断
 #### R0/R1 安全行动后的事实留档
 
 Emergency/Urgent 首屏不得自动写入用户长期档案，也不得先要求事实复核。Application Service 可以短期保存一个未确认草稿，并在 `record_review_available=true` 时于安全主行动之后提供弱化的次级入口。用户主动进入后，系统创建 `post_escalation_record` 生命周期 Turn：只复核既有事实，保留原 tier、规则、SafetyBaseline 与审核行动，不调用 LLM，不生成普通建议，并继续固定显示 emergency/professional CTA。正式 Event 仍需“复核事实创建 Intent”与“批准执行”两次明确动作；取消、过期或执行失败均不得自动写入。post 安全重检不可用时，latest Turn 必须如实标记 `undetermined/degraded`；这不覆盖已知 R0/R1，因为 UI 始终从独立的 `Session.retained_safety_action` 置顶原安全入口。仅 R1 修订明确命中 R0 时更新为新的 assessment/escalated 行动；信息不足只进 post/awaiting_user。
+
+在 P1D 本地原型尚未具有独立 `retained_safety_action` 前，R0/R1/R2/`undetermined` 的语义感觉修订不能通过“清空当前 safety 后继续”模拟；必须在 Core 层拒绝，并在 UI 中保持当前安全行动优先。只有服务端 revision 能保留旧行动、生成新 revision、使旧 Intent/digest 失效并重新运行规则后，才可开放对应修改路径。详见 [CONFLICT-003](decisions/CONFLICT-003-sensation-revision-safety-invalidation.md)。
 
 #### ProfessionalPreparationMode
 

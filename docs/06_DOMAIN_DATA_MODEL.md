@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | DATA-01 |
-| 版本 | 1.2.0-draft |
+| 版本 | 1.2.1-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构与后端领域负责人 |
 | 审核角色 | 产品、iOS、后端、AI、临床安全、隐私法务、安全、QA、人体资产负责人 |
@@ -162,6 +162,7 @@ P1D 的 [`SignalIntakeDraft`](contracts/ios-signal-intake.schema.json) 是将 `B
 - `SignalSensationCode`、程度上下文、时间模式、因素、功能影响和背景类别使用稳定代码，并允许显式 `unknown`；空值不能被解释成“没有”；
 - `reviewed_groups` 只是用户看过并接受当前表达，不能把 Agent/Profile 候选隐式升级为 `UserConfirmedFact`；
 - `safety.status=no_rule_triggered` 只表示当前规则集没有命中，不能写成“安全”；`unavailable`/`undetermined` 不允许生成普通 Agent 草稿或 Approval；
+- 任一语义感觉修订必须递增同一未确认客户端草稿的 `SignalIntakeDraft.draft_revision`（不是服务端 `DraftRevision`，也不创建 ApprovalIntent），并使旧安全/普通路径/审批资格失效；在 P1D 尚无独立 `retained_safety_action` 的当前 P0，R0/R1/R2/`undetermined` 的直接感觉修订必须被拒绝，不能清空、降低或隐藏既有安全行动。服务端 revision 实现后才可保留行动并重跑规则，见 [CONFLICT-003](decisions/CONFLICT-003-sensation-revision-safety-invalidation.md)；
 - 映射到 P4 `DraftEnvelope` 时可降维为 `UnconfirmedDraftFacts`，但不得丢失每个感觉到 `location_marker_ids` 的明确关系，也不得携带 `event_id`、`approval_id`、报告引用、诊断或处方字段；
 - 只有服务端重新执行安全、授权、revision、Episode 选择和用户确认后，才允许组装正式 `BodySignalEvent`。
 

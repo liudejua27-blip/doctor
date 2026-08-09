@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 3.0.2-draft |
+| 版本 | 3.0.3-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -19,7 +19,7 @@
 
 | 需求 | 核心设计真源 | 机器契约 | 当前实现/测试 | 当前状态 | 发布门禁 |
 |---|---|---|---|---|---|
-| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified | GATE-06/07/08 |
+| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；完整感觉目录与语义感觉修订的安全失效/高风险拒绝正在按 CONFLICT-003 收敛；位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P0 safety correction in progress | GATE-03/06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001、CONFLICT-002、FEAT-COMP-01 §10.2 | `agent-turn`、内部 handoff schemas；P1I `QuestionPlan` 契约待批准 | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3。P1I 的目录/失效/测试评审输入已定义，但现有 Agent 仍可表达多题，不能当作单题计划实现 | Prototype verified; P1I / 情境化产品能力未实现 | GATE-02/03/04/07/08 |
 | PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；`9fc54d4` 的本地文字目录只产生 `Zone + Area + body_part_search`，Pin 模式也不伪造 Point/3D anchor；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
@@ -51,6 +51,8 @@
 | SAFE-INV-10 | 测试与部署绑定同一基线 | DOC-00、QA-01 | PR #1 在 `31234329478` 两个 job 成功后合并，合并后 CI `31234382019` 两个 job 成功；PR #2 复验路径也通过；SafetyBaseline 尚未建立 | 完全一致 |
 | SAFE-INV-11 | 审核行动与营养/动作输出边界 | SAFE-01、DATA-01、FEAT-COMP-01 | TEST-COMP-01 已定义；无已审核内容或生产实现 | 未审核动作/具体食物/补剂/药物/剂量输出 0 |
 | SAFE-INV-12 | R2 不得进入普通 Agent | SAFE-01、AGENT-01、CONFLICT-001 | Swift 状态机、Python validator/adapter/application handoff 与 JSON Schema 回归 | R2 普通 Agent/行动输出 0 |
+| SAFE-INV-13 | 语义感觉修订不得复用旧安全、普通 Agent 或审批 | UX-01、DATA-01、SAFE-01、CONFLICT-003 | P0 修复与 Core/Host 回归待实施；高风险修订必须保留安全行动或拒绝 | 旧安全/Agent/approval 复用 0；R0/R1/R2/undetermined 不得被本地清空 |
+| SAFE-INV-14 | 非感觉安全相关事实修订不得隐藏既有安全行动 | UX-01、IOS-01、DATA-01、SAFE-01、CONFLICT-004 | 当前 P1D 未完成 retained action/revision 闭环，不能作为发布能力 | 未关闭；受影响能力不得外部发布 |
 
 ## 4. 非功能追踪
 
