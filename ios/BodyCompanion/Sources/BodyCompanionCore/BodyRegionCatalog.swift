@@ -7,16 +7,6 @@ public enum BodyRegionGeometry: Hashable, Sendable {
     case ellipse(center: Point2D, radius: Point2D)
     case rectangle(origin: Point2D, size: Point2D)
 
-    /// A deterministic, non-clinical point used only when an accessibility
-    /// list selects a broad region while the map is in Pin mode.
-    public var representativePoint: Point2D {
-        switch self {
-        case let .ellipse(center, _): return center
-        case let .rectangle(origin, size):
-            return Point2D(x: origin.x + size.x / 2, y: origin.y + size.y / 2)
-        }
-    }
-
     public func contains(_ point: Point2D) -> Bool {
         switch self {
         case let .ellipse(center, radius):
@@ -116,6 +106,20 @@ public enum BodyRegionCatalog {
 
     public static func options(for view: BodyMapView) -> [BodyRegionOption] {
         all.filter { $0.geometry(for: view) != nil }
+    }
+
+    /// Searches only the display vocabulary of the versioned local catalog.
+    /// The query is intentionally not expanded through history, Agent output,
+    /// remote synonyms, or anatomy inference. Filtering happens after the
+    /// front/back catalog filter, so the returned ordering stays stable.
+    public static func options(matching query: String, for view: BodyMapView) -> [BodyRegionOption] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let viewOptions = options(for: view)
+        guard !normalizedQuery.isEmpty else { return viewOptions }
+        return viewOptions.filter { option in
+            option.label.localizedCaseInsensitiveContains(normalizedQuery) ||
+                option.englishLabel.localizedCaseInsensitiveContains(normalizedQuery)
+        }
     }
 
     public static func hitTest(point: Point2D, view: BodyMapView) -> BodyRegionOption? {

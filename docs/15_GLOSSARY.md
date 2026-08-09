@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TERM-01 |
-| 版本 | 1.2.0-draft |
+| 版本 | 1.2.1-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构 + 临床安全 |
 | 原则 | 其他文档引用这里的术语，不自行创造近义状态 |
@@ -79,6 +79,7 @@
 | 身体位置 | `BodyLocation` | 可跨视图持久化的区域、侧别、表面和可选精确锚点 |
 | 区域标记 | `RegionMark` | 以稳定 `region_id` 表达的一片身体区域 |
 | 精确针点 | `PointMark` | 使用资产局部表面锚点表达的精确触点 |
+| 文字部位选择 | `body_part_search` | 基于本地版本化身体区域目录的搜索或浏览输入；P0 只创建带 `region_mask_id` 的宽泛 `Area/Zone`，不从显示名称或代表性中心点伪造精确针点 |
 | 规范身体区域 | `CanonicalBodyRegion` | 与具体模型无关、经版本管理的身体区域身份 |
 | 侧别 | `Laterality` | `left`、`right`、`midline`、`bilateral`、`unspecified`；相对用户身体；未知或不适用均显式为 `unspecified`，不得猜为中线 |
 | 表面 | `BodySurface` | `anterior`、`posterior`、`medial`、`lateral`、`superior`、`inferior`、`circumferential`、`unspecified`；未知时不得按当前镜头方向猜测 |

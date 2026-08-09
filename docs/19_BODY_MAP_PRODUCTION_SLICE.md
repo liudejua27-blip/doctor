@@ -50,7 +50,7 @@
 |---|---|---|
 | US-BODY-001 | 作为普通用户，我想在 2D 前/后图点击身体区域 | Given 2D 地图可用，When 点击显式区域，Then 生成带规范区域、侧别、表面和归一化锚点的未确认 marker |
 | US-BODY-002 | 作为普通用户，我想在 3D 旋转人体后选点 | Given 内部原型资产通过 prototype gate，When 命中人体表面，Then 只回传局部位置/法线/资产版本证据，业务层生成候选，不在 Scene 中写档案 |
-| US-BODY-003 | 作为无障碍用户，我不想操作 3D | Given VoiceOver 或列表路径，When 搜索并选择区域，Then 生成与图形路径一致的 `BodyLocation` 字段 |
+| US-BODY-003 | 作为无障碍用户，我不想操作 3D | Given 2D、候选 3D 或其回退中的文字入口，When 在本地静态目录中用中文/英文搜索并选择区域，Then 生成 `source=body_part_search` 的宽泛 `Area/Zone + region_mask_id`；即使当前为 Pin 模式，也不得伪造精确点 |
 | US-BODY-004 | 作为用户，我想切换 2D/3D | Given 已有 marker，When 切换视图，Then Marker UUID、区域、侧别和 Episode 不变；无法迁移精确点时保留区域并请求复核 |
 | US-BODY-005 | 作为用户，我想避免误把感觉当成位置事实 | Given 新 marker，When 未选择感觉，Then 不自动填“酸痛”或其他感觉；感觉由后续结构化录入独立确认 |
 | US-BODY-006 | 作为用户，我希望 3D 失败时仍能继续 | Given 资产、网络、命中或性能失败，When 系统进入回退，Then 显示可理解原因、保留草稿并提供 2D/列表完整路径 |
@@ -81,7 +81,7 @@ stateDiagram-v2
 | 字段/对象 | 来源 | 是否用户确认 | 保存位置 | Schema |
 |---|---|---|---|---|
 | `BodyRegionDefinition` | 版本化 2D/3D 区域目录 | 否，属于产品配置 | AssetManifest/区域目录 | BODY-01 |
-| `BodyLocationCandidate` | 2D 命中、3D 命中或列表选择 | 否 | 当前 `SignalIntakeDraft` | `body-location` 投影 |
+| `BodyLocationCandidate` | 2D 命中、3D 命中或列表选择 | 否 | 当前 `SignalIntakeDraft` | `body-location` 投影；列表只产生 `Area/Zone + region_mask_id + body_part_search` |
 | `BodyLocation` | 用户复核后的单个位置表达 | 是 | 正式 Event/Episode（生产尚未接入） | `body-location.schema.json` |
 | 3D hit evidence | RealityKit 局部命中 | 否 | 当前会话内存 | `BodyHitEvidence` |
 | 感觉、强度、时间、诱因 | 结构化录入/后续 Agent 候选 | 只有用户确认后才是事实 | SignalIntakeDraft/Event | `ios-signal-intake` |
@@ -104,7 +104,8 @@ stateDiagram-v2
 
 ## 8. UI、无障碍与本地化
 
-- 模式切换：`2D`、`3D`、`部位列表`；列表应支持搜索、区域层级、左右侧和前后表面。
+- 模式切换：`2D`、`3D`、`部位列表`；2D、候选 3D 成功与回退均有同一显式文字入口。P0 列表只支持本地静态目录的中英文名称搜索/浏览并显示目录已有的左右侧/前后表面；正式层级、别名和深度选项继续受 `BODY-V1-OPEN-003` 约束。
+- 文字列表选择固定为 `Area/Zone + region_mask_id + body_part_search`，不受 Pin/Zone 控件影响；精确 Pin 只能由明确的 2D/3D 点选创建。
 - 2D 图形使用清晰轮廓和选中态；颜色不是唯一语义，文字/VoiceOver 同时表达。
 - 3D 提供前、后、左、右预设、旋转、缩放、重置和“改用 2D”。
 - Reduce Motion 下不自动旋转或持续闪烁；Dynamic Type 不改变归一化锚点。
@@ -124,7 +125,7 @@ stateDiagram-v2
 
 ## 10. 测试与发布
 
-- 自动化：`BodyRegionCatalog` 命中边界、2D 前后视图、列表映射、3D evidence 校验、manifest gate、marker 恢复和 2D 回退。
+- 自动化：`BodyRegionCatalog` 命中边界、中文/英文目录搜索、2D 前后视图、列表 Area 映射、Pin 模式下不伪造 Point、3D evidence 校验、manifest gate、marker 恢复和 2D 回退。
 - 合同：BodyLocation JSON Schema、AssetManifest JSON Schema、未知字段和版本兼容检查。
 - 设备：最低 iPhone 冷启动、内存、帧率、命中延迟、旋转/缩放、VoiceOver、Dynamic Type、Reduce Motion、杀进程恢复。
 - 人体资产：作者链、许可证、哈希、修改记录、解剖审核、golden hit set 和 attribution 必须独立签字。

@@ -85,6 +85,30 @@ public final class BodyMapModel {
         return mutation
     }
 
+    /// Textual catalog selection is intentionally a broad semantic-region
+    /// input, never a proxy for a 2D/3D point. It must therefore bypass the
+    /// active visual Pin/Zone mode and always create or select a Zone backed by
+    /// a region-mask Area. The query itself remains UI-local and is not part of
+    /// the BodyLocation or any downstream health fact.
+    @discardableResult
+    public func applyTextRegionSelection(
+        _ option: BodyRegionOption,
+        view: BodyMapView
+    ) -> BodyMarkMutation {
+        let selection = BodyRegionSelection(
+            regionID: option.regionID,
+            laterality: option.laterality,
+            surface: option.surface,
+            depth: option.depth,
+            source: .bodyPartSearch,
+            view: view,
+            userLabel: option.label
+        )
+        let mutation = toggleZone(BodyLocationMapper.from2D(selection))
+        lastMutation = mutation
+        return mutation
+    }
+
     @discardableResult
     public func toggleZone(_ location: BodyLocation) -> BodyMarkMutation {
         if marks.contains(where: { $0.location.id == location.id }) {

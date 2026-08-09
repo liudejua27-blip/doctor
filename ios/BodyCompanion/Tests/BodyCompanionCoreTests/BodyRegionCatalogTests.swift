@@ -45,6 +45,27 @@ final class BodyRegionCatalogTests: XCTestCase {
         }
     }
 
+    func testLocalTextSearchMatchesChineseAndEnglishAfterCurrentViewFilter() {
+        let frontKnees = BodyRegionCatalog.options(matching: " 膝 ", for: .front)
+        let backKnees = BodyRegionCatalog.options(matching: "KNEE", for: .back)
+
+        XCTAssertEqual(frontKnees.map(\.id), [
+            "body.knee.general|left",
+            "body.knee.general|right",
+        ])
+        XCTAssertEqual(backKnees.map(\.id), frontKnees.map(\.id))
+        XCTAssertTrue(BodyRegionCatalog.options(matching: "upper back", for: .front).isEmpty)
+        XCTAssertEqual(
+            BodyRegionCatalog.options(matching: "   ", for: .front),
+            BodyRegionCatalog.options(for: .front)
+        )
+    }
+
+    func testLocalTextSearchReturnsNoMatchWithoutChangingCatalogVocabulary() {
+        XCTAssertTrue(BodyRegionCatalog.options(matching: "not-a-catalog-region", for: .front).isEmpty)
+        XCTAssertTrue(BodyRegionCatalog.options(matching: "not-a-catalog-region", for: .back).isEmpty)
+    }
+
     func test3DResolverAcceptsOnlyStableProjectEntityNames() {
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_left_knee")?.laterality, .left)
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_right_forearm")?.regionID, "body.forearm.general")

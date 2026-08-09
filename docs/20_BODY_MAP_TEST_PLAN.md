@@ -19,17 +19,18 @@
 | TEST-BODY-001 | PRD-F03A | Unit | 2D 前视图区域边界 | 返回稳定 region/laterality/surface/normalized anchor | 是 |
 | TEST-BODY-002 | PRD-F03A | Unit | 2D 后视图同一区域 | 不改变 marker UUID；surface 为 posterior | 是 |
 | TEST-BODY-003 | SAFE-INV-09 | Contract | 位置编码 | 不含疾病、组织或病因字段 | 是 |
-| TEST-BODY-004 | NFR-A11Y-001 | Unit/UI | 列表选择左右侧 | 与图形路径生成相同契约 | 是/待真机 |
+| TEST-BODY-004 | NFR-A11Y-001、ADR-0003 | Unit/UI | 文字列表搜索/选择左右侧 | 中英文目录查询仅返回当前视图的静态选项；选择生成 `body_part_search` 的 `Area/Zone + region_mask_id`，即使 Pin 模式也没有 point | 是/待真机 |
 | TEST-BODY-005 | PRD-F03A | Unit | 2D/3D 切换 | UUID、region、laterality 保持 | 是 |
 | TEST-BODY-006 | ADR-0004 | Unit | 3D evidence 缺法线/重心不一致 | 返回 nil/回退，不崩溃 | 是 |
 | TEST-BODY-007 | ADR-0018 | Unit | 未批准/blocked/retired manifest | 不加载模型，返回 fallback | 是 |
 | TEST-BODY-008 | ADR-0009 | Static | 禁止 RehabMate 实现/资产扫描 | 无 Web/Three.js/GSAP/body.glb 生产引用 | 是 |
 | TEST-BODY-009 | PRD-F03A | Device | 最低设备 3D 冷启动/旋转/缩放 | 达到 signpost 目标或回退 2D | 待真机 |
-| TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type | 无 3D 完成选择，动画可关闭 | 待真机 |
+| TEST-BODY-010 | NFR-A11Y-001 | Accessibility | VoiceOver/Reduce Motion/Dynamic Type | 无 3D 可通过“文字选择部位”入口搜索、选择 Area、继续；动画可关闭 | 待真机 |
 | TEST-BODY-011 | PRD-F01 | Integration | 选位置后进入结构化描述 | 未确认位置保留，未自动填感觉 | 待联调 |
 | TEST-BODY-012 | PRD-F03A | Recovery | 3D loader/命中/内存失败 | 提示原因，保留草稿，2D/列表可继续 | Unit + Device |
 | TEST-BODY-013 | PRD-F03A | Simulator probe | 显式内部候选 Bundle 加载 | 先观察当前 Scene 的 `onLoadAttempted` 运行时确认，再只接受内部候选状态+列表入口，或加载/初始化错误、8 秒超时后的固定 2D 回退+列表入口；不点击网格、不创建位置事实 | 是 / 非真机 |
 | TEST-BODY-014 | PRD-F03A | Unit | 3D attempt 状态权威 | 只有当前 `request3D()` attempt 的 `onLoadAttempted` 后 `onReady` 可以进入 3D ready；初始/2D interactive、跳过确认、切回 2D 后的旧回调或被新请求替代的旧回调均不得改变当前状态 | 是 |
+| TEST-BODY-015 | PRD-F03A、NFR-A11Y-001 | UI | 共享文字入口 | 2D、候选 3D ready 与候选回退均能打开同一可搜索列表；无结果不改变位置草稿，选中后只显示待确认 Area 反馈 | 是 / 非真机 |
 
 V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、位置摘要/Inspector、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。地图只产生位置候选；感觉、程度和因素的结构化编辑另由 P1D 验收。
 

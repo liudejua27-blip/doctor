@@ -143,6 +143,37 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(model.marks.map(\.colorToken), [0, 1])
     }
 
+    func testTextRegionSelectionAlwaysCreatesZoneAreaWhenPinModeIsActive() throws {
+        let option = try XCTUnwrap(
+            BodyRegionCatalog.options(matching: "膝", for: .front)
+                .first { $0.regionID == "body.knee.general" && $0.laterality == .left }
+        )
+        let model = BodyMapModel()
+        model.markingMode = .pin
+
+        let first = model.applyTextRegionSelection(option, view: .front)
+        let markerID = try XCTUnwrap(model.selectedMarkID)
+        let mark = try XCTUnwrap(model.selectedMark())
+
+        XCTAssertEqual(first, .added(markerID))
+        XCTAssertEqual(model.markingMode, .pin)
+        XCTAssertEqual(mark.kind, .zone)
+        XCTAssertEqual(mark.location.shape, .area)
+        XCTAssertEqual(mark.location.source.interaction, .bodyPartSearch)
+        XCTAssertEqual(mark.location.anchor2D?.view, .front)
+        XCTAssertNil(mark.location.anchor2D?.point)
+        XCTAssertEqual(mark.location.anchor2D?.regionMaskID, "body.knee.general")
+        XCTAssertNil(mark.location.anchor3D)
+        XCTAssertNil(mark.location.modelAsset)
+        XCTAssertEqual(mark.location.mapping.method, .directUserSelection)
+        XCTAssertEqual(mark.location.mapping.confidence, 1)
+        XCTAssertFalse(mark.location.mapping.reviewedByUser)
+
+        XCTAssertEqual(model.applyTextRegionSelection(option, view: .front), .updated(markerID))
+        XCTAssertEqual(model.marks.count, 1)
+        XCTAssertEqual(model.marks.first?.kind, .zone)
+    }
+
     func testThreeDReadyRequiresAnActiveRequestedLoad() {
         let model = BodyMapModel()
 

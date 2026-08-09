@@ -11,13 +11,37 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
-    func testTwoDListReachesStructuredIntake() {
+    func testTwoDTextPickerReachesStructuredIntake() {
         let app = launchApp()
-        selectFirstLocationFromTwoDList(in: app)
+        selectKneeFromTextPicker(in: app)
 
         assertExists(app.buttons["body-map.next"])
         app.buttons["body-map.next"].tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
+    }
+
+    @MainActor
+    func testTextPickerNoResultDoesNotCreateLocationDraft() {
+        let app = launchApp()
+        openBodyMap(in: app)
+
+        let textPicker = app.buttons["body-map.text-picker-open"]
+        assertExists(textPicker)
+        textPicker.tap()
+
+        let search = app.textFields["body-map.text-picker.search"]
+        assertExists(search)
+        search.tap()
+        search.typeText("不存在的部位")
+        dismissKeyboard(in: app)
+
+        assertExists(app.staticTexts["没有匹配的部位"])
+        XCTAssertFalse(app.buttons["body-map.next"].exists)
+
+        let done = app.buttons["body-map.text-picker-done"]
+        assertExists(done)
+        done.tap()
+        XCTAssertFalse(app.buttons["body-map.next"].exists)
     }
 
     @MainActor
@@ -40,7 +64,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     @MainActor
     func testStartOverCancellationKeepsCurrentDraftResumable() {
         let app = launchApp()
-        selectFirstLocationFromTwoDList(in: app)
+        selectKneeFromTextPicker(in: app)
         returnToToday(in: app)
 
         let resume = app.buttons["intake-entry.resume-draft"]
@@ -67,7 +91,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     @MainActor
     func testStartOverConfirmationClearsCurrentDraft() {
         let app = launchApp()
-        selectFirstLocationFromTwoDList(in: app)
+        selectKneeFromTextPicker(in: app)
         returnToToday(in: app)
 
         let resume = app.buttons["intake-entry.resume-draft"]
@@ -109,7 +133,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         modeControl.buttons["3D"].tap()
 
         assertExists(app.descendants(matching: .any).matching(identifier: "body-map.fallback-notice").firstMatch)
-        assertExists(app.buttons["body-map.2d-list.option-0"])
+        assertTextPickerCanOpen(in: app)
     }
 
     @MainActor
@@ -145,18 +169,18 @@ final class BodyCompanionInternalUITests: XCTestCase {
         if candidateReady.exists {
             XCTAssertFalse(fallback.exists)
             assertExists(app.descendants(matching: .any).matching(identifier: "body-map.3d-scene").firstMatch)
-            assertExists(app.buttons["body-map.3d-list"])
+            assertTextPickerCanOpen(in: app)
         } else {
             assertExists(fallback)
             XCTAssertFalse(candidateReady.exists)
-            assertExists(app.buttons["body-map.2d-list.option-0"])
+            assertTextPickerCanOpen(in: app)
         }
     }
 
     @MainActor
     func testRestartDoesNotClaimDraftPersistence() {
         let app = launchApp()
-        selectFirstLocationFromTwoDList(in: app)
+        selectKneeFromTextPicker(in: app)
         app.terminate()
         app.launch()
 
@@ -191,13 +215,37 @@ final class BodyCompanionInternalUITests: XCTestCase {
     }
 
     @MainActor
-    private func selectFirstLocationFromTwoDList(in app: XCUIApplication) {
+    private func selectKneeFromTextPicker(in app: XCUIApplication) {
         openBodyMap(in: app)
-        let firstOption = app.buttons["body-map.2d-list.option-0"]
-        assertExists(firstOption)
-        firstOption.tap()
+        let textPicker = app.buttons["body-map.text-picker-open"]
+        assertExists(textPicker)
+        textPicker.tap()
 
-        let done = app.buttons["body-map.mark-editor-done"]
+        let search = app.textFields["body-map.text-picker.search"]
+        assertExists(search)
+        search.tap()
+        search.typeText("膝")
+        dismissKeyboard(in: app)
+
+        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
+        assertExists(leftKnee)
+        leftKnee.tap()
+        assertExists(app.buttons["body-map.next"])
+        assertExists(app.staticTexts["已添加待确认位置：左膝附近"])
+        XCTAssertFalse(app.buttons["body-map.mark-editor-done"].exists)
+
+        let done = app.buttons["body-map.text-picker-done"]
+        assertExists(done)
+        done.tap()
+    }
+
+    @MainActor
+    private func assertTextPickerCanOpen(in app: XCUIApplication) {
+        let textPicker = app.buttons["body-map.text-picker-open"]
+        assertExists(textPicker)
+        textPicker.tap()
+        assertExists(app.textFields["body-map.text-picker.search"])
+        let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
         done.tap()
     }
@@ -208,6 +256,14 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(back)
         back.tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.today").firstMatch)
+    }
+
+    @MainActor
+    private func dismissKeyboard(in app: XCUIApplication) {
+        let returnKey = app.keyboards.buttons["Return"]
+        assertExists(returnKey)
+        returnKey.tap()
+        XCTAssertFalse(app.keyboards.element.waitForExistence(timeout: 1), "Expected the search keyboard to dismiss before choosing a body region")
     }
 
     @MainActor

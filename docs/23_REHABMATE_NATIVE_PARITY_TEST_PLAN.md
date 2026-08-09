@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / V2.5 Core automated slice implemented / device run blocked |
+| 状态 | Active implementation spec / V2.6 text-list Area semantics implemented / device run blocked |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -43,10 +43,11 @@
 | TEST-BODY-V2-015 | UI | 视角与焦点 | front/back/left/right 及返回全身按钮可操作且不删除草稿 |
 | TEST-BODY-V2-016 | UI | 窄屏编辑器 | 选中 mark 自动打开系统 Sheet；中/大屏保持可访问的内联编辑；删除后安全关闭 |
 | TEST-BODY-V2-017 | UI | 上限/回退反馈 | 第 21 个 Zone 或 Pin、3D gate 失败和无稳定命中都有固定文本/VoiceOver 反馈；已有 marks 保留 |
-| TEST-BODY-V2-018 | Unit | 单次位置同步 | 一次 mark 变化只触发一次 typed draft revision；地图只同步位置，不能重写感觉与位置关系 |
+| TEST-BODY-V2-018 | Unit | 单次位置同步 | 一次 mark 变化（包含文字目录 Area 选择）只触发一次 typed draft revision；地图只同步位置，不能重写感觉与位置关系 |
 | TEST-BODY-V2-019 | Unit | 同 ID 位置替换与删除关系收敛 | `SignalIntakeModel` 接受的 canonical location 必须投影回地图；同 `marker_id` 的内容替换使感觉复核/全局未知失效但不复制感觉；删除最后一个关联 marker 时移除该未确认感觉，不留下空关系 |
-| TEST-BODY-V2-020 | Simulator probe | 显式内部候选 3D 加载/回退 | 先观察当前 Scene 的 `onLoadAttempted`，再只接受“内部候选状态 + 3D 列表入口”或“加载/初始化错误、8 秒超时后的固定 2D 回退 + 2D 列表入口”；不得通过点击网格推导位置、碰撞或区域准确性 |
+| TEST-BODY-V2-020 | Simulator probe | 显式内部候选 3D 加载/回退 | 先观察当前 Scene 的 `onLoadAttempted`，再只接受“内部候选状态 + 共享文字列表入口”或“加载/初始化错误、8 秒超时后的固定 2D 回退 + 同一入口”；不得通过点击网格推导位置、碰撞或区域准确性 |
 | TEST-BODY-V2-021 | Unit | 3D attempt 状态权威 | 仅当前 Scene attempt 的 `onLoadAttempted` 后 `onReady` 可标成 ready；初始/2D interactive、直接改 mode、切回 2D 或被新请求替代的失效 attempt 不得显示“候选已加载” |
+| TEST-BODY-V2-022 | Unit/UI | 文字部位选择边界 | 本地中英文目录搜索只显示静态当前视图选项；无结果不改变草稿；无论当前 Zone/Pin 模式，选择均创建单个 `zone` 的 `Area + region_mask_id + body_part_search`，不生成代表性 Point；2D/候选 ready/回退都能进入同一列表 |
 
 ## 3. 真机与无障碍矩阵
 
@@ -54,14 +55,14 @@
 |---|---|---|
 | TEST-BODY-V2-DEVICE-001 | 最低支持 iPhone 冷启动 | 2D 可用；候选 3D 在目标时间内可交互，否则稳定回退 |
 | TEST-BODY-V2-DEVICE-002 | 连续旋转/缩放 5 分钟 | 无崩溃、无误落 Pin、无明显热失控；帧率和内存记录 signpost |
-| TEST-BODY-V2-DEVICE-003 | VoiceOver | 不操作 3D 也能选择区域、编辑、删除、继续 |
+| TEST-BODY-V2-DEVICE-003 | VoiceOver | 不操作 3D 也能打开文字部位入口、按中文/英文目录搜索、选择宽泛区域、编辑、删除、继续；列表不会生成 Pin |
 | TEST-BODY-V2-DEVICE-004 | Dynamic Type 最大档 | 摘要和编辑器不遮挡主要操作，文本状态可读 |
 | TEST-BODY-V2-DEVICE-005 | Reduce Motion | 不飞行/闪烁/持续旋转，焦点和视角直接切换 |
 | TEST-BODY-V2-DEVICE-006 | 离线/资产失败 | 2D、列表和安全入口可用，未确认草稿不丢失 |
 
 ## 4. 安全、隐私和供应链门槛
 
-- Zone 重复点击不能改变/删除草稿；删除只能由显式动作触发，且视觉状态不能被序列化为“已缓解”、趋势或安全等级；
+- Zone 重复点击不能改变/删除草稿；删除只能由显式动作触发，且视觉状态不能被序列化为“已缓解”、趋势或安全等级；文字列表不得以代表性中心点或 Pin 模式伪造精确针点；
 - 任何 Map 状态不得含有感觉、程度、动作线索、因素、功能影响或安全答案；这些字段只由 typed Signal Intake 显式产生；
 - 未确认 mark 不能调用正式 Event 写接口；
 - 普通日志/遥测不含用户原始健康文本；

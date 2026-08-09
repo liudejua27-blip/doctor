@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.3.1 |
-| 状态 | Executed local smoke including candidate 3D probe / remote CI rebuilt / internal-only evidence |
+| 版本 | 0.4.1-draft |
+| 状态 | Executed local smoke including candidate 3D probe and text-list Area-safe flow / internal-only evidence |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
@@ -33,22 +33,22 @@
 | HOST-T-002 | Simulator 编译与安装 | 生成 Simulator `.app`，可由 XCTest 启动 | 集成 |
 | HOST-T-003 | 冷启动今天页 | “今天”“记录这次不适”和非诊断说明存在；无“已恢复/已保存” | UI |
 | HOST-T-004 | 多入口一致 | 今天、记录、AI 身体助手都可进入同一位置草稿路径 | UI |
-| HOST-T-005 | 2D/列表路径 | 不依赖候选 3D 选择一个合成部位，进入结构化描述 | UI |
+| HOST-T-005 | 2D/文字列表路径 | 通过显式“用文字选择部位”入口，在本地目录搜索合成部位并选择；进入结构化描述，结果仅为待确认 Area/Zone | UI |
 | HOST-T-006 | 草稿继续 | 进入草稿后返回入口，再继续时按当前 phase 进入结构化描述并保持进程内 draft；Core 测试锁定 UUID/位置/phase 语义 | UI + Core |
 | HOST-T-007 | 新建确认 | 有草稿时“新建”先显示放弃对话框；UI 断言固定可见标题，Core 测试锁定取消不 reset、确认后才 reset | UI + Core |
 | HOST-T-008 | 普通 AI 关闭 | AI 身体助手明确显示“普通对话尚未接入”；不存在建议、行动或资料已使用断言 | UI |
 | HOST-T-009 | 候选 3D 回退 | UI test 配置下显示 2D/列表或明确内部候选/回退提示；不得依赖碰撞命中 | UI |
 | HOST-T-010 | 权限与网络负向 | `check_internal_ios_host.py` 断言无 HealthKit/相机/麦克风/照片/通知 usage key、Provider/URLSession 入口或分析 SDK；冷启动 UI smoke 不出现应用权限流程 | 静态 + UI |
 | HOST-T-011 | 存储负向 | 无 UserDefaults/Keychain/文件/数据库健康草稿写入；重启不宣称恢复 | 静态 + UI |
-| HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
-| HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留 3D 列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留 2D 列表入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
+| HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；文字入口、搜索框、无结果状态和选项使用稳定目录 ID（不能使用过滤后的序号或用户输入）；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
+| HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留共享文字列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留同一入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
 
 ### 3.1 候选 3D probe 的可接受结果
 
 `HOST-T-013` 必须单独启动 App，避免默认 smoke 的 `BODY_COMPANION_UI_SMOKE=1` 覆盖显式候选开关。每次请求均有新的仅内存 attempt ID；测试先观察当前 `BodySceneView` 在 Bundle 查询/loader 前发出的 `onLoadAttempted`，再观察可见终态：
 
-1. **内部候选加载成功**：可见“内部候选模型，未经生产审核”与 3D 页面中的“从列表选择部位”入口；或
-2. **fail-closed 回退**：可见候选 loader 专用的固定 `body-map.candidate-3d-fallback-notice` 与 2D 部位列表入口；加载错误、初始化失败或 8 秒无终态都必须走此路径。普通 UI smoke 的 `body-map.fallback-notice` 不能代替此断言。
+1. **内部候选加载成功**：可见“内部候选模型，未经生产审核”与 3D 页面中的共享“用文字选择部位”入口；或
+2. **fail-closed 回退**：可见候选 loader 专用的固定 `body-map.candidate-3d-fallback-notice` 与同一文字入口；加载错误、初始化失败或 8 秒无终态都必须走此路径。普通 UI smoke 的 `body-map.fallback-notice` 不能代替此断言。
 
 两者都不是质量结论。不得由测试点击 3D 网格、Pin、Zone 或将测试结果解释为 Region/Collision/triangle/barycentric、视觉、解剖、FPS、内存、VoiceOver、Dynamic Type、Reduce Motion、真机或许可通过。
 
@@ -114,3 +114,5 @@ remote CI: ea85c68 / run 31301067572 成功；CI 只证明 HOST-T-013 的允许�
 | 2026-08-09 | 0.2.0 | 本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 和远端 CI iPhone 16 / iOS 18.5 的同一脚本均通过；精确命令与未证明范围见 EVIDENCE-01/EVIDENCE-DEVICE-01。 |
 | 2026-08-09 | 0.3.0 | 执行 HOST-T-013：显式候选 3D Simulator probe 先锁定 loader-entry，当前本地运行实际进入 ready 并保留列表入口；不测试人体命中或升级资产/真机结论，远端 CI 待推送。 |
 | 2026-08-09 | 0.3.1 | `ea85c68` 的 CI run `31301067572` 成功重建完整 Host suite；其 Host smoke 通过有效终态集合，不把远端分支、碰撞、资产或设备质量外推为通过。 |
+| 2026-08-09 | 0.4.0-draft | 规定 HOST-T-005/013 使用共享的本地文字部位入口；实现后必须证明搜索选择只生成 Area/Zone，且不将 Simulator 外推为 VoiceOver 或真机通过。 |
+| 2026-08-09 | 0.4.1-draft | 已实现本地文字入口、稳定目录项与 Area/Zone-only 写入路径；Core 与本地 Simulator 执行收据由 EVIDENCE-01 归档，VoiceOver/真机门禁不变。 |

@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.6.0-draft |
+| 版本 | 1.6.1-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
@@ -175,7 +175,7 @@ Simulator Host 成功只证明可安装的内部 UI smoke。它不能关闭真�
 | `MarkerRenderer` | Marker + 当前资产 | 纯视觉 Entity / Overlay |
 | `RegionHighlightRenderer` | `region_id`、选中态 | 纯视觉区域高亮 |
 | `CameraPresetController` | front/back/left/right/focus | 可取消的相机变换 |
-| `AccessibleBodyRegionPicker` | 搜索、层级、左右、表面、深度 | 与图形点击相同的 `BodyLocation` 草稿 |
+| `AccessibleBodyRegionPicker` | 共享 SwiftUI Sheet、本地目录搜索/浏览、目录已有的侧别/表面 | 与图形区域输入相同的宽泛 `BodyLocation` 草稿；P0 固定为 `Area/Zone + region_mask_id + body_part_search`，不得依据 Pin 模式或代表性中心点生成 Point |
 
 ### 5.3 Signal Intake Feature
 
@@ -435,7 +435,7 @@ P4 的可执行规格是 [FEAT-P4-IOS-OFFLINE-DRAFT-SYNC-SLICE](18_IMPLEMENTED_P
 
 ### 11.1 必须支持
 
-- VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；该列表入口在 2D 和 3D 均直接可达，3D 通过 SwiftUI Sheet 暴露前/后部位目录，不能要求用户先操作 RealityKit；
+- VoiceOver 完成：搜索部位 → 选择左右 → 选择前后/内外 → 选择表层/深部/关节附近 → 确认；该列表入口在 2D 和 3D 均直接可达，3D 通过 SwiftUI Sheet 暴露前/后部位目录，不能要求用户先操作 RealityKit。P0 Sheet 仅匹配本地静态目录的中英文显示名，返回目录已有的侧别/表面和 `depth=unspecified` 的 `Area/Zone`；搜索文字只保留在 View，不能读取历史或生成 Point；
 - Dynamic Type，包括编辑 Sheet 和报告；
 - Reduce Motion，关闭相机飞行动画、扫描和持续旋转；
 - Increase Contrast / Differentiate Without Color；

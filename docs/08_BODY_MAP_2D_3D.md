@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | BODY-01 |
-| 版本 | 1.0.0-draft |
+| 版本 | 1.0.1-draft |
 | 状态 | Baseline Draft / Anatomy and Asset Review Required |
 | 负责人 | 3D 资产负责人 + iOS 负责人 |
 | 审核角色 | 产品、解剖审核、无障碍、隐私法务、QA |
@@ -42,6 +42,7 @@
 - 区域路径与显示名称分离，以 `region_id` 绑定；
 - Canvas 上每个可选区域必须有等价的 accessibility element；
 - 必须另有“搜索部位 / 层级列表”路径，不能只靠图形命中；
+- 当前 P0 的文字入口只查询本地、版本化区域目录的中英文显示名并保留目录顺序；选择结果始终为宽泛 `Area/Zone`（视觉 `BodyMark.kind=zone`），不因当前 UI 处于 Pin 模式而产生代表性中心点或精确针点；
 - 精确点使用视图内归一化坐标和规范表面映射，不存屏幕像素。
 
 ### 2.2 默认 3D 模式
@@ -165,6 +166,7 @@ RehabMate 的现有 GLB 是单一身体网格，没有独立肌肉、骨骼、�
 - 专业实体 ID 不能替代 `region_id`；
 - `body_map_2d` 来源必须有 `anchor_2d`；`body_map_3d` 来源必须有 `anchor_3d + model_asset`；
 - 区域级 `area` 可以没有精确锚点，但 `point` 必须含 2D point 或 3D anchor，不能只用 `region_id` 冒充精确针点；
+- `body_part_search` 的 P0 文字目录必须产生 `shape=area` 与稳定 `anchor_2d.region_mask_id`；它不得把目录几何、显示名称或当前 Pin 模式转换成 `anchor_2d.point`；
 - `document_import`/`agent_normalization` 分别必须绑定 `source_document_id`/`source_turn_id`；`mapping.method=cross_asset_migration` 必须绑定 `migration_id`；
 - `mapping.confidence` 低于发布阈值或 `mapping.reviewed_by_user=false` 的精确点不能自动用于跨模型趋势叠加；
 - 用户确认的是位置表达，不是解剖诊断。
@@ -303,6 +305,7 @@ body.lower_back.central
 ### 10.1 Point
 
 - 表示“最明显的点”；
+- 只能由用户在 2D/3D 可视图上的明确点选产生有效 2D/3D 锚点；文字列表不得代为选取区域中心；
 - 保存精确 2D/3D 锚点与宽泛区域；
 - Marker 视觉沿表面法线偏移，避免穿模；
 - Marker 尺寸不得仅依赖世界单位，应兼顾屏幕可见性和选择范围；
@@ -311,6 +314,7 @@ body.lower_back.central
 ### 10.2 Semantic Area
 
 - 用户选择预定义身体区域；
+- 本地文字部位搜索也是 Semantic Area：只使用目录中已审核的区域、侧别和表面，输出 `source.interaction=body_part_search`；
 - 保存 `region_id + ontology_version`，具体视觉蒙版由 2D/3D AssetManifest 版本决定；
 - 不保存某次模型的整组顶点下标作为长期事实；
 - 区域视觉随资产版本重新渲染；
@@ -505,6 +509,8 @@ flowchart LR
 
 该路径生成与 2D/3D 相同的 `BodyLocation`，并记录 `source.interaction=body_part_search`。
 
+当前 P0 的最小等价路径是：在 2D、候选 3D 与其回退状态直接打开同一 SwiftUI Sheet，搜索或浏览静态目录并选择宽泛区域。查询只存在于 View 本地状态，不读取草稿历史、Agent、网络或资产；选择固定生成 `Area/Zone + region_mask_id`，不生成 Point。目录项已包含的侧别、规范表面和 `depth=unspecified` 会被明确显示；它不声称已经实现正式层级、同义词库、自由深度选择或真机 VoiceOver 验证，这些继续由 `BODY-V1-OPEN-003` 与 TEST-BODY-010 跟踪。
+
 ### 15.2 图形语义
 
 - 每个 2D 区域有名称、侧别、选中态和提示；
@@ -579,6 +585,7 @@ flowchart LR
 ### 17.6 无障碍
 
 - VoiceOver 无需点击 2D/3D 图形完成位置记录；
+- 同一文字入口可按中文或英文目录名过滤，且在 Pin 模式下仍只创建宽泛 `Area/Zone`，不能伪造精确点；
 - 每个 2D 区域具有准确标签、侧别和选中态；
 - 主要控件 ≥44×44 pt；
 - Dynamic Type 最大支持档仍能完成确认；

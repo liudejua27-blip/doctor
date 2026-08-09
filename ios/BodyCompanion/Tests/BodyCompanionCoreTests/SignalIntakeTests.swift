@@ -154,6 +154,39 @@ final class SignalIntakeTests: XCTestCase {
         XCTAssertNoThrow(try model.draft.validate())
     }
 
+    func testTextRegionSelectionSynchronizesOneAreaRevisionAndDoesNotDuplicateIt() throws {
+        let map = BodyMapModel()
+        let model = SignalIntakeModel(bodyMapModel: map)
+        map.markingMode = .pin
+        let option = try XCTUnwrap(
+            BodyRegionCatalog.options(matching: "knee", for: .front)
+                .first { $0.regionID == "body.knee.general" && $0.laterality == .left }
+        )
+        let revisionBefore = model.draft.draftRevision
+
+        if case .added = map.applyTextRegionSelection(option, view: .front) {
+            // Expected: a first text selection creates one broad Zone draft.
+        } else {
+            XCTFail("first text selection should add one Zone draft")
+        }
+        XCTAssertTrue(model.setLocations(map.markerDrafts))
+        let location = try XCTUnwrap(model.draft.locations.first)
+        let revisionAfterFirstSelection = model.draft.draftRevision
+
+        XCTAssertEqual(map.marks.first?.kind, .zone)
+        XCTAssertEqual(model.draft.locations, map.markerDrafts)
+        XCTAssertEqual(location.shape, .area)
+        XCTAssertEqual(location.source.interaction, .bodyPartSearch)
+        XCTAssertNil(location.anchor2D?.point)
+        XCTAssertEqual(location.anchor2D?.regionMaskID, "body.knee.general")
+        XCTAssertEqual(revisionAfterFirstSelection, revisionBefore + 1)
+
+        XCTAssertEqual(map.applyTextRegionSelection(option, view: .front), .updated(map.marks[0].id))
+        XCTAssertTrue(model.setLocations(map.markerDrafts))
+        XCTAssertEqual(model.draft.draftRevision, revisionAfterFirstSelection)
+        XCTAssertNoThrow(try model.draft.validate())
+    }
+
     func testDecodedOrRestoredAgentDraftMustCarryNormalAgentSafety() throws {
         let malformed = SignalIntakeDraft(
             phase: .agentDraft,

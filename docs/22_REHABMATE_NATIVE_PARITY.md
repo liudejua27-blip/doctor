@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | FEAT-BODY-MAP-V2 |
-| 版本 | 1.5.0-draft |
+| 版本 | 1.6.0-draft |
 | 状态 | Active implementation spec / Prototype release gate open |
 | 负责人 | iOS + 产品交互 + 3D 资产 |
 | 关联需求 | PRD-F01、PRD-F03A、PRD-F04、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001、NFR-PERF-002 |
@@ -65,12 +65,13 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | BODY-V2-AC-006 | Given 3D 点击或模型失败，When 回退，Then 2D/部位列表和已有未确认草稿完整保留。 |
 | BODY-V2-AC-007 | Given 用户打开地图摘要，When 未进入结构化描述页，Then 地图不展示或写入感觉、程度、动作线索或安全事实，也不自动填入默认感觉。 |
 | BODY-V2-AC-008 | Given 用户点击“下一步：描述你的感受”，When 填写 0–10 程度，Then 仅由 typed `SignalIntakeDraft` 保存未确认程度；`nil` 与用户主动选择 0 不同，没有确认动作不能创建正式 Event。 |
-| BODY-V2-AC-009 | Given VoiceOver、Dynamic Type 或 Reduce Motion，When 完成位置选择，Then 不依赖 3D 动画或颜色，列表、文字状态和固定控件提供等价路径。 |
+| BODY-V2-AC-009 | Given VoiceOver、Dynamic Type 或 Reduce Motion，When 从 2D、候选 3D 或其回退打开文字部位入口并完成位置选择，Then 不依赖 3D 动画或颜色；同一本地中英文目录、文字状态和固定控件提供等价路径，且列表选择固定为 `Area/Zone + region_mask_id`，不因 Pin 模式生成 Point。 |
 | BODY-V2-AC-010 | Given 资产 gate 未通过，When 请求 3D，Then 不读取生产模型，显示候选/回退状态并保持安全入口。 |
 | BODY-V2-AC-011 | Given 窄屏选中一个 mark，When 打开编辑，Then 使用系统 Sheet/Detent 展示编辑器；大屏保持内联编辑；删除或清空后 Sheet 安全关闭。 |
 | BODY-V2-AC-012 | Given Zone 与 Pin 已合计达到 20 个或 3D 发生回退，When 用户再次操作，Then 显示明确原因，VoiceOver 能读出，且不丢失已有未确认 marks。 |
 | BODY-V2-AC-013 | Given 用户切换 2D/3D 或编辑位置 mark，When 状态同步到 Signal Intake，Then 每个用户动作只产生一次位置草稿修订，不覆盖结构化页已填写的感觉、程度、因素或感觉—位置关系。 |
 | BODY-V2-AC-014 | Given `SignalIntakeModel` 接受一个保留原 `marker_id` 的位置内容替换，When 区域、侧别、表面或锚点改变，Then `BodyMapModel` 同步该位置投影并保留纯视觉 Zone/Pin 表现；感觉只保留显式有效关联、感觉复核/全局未知状态失效，且不能留下空 `location_marker_ids`。 |
+| BODY-V2-AC-015 | Given 当前图形模式是 Pin，When 用户从文字目录选择“左膝附近”，Then 新增或选中的均是同一 `zone + area + body_part_search` 草稿，带 `region_mask_id` 且没有 2D point、3D anchor 或 model asset；重复选择只重新选中，不产生第二个位置或 typed draft revision。 |
 
 ## 4. 客户端状态契约
 
@@ -78,7 +79,7 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 
 | 字段 | 语义 | 可写入正式档案 |
 |---|---|---|
-| `kind` | `zone` 或 `pin`，表示用户选择方式 | 作为来源元数据，可选 |
+| `kind` | `zone` 或 `pin`，表示用户选择方式；文字目录选择固定为 `zone` | 作为来源元数据，可选 |
 | `location` | 规范 `BodyLocation` 候选 | 只有用户确认后 |
 | `zoneVisualState` | `none` 或 `marked` 的纯视觉状态 | 不可；不表示缓解/恶化；不得作为重复点击循环 |
 | `colorToken` | 纯视觉区分，非业务含义 | 不可 |
@@ -103,6 +104,7 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 - 第一次点击创建 `marked` 视觉状态并聚焦；重复点击只重新选中同一 marker。删除只能通过摘要/编辑器中的显式删除动作完成，不能由点击循环触发。
 - Zone 标记按 `region_id + laterality` 去重，保留同一 marker ID；位置编辑器只可查看位置语义或删除，不可填写感觉和程度。
 - “返回全身”只恢复相机和高亮，不删除位置草稿。
+- 文字部位入口不属于 Zone/Pin 模式切换：它始终创建宽泛 Zone。用户只能通过 2D/3D 可视图的明确点选创建 Pin，不能由目录代表性点、当前相机或显示名推导。
 
 ### 5.2 Pin 模式
 
@@ -162,3 +164,4 @@ RehabMate 的成熟度来自一套完整的身体地图交互闭环，而不只�
 | 2026-08-09 | V2.3 清除地图内感觉/程度/动作线索与 typed draft 覆盖路径：Body Map 只写 `BodyLocation`，多位置事实关系只在结构化录入页创建。 |
 | 2026-08-09 | V2.4 统一 Zone + Pin 的 20 个位置总上限；地图和 typed draft 共享同一上限，超限显式拒绝且不截断。 |
 | 2026-08-09 | V2.5 固定 `SignalIntakeModel` 与 `BodyMapModel` 的 canonical location 双向投影：同 ID 内容替换仍触发感觉复核，删除不保留空感觉关联；地图仍只处理位置。 |
+| 2026-08-09 | V2.6 固定共享文字部位入口为本地目录的宽泛 Area/Zone 选择；Pin 模式、代表性中心点和当前镜头都不得伪造精确点。 |

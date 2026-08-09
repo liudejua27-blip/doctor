@@ -109,12 +109,13 @@ def main() -> int:
     for expected in (
         '"BODY_COMPANION_UI_SMOKE"',
         '"BODY_COMPANION_ENABLE_CANDIDATE_3D"',
-        '"body-map.2d-list.option-0"',
+        '"body-map.text-picker-open"',
+        '"body-map.text-picker.search"',
+        '"body-map.text-picker.option-body.knee.general-left"',
         '"body-map.fallback-notice"',
         '"body-map.candidate-3d-ready"',
         '"body-map.candidate-3d-fallback-notice"',
         '"body-map.candidate-3d-load-attempted"',
-        '"body-map.3d-list"',
         '"screen.records"',
         '"analysis.standard-chat-unavailable"',
         "launchCandidateThreeDProbe",
@@ -127,9 +128,11 @@ def main() -> int:
         '"body-map.candidate-3d-loading"',
         '"body-map.candidate-3d-fallback-notice"',
         '"body-map.candidate-3d-load-attempted"',
-        '"body-map.3d-list"',
+        '"body-map.text-picker-open"',
         '"body-map.3d-scene"',
         "allowsPrototypeCandidate: true",
+        "identifierPrefix).selection-notice",
+        "identifierPrefix).empty",
     ):
         if expected not in body_map_screen:
             fail(f"missing_candidate_probe_boundary:{expected}")
