@@ -24,133 +24,130 @@ public struct BodyMapScreen: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                CompanionSectionHeading(
-                    eyebrow: "第 1 步 / 共 3 步",
-                    title: "哪里不舒服？",
-                    detail: "轻点你感觉不适的位置；这只是你的主观位置表达。"
-                )
-
-                CompanionCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Picker("身体地图模式", selection: Binding(
-                            get: { model.mode },
-                            set: { newMode in
-                                model.clearInteractionNotice()
-                                if newMode == .threeD { model.request3D() } else { model.switchTo2D() }
-                            }
-                        )) {
-                            ForEach(BodyMapMode.allCases, id: \.self) { mode in
-                                Text(mode.rawValue).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
-                        .accessibilityIdentifier("body-map.mode")
-
-                        Picker("标记方式", selection: Binding(
-                            get: { model.markingMode },
-                            set: {
-                                model.markingMode = $0
-                                model.clearInteractionNotice()
-                            }
-                        )) {
-                            ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
-                                Text(mode.displayName).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
-
-                        markerCountSummary
-                    }
-                }
-
-                if model.lastMutation == .rejectedMarkerLimit {
-                    BodyMapNotice(
-                        text: "已达到 20 个位置上限，请编辑或删除已有标记。",
-                        systemImage: "exclamationmark.circle",
-                        identifier: "body-map.limit-notice"
-                    ) {
-                        model.clearInteractionNotice()
-                    }
-                }
-
-                if model.lastMutation == .rejectedDuplicateLocation {
-                    BodyMapNotice(
-                        text: "这个位置标记已存在，未重复加入记录。",
-                        systemImage: "exclamationmark.circle",
-                        identifier: "body-map.duplicate-notice"
-                    ) {
-                        model.clearInteractionNotice()
-                    }
-                }
-
-                if model.lastMutation == .rejectedDraftSynchronization {
-                    BodyMapNotice(
-                        text: "位置未能同步到当前记录，已恢复到上一次有效状态。",
-                        systemImage: "exclamationmark.triangle",
-                        identifier: "body-map.sync-notice"
-                    ) {
-                        model.clearInteractionNotice()
-                    }
-                }
-
-                if case let .fallback2D(reason) = model.loadState {
-                    BodyMapNotice(
-                        text: reason,
-                        systemImage: "arrow.uturn.backward.circle",
-                        identifier: prototype3DEnabled
-                            ? "body-map.candidate-3d-fallback-notice"
-                            : "body-map.fallback-notice"
-                    ) {
-                        model.switchTo2D()
-                    }
-                    if prototype3DEnabled, model.hasRecordedThreeDLoadAttempt {
-                        Text("内部候选加载请求已发起；已保留 2D/列表路径。")
-                            .font(.caption2)
-                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                            .accessibilityIdentifier("body-map.candidate-3d-load-attempted")
-                    }
-                }
-
-                CompanionCard {
-                    modeContent
-                }
-
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "hand.raised.fill")
-                        .foregroundStyle(BodyCompanionTheme.mint)
-                        .frame(width: 24)
-                    Text("标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
-                        .font(.footnote)
-                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("位置说明：标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
-
-                if !model.marks.isEmpty {
-                    MarkSummaryPanel(
-                        model: model,
-                        suppressAutomaticEditor: isTextRegionPickerPresented
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    CompanionSectionHeading(
+                        eyebrow: "第 1 步 / 共 3 步",
+                        title: "哪里不舒服？",
+                        detail: "轻点你感觉不适的位置；这只是你的主观位置表达。"
                     )
-                }
-            }
-            .padding(20)
-        }
-        .accessibilityIdentifier("screen.body-map")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !model.marks.isEmpty {
-                continuationAction
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(BodyCompanionTheme.canvas)
-                    .overlay(alignment: .top) {
-                        Rectangle()
-                            .fill(BodyCompanionTheme.line.opacity(0.72))
-                            .frame(height: 1)
+
+                    CompanionCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Picker("身体地图模式", selection: Binding(
+                                get: { model.mode },
+                                set: { newMode in
+                                    model.clearInteractionNotice()
+                                    if newMode == .threeD { model.request3D() } else { model.switchTo2D() }
+                                }
+                            )) {
+                                ForEach(BodyMapMode.allCases, id: \.self) { mode in
+                                    Text(mode.rawValue).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .accessibilityHint("2D 提供完整触控区域和部位列表；3D 在不可用时会回退到 2D。")
+                            .accessibilityIdentifier("body-map.mode")
+
+                            Picker("标记方式", selection: Binding(
+                                get: { model.markingMode },
+                                set: {
+                                    model.markingMode = $0
+                                    model.clearInteractionNotice()
+                                }
+                            )) {
+                                ForEach(BodyMarkingMode.allCases, id: \.self) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .accessibilityHint("区域用于表达大致位置，针点用于表达表面上的精确位置；两种草稿会同时保留。")
+
+                            markerCountSummary
+                        }
                     }
+
+                    if model.lastMutation == .rejectedMarkerLimit {
+                        BodyMapNotice(
+                            text: "已达到 20 个位置上限，请编辑或删除已有标记。",
+                            systemImage: "exclamationmark.circle",
+                            identifier: "body-map.limit-notice"
+                        ) {
+                            model.clearInteractionNotice()
+                        }
+                    }
+
+                    if model.lastMutation == .rejectedDuplicateLocation {
+                        BodyMapNotice(
+                            text: "这个位置标记已存在，未重复加入记录。",
+                            systemImage: "exclamationmark.circle",
+                            identifier: "body-map.duplicate-notice"
+                        ) {
+                            model.clearInteractionNotice()
+                        }
+                    }
+
+                    if model.lastMutation == .rejectedDraftSynchronization {
+                        BodyMapNotice(
+                            text: "位置未能同步到当前记录，已恢复到上一次有效状态。",
+                            systemImage: "exclamationmark.triangle",
+                            identifier: "body-map.sync-notice"
+                        ) {
+                            model.clearInteractionNotice()
+                        }
+                    }
+
+                    if case let .fallback2D(reason) = model.loadState {
+                        BodyMapNotice(
+                            text: reason,
+                            systemImage: "arrow.uturn.backward.circle",
+                            identifier: prototype3DEnabled
+                                ? "body-map.candidate-3d-fallback-notice"
+                                : "body-map.fallback-notice"
+                        ) {
+                            model.switchTo2D()
+                        }
+                        if prototype3DEnabled, model.hasRecordedThreeDLoadAttempt {
+                            Text("内部候选加载请求已发起；已保留 2D/列表路径。")
+                                .font(.caption2)
+                                .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                                .accessibilityIdentifier("body-map.candidate-3d-load-attempted")
+                        }
+                    }
+
+                    CompanionCard {
+                        modeContent
+                    }
+
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundStyle(BodyCompanionTheme.mint)
+                            .frame(width: 24)
+                        Text("标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
+                            .font(.footnote)
+                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("位置说明：标记只表示你主观指出的不适位置，不代表疼痛来源、受损组织或医学定位。")
+
+                    if !model.marks.isEmpty {
+                        MarkSummaryPanel(
+                            model: model,
+                            suppressAutomaticEditor: isTextRegionPickerPresented
+                        )
+                    }
+                }
+                .padding(20)
+            }
+            // Keep the screen identifier on the scrolling content. The bottom
+            // action is a sibling so an older SwiftUI runtime cannot omit it
+            // from the accessibility tree as a conditional safe-area inset.
+            .accessibilityIdentifier("screen.body-map")
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            if !model.marks.isEmpty {
+                continuationFooter
             }
         }
         .navigationTitle("记录这次不适")
@@ -192,6 +189,19 @@ public struct BodyMapScreen: View {
         .buttonStyle(CompanionPrimaryButtonStyle())
         .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
         .accessibilityIdentifier("body-map.next")
+    }
+
+    private var continuationFooter: some View {
+        continuationAction
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(BodyCompanionTheme.canvas)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(BodyCompanionTheme.line.opacity(0.72))
+                    .frame(height: 1)
+            }
+            .layoutPriority(1)
     }
 
     @ViewBuilder

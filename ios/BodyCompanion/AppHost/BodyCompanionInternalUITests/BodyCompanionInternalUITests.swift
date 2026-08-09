@@ -15,8 +15,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         let app = launchApp()
         selectKneeFromTextPicker(in: app)
 
-        assertExists(app.buttons["body-map.next"])
-        app.buttons["body-map.next"].tap()
+        tapMapContinuationAction(in: app)
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
     }
 
@@ -24,7 +23,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     func testMoreSensationsKeepsStructuredInternalDraftFlow() {
         let app = launchApp()
         selectKneeFromTextPicker(in: app)
-        app.buttons["body-map.next"].tap()
+        tapMapContinuationAction(in: app)
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
 
         let moreSensations = app.descendants(matching: .any)
@@ -96,7 +95,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         app.tabBars.buttons["记录"].tap()
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.records").firstMatch)
         selectKneeFromTextPicker(in: app)
-        app.buttons["body-map.next"].tap()
+        tapMapContinuationAction(in: app)
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
 
         let intakeScroll = app.descendants(matching: .any)
@@ -138,7 +137,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
     func testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown() {
         let app = launchApp()
         selectBothKneesFromTextPicker(in: app)
-        app.buttons["body-map.next"].tap()
+        tapMapContinuationAction(in: app)
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
 
         let perLocationUnknown = app.switches["部分位置的感觉说不清"]
@@ -167,12 +166,12 @@ final class BodyCompanionInternalUITests: XCTestCase {
         dismissKeyboard(in: app)
 
         assertExists(app.staticTexts["没有匹配的部位"])
-        XCTAssertFalse(app.buttons["body-map.next"].exists)
+        XCTAssertFalse(mapContinuationAction(in: app).exists)
 
         let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
         done.tap()
-        XCTAssertFalse(app.buttons["body-map.next"].exists)
+        XCTAssertFalse(mapContinuationAction(in: app).exists)
     }
 
     @MainActor
@@ -238,7 +237,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         confirmDiscard.tap()
 
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.body-map").firstMatch)
-        XCTAssertFalse(app.buttons["body-map.next"].exists)
+        XCTAssertFalse(mapContinuationAction(in: app).exists)
 
         returnToToday(in: app)
         assertExists(app.buttons["intake-entry.start-record"])
@@ -374,12 +373,16 @@ final class BodyCompanionInternalUITests: XCTestCase {
         search.typeText("膝")
         dismissKeyboard(in: app)
 
+        let pickerList = app.descendants(matching: .any)
+            .matching(identifier: "body-map.text-picker")
+            .firstMatch
+        assertExists(pickerList)
         let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
         // At accessibility sizes the sheet keeps results below its explanatory
         // text, so the lazy List has not materialized this row until it is
-        // scrolled into view. Use the same real interaction as a user rather
-        // than treating off-screen content as absent.
-        scrollUntilHittable(leftKnee, in: app)
+        // scrolled into view. Limit the gesture to the sheet list so the
+        // background map never competes for the same vertical swipe.
+        scrollUntilHittable(leftKnee, in: app, within: pickerList)
         leftKnee.tap()
         // The selection notice is transient view feedback inside a lazy List,
         // not the selected-location fact. Verify the stable interaction
@@ -403,7 +406,8 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // must become directly reachable after the same explicit completion
         // action a user takes, without generic scrolling to compensate for a
         // layout defect at accessibility sizes.
-        let next = app.buttons["body-map.next"]
+        assertLocationCount(1, in: app)
+        let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
     }
@@ -422,11 +426,15 @@ final class BodyCompanionInternalUITests: XCTestCase {
         search.typeText("膝")
         dismissKeyboard(in: app)
 
+        let pickerList = app.descendants(matching: .any)
+            .matching(identifier: "body-map.text-picker")
+            .firstMatch
+        assertExists(pickerList)
         let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
         let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right"]
-        scrollUntilHittable(leftKnee, in: app)
+        scrollUntilHittable(leftKnee, in: app, within: pickerList)
         leftKnee.tap()
-        scrollUntilHittable(rightKnee, in: app)
+        scrollUntilHittable(rightKnee, in: app, within: pickerList)
         rightKnee.tap()
         XCTAssertFalse(
             app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
@@ -442,7 +450,8 @@ final class BodyCompanionInternalUITests: XCTestCase {
             done.waitForExistence(timeout: 5),
             "Expected the text-region picker to dismiss after the explicit completion action."
         )
-        let next = app.buttons["body-map.next"]
+        assertLocationCount(2, in: app)
+        let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
     }
@@ -473,6 +482,52 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(returnKey)
         returnKey.tap()
         XCTAssertFalse(app.keyboards.element.waitForExistence(timeout: 1), "Expected the search keyboard to dismiss before choosing a body region")
+    }
+
+    @MainActor
+    private func mapContinuationAction(in app: XCUIApplication) -> XCUIElement {
+        // A SwiftUI NavigationLink can be projected as a Button, Link, or
+        // another interactive accessibility element across iOS releases. The
+        // stable identifier—not XCTest's element class—is the contract.
+        app.descendants(matching: .any)
+            .matching(identifier: "body-map.next")
+            .firstMatch
+    }
+
+    @MainActor
+    private func assertLocationCount(
+        _ expectedCount: Int,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let summary = app.descendants(matching: .any)
+            .matching(identifier: "body-map.marker-count-summary")
+            .firstMatch
+        assertExists(summary, file: file, line: line)
+        let expectedLabel = "位置标记数量 \(expectedCount)"
+        let countUpdated = expectation(
+            for: NSPredicate(format: "label CONTAINS %@", expectedLabel),
+            evaluatedWith: summary
+        )
+        wait(for: [countUpdated], timeout: 5)
+    }
+
+    @MainActor
+    private func tapMapContinuationAction(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let next = mapContinuationAction(in: app)
+        assertExists(next, file: file, line: line)
+        XCTAssertTrue(
+            next.isHittable,
+            "Expected the persistent map continuation action to be immediately reachable after the picker closes.",
+            file: file,
+            line: line
+        )
+        next.tap()
     }
 
     @MainActor
