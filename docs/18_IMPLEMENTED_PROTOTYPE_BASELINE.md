@@ -55,7 +55,7 @@
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
 | iOS Swift | 82 tests、0 failures；iOS `BodyCompanionIOS` SDK build、`BodyCompanionInternal` 本地 7 项 UI smoke 与远端 CI Host smoke 绿色 | 证明内部 Simulator 可安装/启动的 P0 壳和回退路径；不能替代真机 UI 验收 |
 | 后端 Python | 194 tests、0 failures；P2A 聚焦 19 tests | 受控时钟回归已修复；只证明合成/内存样机 |
-| Git/CI | `codex/initial-git-ci-baseline` 受保护默认分支合并提交 `2bb8e8a`；本轮复刻切片提交 `6f232b4`、内部 Host `5dddd83`；双作业 workflow；Python 3.11 constraints | run `31295533318` 已在远端完成后端/契约与 iOS package/Host smoke；不等于真机或发布验收 |
+| Git/CI | `codex/initial-git-ci-baseline` 受保护默认分支合并提交 `2bb8e8a`；本轮复刻切片提交 `6f232b4`、内部 Host `5dddd83`、地图投影边界修复 `a796f0b`；双作业 workflow；Python 3.11 constraints | run `31295533318` 与本轮 run `31296924827` 已在远端完成后端/契约与 iOS package/Host smoke；不等于真机或发布验收 |
 
 ## 6. 删除登记
 
