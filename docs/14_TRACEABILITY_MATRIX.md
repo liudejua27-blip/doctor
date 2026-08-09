@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 3.0.6-draft |
+| 版本 | 3.0.8-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -19,9 +19,9 @@
 
 | 需求 | 核心设计真源 | 机器契约 | 当前实现/测试 | 当前状态 | 发布门禁 |
 |---|---|---|---|---|---|
-| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；`0105cd7` 已在本地实现完整稳定感觉目录（首屏 10 项、扩展 22 项）、普通状态的语义感觉修订安全失效与 R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝，并由 94 项 Core/12 项 Host flow 覆盖。`31311301360` 与 `31312416395` 均仅 HOST-T-015 失败；后者为 iPhone 16 / iOS 18.5 / Xcode 16.4 的 12 passed、1 failed、0 skipped，缺少 `body-map.next` Button（exit 65），其余指定 CI 步骤成功。`e0f1089` 只将断言移至文字部位 Sheet 关闭后，本地完整 Host suite 与单独 HOST-T-015 已通过，远端复测 pending。位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P1D 感觉安全修订及局部 accessibility-size 结构已本地验证；外部发布仍阻断 | GATE-03/06/07/08 |
+| PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；`0105cd7` 已在本地实现完整稳定感觉目录（首屏 10 项、扩展 22 项）、普通状态的语义感觉修订安全失效与 R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝，并由 94 项 Core/12 项 Host flow 覆盖。`31311301360`、`31312416395` 与 `31313515662` 均仅 HOST-T-015 失败；后者为 pushed SHA `306f2b91` 的 iPhone 16 / iOS 18.5 / Xcode 16.4 运行，12 passed、1 failed、0 skipped，缺少静态文案“已添加待确认位置：左膝附近”（exit 65），其余指定 CI 步骤成功。测试专用修复 `0ed0563` 不再依赖短暂的本地化选择反馈，先验证无并存 `MarkEditor`、完成/关闭文字部位 Sheet 后再检查 `body-map.next`，并同样加固 `selectBoth`；本地完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，远端 retry 尚未推送。位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P1D 感觉安全修订及局部 accessibility-size 结构已本地验证；外部发布仍阻断 | GATE-03/06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001、CONFLICT-002、FEAT-COMP-01 §10.2 | `agent-turn`、内部 handoff schemas；P1I `QuestionPlan` 契约待批准 | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3。P1I 的目录/失效/测试评审输入已定义，但现有 Agent 仍可表达多题，不能当作单题计划实现 | Prototype verified; P1I / 情境化产品能力未实现 | GATE-02/03/04/07/08 |
-| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；`9fc54d4` 的本地文字目录只产生 `Zone + Area + body_part_search`，Pin 模式也不伪造 Point/3D anchor；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联；TEST-BODY-MAP-V1/V2 | Implementation in progress | GATE-06/07/08 |
+| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；`9fc54d4` 的本地文字目录只产生 `Zone + Area + body_part_search`，Pin 模式也不伪造 Point/3D anchor；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联。Canvas Zone=`Area + region_mask_id`（无 2D point）、Canvas Pin 才可使用真实 point，以及 Zone 三元组 `(region_id,laterality,surface)` 的复选/不同 surface 共存，现仅在规格和计划 `TEST-BODY-016`～`018`、`TEST-BODY-V2-023`～`026` 中定义，尚无实现或执行收据；文字目录的既有 Area-only 证据不得外推到这些语义。 | Implementation in progress / Canvas Zone semantics correction planned and unverified | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
 | PRD-F05 复查与趋势 | UX-01、DATA-01、API-01 | Event/CheckIn operations | 未形成正式数据闭环 | Planned | GATE-05/07 |
@@ -33,7 +33,7 @@
 | PRD-F09B HealthKit/文件 | AGENT-01、PRIV-01 | Connector capabilities | 未实现 | Planned P1 | 首发后独立门禁 |
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
 | PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001、CONFLICT-002 | 待 ADR 批准后新增上下文、资料收据、行动引用、报告显示类型与 P1I `QuestionPlan` 契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；P1I 审核附录与 COMP-T-024～030 已定义；无情境化 API、目录或生产实现 | Draft / P0 prototype only | GATE-02/03/04/07/08 |
-| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表；`9fc54d4` 本地 10 项 UI 流程覆盖文字搜索、无结果与候选 ready/fallback 共用入口；`0105cd7` 本地 12 项流程覆盖 HOST-T-001～014 的完整感觉/unknown 路径，run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 smoke（不记录 probe 分支为质量结论）；`7d8bf59` 的 run `31311301360` 和 `7e64833` 的 run `31312416395` 均仅 HOST-T-015 失败（exit 65）。`e0f1089` 的本地完整 Host suite 与单独 HOST-T-015 均通过；远端复测 pending | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
+| PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `5dddd83` 的 Xcode Host / 7 项本地 UI smoke / run `31295533318` 远端 Simulator smoke 通过；`79f1f36` 本地 9 项 UI 套件观察到候选 3D loader-entry → candidate-ready → Scene/列表；`9fc54d4` 本地 10 项 UI 流程覆盖文字搜索、无结果与候选 ready/fallback 共用入口；`0105cd7` 本地 12 项流程覆盖 HOST-T-001～014 的完整感觉/unknown 路径，run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Swift 94、SDK build、Host boundary 与 smoke（不记录 probe 分支为质量结论）；`31311301360`、`31312416395` 与 pushed SHA `306f2b91` 的 run `31313515662` 均仅 HOST-T-015 失败（exit 65）；第三次为 12 passed、1 failed、0 skipped，缺少静态文案“已添加待确认位置：左膝附近”。测试专用修复 `0ed0563` 已在本地 iPhone 17 Pro / iOS 26.5 通过完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94，远端 retry 尚未推送 | Implemented internal engineering prototype / Simulator only | GATE-02/06/07/08 仍打开 |
 
 ## 3. 安全不变量追踪
 
@@ -63,11 +63,11 @@
 | NFR-PERF-003 3D 帧率 | 未真机验证；候选 manifest performance=pending | 默认资产最低设备持续交互 |
 | NFR-REL-001 草稿恢复 | CryptoKit/内存样机；P4 1.1 保留感觉—位置关系并拒绝重复位置/悬空关联 | Keychain、文件、杀进程、后台同步 |
 | NFR-REL-002 幂等/事务 | 进程内/fake repository 样机 | PostgreSQL、跨实例、崩溃恢复、read-back |
-| NFR-A11Y-001 等价路径 | 2D/列表设计存在；`9fc54d4` 的文字部位 Sheet 与 `0105cd7` 的完整感觉入口均有 Simulator UI 流程覆盖；`7d8bf59` 仅在 `UICTContentSizeCategoryAccessibilityXXXL` 证明文字选择、两张情境卡和两组结构化成对动作可纵向/可达。两次远端 run `31311301360` / `31312416395` 均仅 HOST-T-015 失败；`e0f1089` 本地完整 Host suite 与单独 HOST-T-015 已通过，远端复测 pending。EVIDENCE-DEVICE-01 仍记录真机执行阻塞 | VoiceOver、完整 Dynamic Type、横屏、Switch Control、深色/高对比度、Reduce Motion 真机 |
+| NFR-A11Y-001 等价路径 | 2D/列表设计存在；`9fc54d4` 的文字部位 Sheet 与 `0105cd7` 的完整感觉入口均有 Simulator UI 流程覆盖；`7d8bf59` 仅在 `UICTContentSizeCategoryAccessibilityXXXL` 证明文字选择、两张情境卡和两组结构化成对动作可纵向/可达。三次远端 run `31311301360` / `31312416395` / `31313515662` 均仅 HOST-T-015 失败；第三次为缺少短暂选择反馈静态文案（12 passed、1 failed、0 skipped，exit 65）。测试专用修复 `0ed0563` 不再依赖该反馈，本地完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，远端 retry 尚未推送。EVIDENCE-DEVICE-01 仍记录真机执行阻塞 | VoiceOver、完整 Dynamic Type、横屏、Switch Control、深色/高对比度、Reduce Motion 真机 |
 | NFR-PRIV-001 最小数据 | typed scope 与禁日志规范 | 真实 Consent、Provider、遥测审计 |
 | NFR-TRUST-CTX-001 资料范围可见性 | FEAT-COMP-01/ADR-0019 Draft；无生产实现 | 本次实际使用资料收据、拒绝可选资料完成率与真实审计 |
 | NFR-COMP-001 契约兼容 | OpenAPI/16 schemas、Markdown 和禁止引用已有版本化检查器及 CI job | 生成客户端、相邻版本兼容和首次远端 CI 证据 |
-| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；`9fc54d4` 本地 10 项覆盖文字部位 Area-only 与候选 ready/fallback 共享入口，run `31303340128` 已成功；`0105cd7` 本地 12 项覆盖完整 Host suite，run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建；`31311301360` 和 `31312416395` 均只有 HOST-T-015 失败（exit 65）。`e0f1089` 的本地完整 Host suite 与单独 HOST-T-015 已通过，远端复测 pending；静态扫描通过 | 不得外推真机、签名、VoiceOver、完整 Dynamic Type、横屏、Switch Control、深色/高对比度、Reduce Motion、3D 性能/碰撞或无障碍通过 |
+| NFR-RUNTIME-001 内部 Simulator 可运行性 | `5dddd83` 本地 7 项与 run `31295533318` 远端 Host smoke；`79f1f36` 本地 9 项含当前 attempt 的 loader-entry → candidate-ready → Scene/列表 probe；`9fc54d4` 本地 10 项覆盖文字部位 Area-only 与候选 ready/fallback 共享入口，run `31303340128` 已成功；`0105cd7` 本地 12 项覆盖完整 Host suite，run `31307042209` 已成功在 iPhone 16 / iOS Simulator 18.5 重建；`31311301360`、`31312416395` 与 `31313515662` 均只有 HOST-T-015 失败（exit 65）。第三次为 pushed SHA `306f2b91`，12 passed、1 failed、0 skipped，缺少静态选择反馈文案；测试专用修复 `0ed0563` 已本地通过完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94，远端 retry 尚未推送；静态扫描历史收据保持不变 | 不得外推真机、签名、VoiceOver、完整 Dynamic Type、横屏、Switch Control、深色/高对比度、Reduce Motion、3D 性能/碰撞或无障碍通过 |
 
 ## 5. 参考项目采用追踪
 

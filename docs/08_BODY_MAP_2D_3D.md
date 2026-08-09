@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | BODY-01 |
-| 版本 | 1.0.1-draft |
+| 版本 | 1.0.2-draft |
 | 状态 | Baseline Draft / Anatomy and Asset Review Required |
 | 负责人 | 3D 资产负责人 + iOS 负责人 |
 | 审核角色 | 产品、解剖审核、无障碍、隐私法务、QA |
@@ -43,6 +43,7 @@
 - Canvas 上每个可选区域必须有等价的 accessibility element；
 - 必须另有“搜索部位 / 层级列表”路径，不能只靠图形命中；
 - 当前 P0 的文字入口只查询本地、版本化区域目录的中英文显示名并保留目录顺序；选择结果始终为宽泛 `Area/Zone`（视觉 `BodyMark.kind=zone`），不因当前 UI 处于 Pin 模式而产生代表性中心点或精确针点；
+- 当前 P0 的 **Canvas Zone** 同样是宽泛语义区域：Canvas 点击只用于命中目录区域，输出必须为 `shape=area + anchor_2d.region_mask_id`，不得持久化该次点击的 `anchor_2d.point`；只有用户明确选择 **Canvas Pin** 时才可保存真实的归一化点并输出 `shape=point`。
 - 精确点使用视图内归一化坐标和规范表面映射，不存屏幕像素。
 
 ### 2.2 默认 3D 模式
@@ -167,6 +168,7 @@ RehabMate 的现有 GLB 是单一身体网格，没有独立肌肉、骨骼、�
 - `body_map_2d` 来源必须有 `anchor_2d`；`body_map_3d` 来源必须有 `anchor_3d + model_asset`；
 - 区域级 `area` 可以没有精确锚点，但 `point` 必须含 2D point 或 3D anchor，不能只用 `region_id` 冒充精确针点；
 - `body_part_search` 的 P0 文字目录必须产生 `shape=area` 与稳定 `anchor_2d.region_mask_id`；它不得把目录几何、显示名称或当前 Pin 模式转换成 `anchor_2d.point`；
+- `body_map_2d` 的 P0 Canvas Zone 也必须产生 `shape=area` 与稳定 `anchor_2d.region_mask_id`，点击坐标只可用于瞬时命中，不能被持久化为 `anchor_2d.point`；只有 `body_map_2d` 的明确 Canvas Pin 可以使用该真实点生成 `shape=point`；
 - `document_import`/`agent_normalization` 分别必须绑定 `source_document_id`/`source_turn_id`；`mapping.method=cross_asset_migration` 必须绑定 `migration_id`；
 - `mapping.confidence` 低于发布阈值或 `mapping.reviewed_by_user=false` 的精确点不能自动用于跨模型趋势叠加；
 - 用户确认的是位置表达，不是解剖诊断。
@@ -314,11 +316,20 @@ body.lower_back.central
 ### 10.2 Semantic Area
 
 - 用户选择预定义身体区域；
+- P0 Canvas Zone 与文字目录都属于 Semantic Area：前者的来源为 `body_map_2d`、后者为 `body_part_search`，两者均使用 `shape=area + region_mask_id`，不得因 Canvas 已取得点击坐标而伪装为 Point；
 - 本地文字部位搜索也是 Semantic Area：只使用目录中已审核的区域、侧别和表面，输出 `source.interaction=body_part_search`；
 - 保存 `region_id + ontology_version`，具体视觉蒙版由 2D/3D AssetManifest 版本决定；
 - 不保存某次模型的整组顶点下标作为长期事实；
 - 区域视觉随资产版本重新渲染；
 - 一个区域可配合用户的“这一片”原话。
+
+### 10.2.1 P0 Canvas Zone 语义键
+
+在当前未确认的 `BodyMapModel` 中，一个 Canvas Zone 的去重、选中和高亮键固定为 `(region_id, laterality, surface)`：
+
+- 同一三元组被再次选中时，必须重新选中既有 Zone 并保留其 `marker_id`，不得创建第二个 marker、改写 Area 为 Point 或触发健康状态变化；
+- `surface` 不同即为不同 Zone，即使 `region_id` 与 `laterality` 相同；它们必须可同时保留、分别选中和正确高亮；
+- 该键仅是未确认地图交互状态，不是新的 `BodyLocation` 字段、API 键或长期档案去重规则；正式事实仍以完整、已确认的 `BodyLocation` 为准。
 
 ### 10.3 Free Area 与 Path
 
@@ -560,6 +571,8 @@ flowchart LR
 
 - 2D、默认 3D、专业 3D 切换后 Marker UUID、区域、侧别和 Episode 100% 保持；
 - 切换不会新增事件、复制 Marker 或改变程度；
+- 2D Canvas Zone 始终保留为 `Area + region_mask_id` 且没有持久化 point；2D Canvas Pin 的真实点选可回放为 Point；
+- 同一 Canvas Zone 三元组 `(region_id, laterality, surface)` 复选后 marker ID 不变；不同 surface 的 Zone 可共存且不会被错误折叠或高亮到另一个表面；
 - 精确点映射低于置信门槛时 100% 要求复核；
 - 3D 完全不可用时，2D/列表可完成同一正式记录；
 - 2D 路径在不同屏幕尺寸和缩放下命中结果一致。
@@ -608,6 +621,7 @@ flowchart LR
 - 默认或专业模型没有稳定资产版本和区域映射；
 - 仍以世界坐标保存针点；
 - 仍使用最近中心或首顶点推断专业区域；
+- 2D Canvas Zone 把命中点击坐标持久化成 Point，或按不含 `surface` 的键折叠不同表面；
 - 2D/3D 切换会复制或丢失 Marker；
 - 点击会直接把 Episode 在疼痛/缓解/清除间循环；
 - 3D 不可用时没有完整 2D/列表回退；

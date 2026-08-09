@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | QA-01 |
-| 版本 | 1.4.2-draft |
+| 版本 | 1.4.3-draft |
 | 状态 | Baseline Draft |
 | 负责人 | QA 负责人 |
 | 审核角色 | 产品、临床安全、iOS、后端、AI、隐私法务、安全、统计 |
@@ -602,6 +602,8 @@ FEAT-COMP-01 的验证以 TEST-COMP-01 为最低测试计划，且不得用页�
 
 - 同一标记在 2D、默认 3D、专业 3D 中保持 marker ID、region ID 和侧别；
 - 前后、内外、左/右和双侧映射；
+- 2D Canvas Zone 必须序列化为 `Area + region_mask_id` 且不保存点击 point；只有明确 Canvas Pin 才可序列化真实 2D point；
+- 当前未确认地图中 Zone 的同 `(region_id, laterality, surface)` 复选保留 marker ID，而不同 surface 可共存并分别选中/高亮；
 - 模型旋转、缩放、重载和版本迁移后不漂移；
 - 低映射置信度时要求用户复核；
 - 模型升级无法迁移时保留原始标记，不伪造新位置；

@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TEST-BODY-MAP-V2 |
-| 状态 | Active implementation spec / V2.6 text-list Area semantics implemented / device run blocked |
+| 状态 | Active implementation spec / V2.6 text-list Area semantics implemented / V2.7 Canvas Zone/Pin and surface-aware Zone semantics planned, unverified / device run blocked |
 | 关联功能 | FEAT-BODY-MAP-V2、FEAT-BODY-MAP-V1、PRD-F03A、SAFE-INV-06、SAFE-INV-09、NFR-A11Y-001 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
@@ -48,6 +48,10 @@
 | TEST-BODY-V2-020 | Simulator probe | 显式内部候选 3D 加载/回退 | 先观察当前 Scene 的 `onLoadAttempted`，再只接受“内部候选状态 + 共享文字列表入口”或“加载/初始化错误、8 秒超时后的固定 2D 回退 + 同一入口”；不得通过点击网格推导位置、碰撞或区域准确性 |
 | TEST-BODY-V2-021 | Unit | 3D attempt 状态权威 | 仅当前 Scene attempt 的 `onLoadAttempted` 后 `onReady` 可标成 ready；初始/2D interactive、直接改 mode、切回 2D 或被新请求替代的失效 attempt 不得显示“候选已加载” |
 | TEST-BODY-V2-022 | Unit/UI | 文字部位选择边界 | 本地中英文目录搜索只显示静态当前视图选项；无结果不改变草稿；无论当前 Zone/Pin 模式，选择均创建单个 `zone` 的 `Area + region_mask_id + body_part_search`，不生成代表性 Point；2D/候选 ready/回退都能进入同一列表 |
+| TEST-BODY-V2-023 | Unit | Canvas Zone Area 映射（计划） | 在 Zone 模式点击 2D Canvas 已命中区域，只创建/选择 `body_map_2d` 的 `zone + shape=area + region_mask_id`；`anchor_2d.point` 必须为空，文本目录语义不变 |
+| TEST-BODY-V2-024 | Unit | Canvas Pin Point 映射（计划） | 在 Pin 模式明确点选 2D Canvas，才创建 `body_map_2d` 的 `pin + shape=point + anchor_2d.point`；不得把 Zone 的点击坐标或文字目录变成 Point |
+| TEST-BODY-V2-025 | Unit | Zone 语义键复选（计划） | 同 `(region_id, laterality, surface)` 的 Canvas Zone 再次选择只返回已有 marker，保留其 `marker_id`，不追加草稿、不改 shape、也不触发健康状态变化 |
+| TEST-BODY-V2-026 | Unit/UI | 不同 surface Zone 共存与高亮（计划） | 同 `region_id/laterality` 但不同 `surface` 的 Canvas Zone 可同时存在；选择、focus/highlight 和摘要按完整三元组或对应 marker 解析，不能折叠、替换或高亮到另一个表面 |
 
 ## 3. 真机与无障碍矩阵
 
@@ -62,7 +66,7 @@
 
 ## 4. 安全、隐私和供应链门槛
 
-- Zone 重复点击不能改变/删除草稿；删除只能由显式动作触发，且视觉状态不能被序列化为“已缓解”、趋势或安全等级；文字列表不得以代表性中心点或 Pin 模式伪造精确针点；
+- Zone 重复点击不能改变/删除草稿；Canvas Zone 不得将点击坐标持久化成 Point，并必须以 `(region_id, laterality, surface)` 区分不同表面；删除只能由显式动作触发，且视觉状态不能被序列化为“已缓解”、趋势或安全等级；文字列表不得以代表性中心点或 Pin 模式伪造精确针点；
 - 任何 Map 状态不得含有感觉、程度、动作线索、因素、功能影响或安全答案；这些字段只由 typed Signal Intake 显式产生；
 - 未确认 mark 不能调用正式 Event 写接口；
 - 普通日志/遥测不含用户原始健康文本；
@@ -72,7 +76,7 @@
 
 ## 5. 停止规则
 
-任一以下失败立即阻止外部测试或发布：左右侧错误、3D 失败导致 2D 不可用、未批准资产加载、Zone + Pin 合计超过 20 或被 typed draft 静默截断、已有 Pin 被误复制、空感觉被默认填充、视觉状态被当作健康事实、VoiceOver 无等价路径、原始健康文本进入日志。
+任一以下失败立即阻止外部测试或发布：左右侧错误、3D 失败导致 2D 不可用、未批准资产加载、Canvas Zone 被持久化成 Point、不同表面 Zone 被折叠或错误高亮、Zone + Pin 合计超过 20 或被 typed draft 静默截断、已有 Pin 被误复制、空感觉被默认填充、视觉状态被当作健康事实、VoiceOver 无等价路径、原始健康文本进入日志。
 
 ## 6. 结果记录模板
 
@@ -83,3 +87,5 @@
 `79f1f36` 的本地 iPhone 17 Pro / iOS 26.5 内部 Host 套件为 9 项通过：`TEST-BODY-V2-020` 先观察 loader-entry，实际到达 candidate-ready 并保留 3D 场景/列表；`TEST-BODY-V2-021` 由 Core 回归覆盖当前 attempt 与替代后旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite，但不把 ready/fallback 分支作为资产质量结论。
 
 `9fc54d4` 的本地 Swift Core 为 87 项通过，Internal Host 为 10 项通过：`TEST-BODY-V2-018/022` 覆盖本地中英文文字目录、无结果不写草稿、一次位置同步只推进一次 revision，以及 Pin 模式下文字选择仍强制生成单个 `zone` 的 `Area + region_mask_id + body_part_search`，没有代表性 Point。候选显式 probe 的 ready-or-fallback 终态与默认 2D fallback 都能打开同一文字入口；不点击网格，文字流只创建未确认的宽泛 `BodyLocation`，不产生精确网格命中/3D 位置证据或已确认健康事实。远端 CI run `31303340128` 已成功完成后端/契约与 iOS internal Host 验证；所有真机、命中、性能、资产与无障碍维度保持 `Blocked/Pending`。
+
+`TEST-BODY-V2-023`～`026` 是 V2.7 的文档计划，当前没有实现或执行收据；既有文字目录、Canvas 或 Simulator 结果不得被解释为这些用例已通过。

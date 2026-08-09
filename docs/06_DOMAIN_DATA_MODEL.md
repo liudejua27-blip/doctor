@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | DATA-01 |
-| 版本 | 1.2.1-draft |
+| 版本 | 1.2.2-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构与后端领域负责人 |
 | 审核角色 | 产品、iOS、后端、AI、临床安全、隐私法务、安全、QA、人体资产负责人 |
@@ -251,6 +251,8 @@ body.<大区>.<子区>[.<更细区域>]
 - `region_mask_id`：可选的矢量区域路径 ID。
 
 `shape=point` 时应提供 `point`；`shape=path` 时应提供至少两个路径点；`shape=area` 可以提供中心点、路径或区域蒙版。复杂的面积几何可以由独立标记资产保存，契约中只保存稳定引用。
+
+P0 的 2D Canvas 映射在不改变上述 Schema 字段的前提下进一步收敛：Canvas 的 **Zone** 命中是宽泛语义区域，必须序列化为 `shape=area` 和稳定 `anchor_2d.region_mask_id`，并省略 `anchor_2d.point`；Canvas 的 **Pin** 只有在用户明确点选时才可以序列化为 `shape=point + anchor_2d.point`。此规则不影响文字部位目录：目录继续固定为 `body_part_search + Area/Zone + region_mask_id`。它只规定现有字段如何映射，不新增 API、Schema 或领域字段。
 
 ### 4.5 3D 锚点
 

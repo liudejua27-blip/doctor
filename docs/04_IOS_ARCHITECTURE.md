@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | IOS-01 |
-| 版本 | 1.6.2-draft |
+| 版本 | 1.6.3-draft |
 | 状态 | Baseline Draft |
 | 负责人 | iOS 负责人 |
 | 审核角色 | 产品、3D 资产、后端、无障碍、隐私安全、QA |
@@ -170,12 +170,14 @@ Simulator Host 成功只证明可安装的内部 UI smoke。它不能关闭真�
 | `BodyHitTestService` | 屏幕点、相机、碰撞组 | 未持久化的命中结果 |
 | `BodySurfaceAnchorResolver` | 命中结果、资产 Manifest | 规范 3D 锚点候选 |
 | `BodyAssetManifest.validate()` / `BodyAssetRuntimeGate` | `BodyAssetManifest`、请求变体、能力配置 | metadata eligibility 或可访问 2D/列表回退；不得做文件 I/O |
-| `BodyLocationMapper` | 2D/3D 锚点、区域图、对应表 | 规范 `BodyLocation` 与置信度 |
-| `MarkerDraftStore` | 用户创建/选择/删除位置草稿 | 仅 `BodyLocation` 候选；Zone 与 Pin 合计严格最多 20 个，超限拒绝而非截断；不产生正式事件或其他身体事实 |
+| `BodyLocationMapper` | 2D/3D 锚点、区域图、对应表和明确的 Zone/Pin 输入意图 | 规范 `BodyLocation` 与置信度；Canvas Zone 产出区域蒙版 Area，Canvas Pin 才可产出真实 2D Point |
+| `MarkerDraftStore` | 用户创建/选择/删除位置草稿 | 仅 `BodyLocation` 候选；Zone 与 Pin 合计严格最多 20 个，超限拒绝而非截断；当前未确认地图内 Zone 的语义键为 `(region_id, laterality, surface)`，同键复选保留原 `marker_id`，不同 surface 可并存；不产生正式事件或其他身体事实 |
 | `MarkerRenderer` | Marker + 当前资产 | 纯视觉 Entity / Overlay |
-| `RegionHighlightRenderer` | `region_id`、选中态 | 纯视觉区域高亮 |
+| `RegionHighlightRenderer` | 选中 Zone 的完整语义键或 `marker_id`、选中态 | 纯视觉区域高亮；不得只按 `region_id` 折叠不同侧别或表面的 Zone |
 | `CameraPresetController` | front/back/left/right/focus | 可取消的相机变换 |
 | `AccessibleBodyRegionPicker` | 共享 SwiftUI Sheet、本地目录搜索/浏览、目录已有的侧别/表面 | 与图形区域输入相同的宽泛 `BodyLocation` 草稿；P0 固定为 `Area/Zone + region_mask_id + body_part_search`，不得依据 Pin 模式或代表性中心点生成 Point |
+
+Canvas 的命中坐标只是在当前视图中定位区域的瞬时证据，不自动等同用户要求的精确点：在 Zone 模式，Canvas 必须使用命中的目录区域和当前视图生成 `shape=area + anchor_2d.region_mask_id`，并省略 `anchor_2d.point`；在 Pin 模式，用户对 Canvas 的明确点选才可以生成 `shape=point + anchor_2d.point`。这只是现有 `BodyLocation` 字段的映射规则，不新增 API、Schema 或长期健康事实字段。`BodyMapModel` 的选中/聚焦状态必须通过完整 Zone 语义键或已选 `marker_id` 解析，不能仅以 `focusedRegionID` 的区域字符串覆盖另一个表面。
 
 ### 5.3 Signal Intake Feature
 
@@ -347,6 +349,8 @@ stateDiagram-v2
 - 精确点跨模型映射置信度不足时必须要求用户复核；
 - 2D 回退不能降低正式记录的数据协议；
 - 资产升级不得静默移动旧标记。
+- 2D Canvas Zone 是宽泛 Area，不保存 Canvas 点击的归一化点；2D Canvas Pin 才可保存用户明确点选的归一化点。
+- 当前未确认地图中 Zone 的重复选择只按 `(region_id, laterality, surface)` 判断：同键重新选中并保留 `marker_id`，不同 surface 必须保留为独立草稿和独立高亮候选。
 - `BodyLocation.model_asset` 只能引用已验证的 `asset_id + asset_version + topology_id`；清单变体、映射版本或坐标约定变化必须走迁移/复核，不得由 loader 猜测。
 
 详细坐标、锚点和迁移规则见 [2D/3D 身体地图规格](08_BODY_MAP_2D_3D.md)。
@@ -494,6 +498,7 @@ RealityKit Canvas 本身不构成可访问控件。当前可见人体、选中�
 
 - `BodyLocation` 不变量、序列化和 schema 迁移；
 - 左右侧、表面和显示名称分离；
+- 2D Canvas Zone/Pin 到既有 Area/Point 锚点的映射，以及 Zone 的 `(region_id, laterality, surface)` 复选/共存语义；
 - 2D/3D/专业资产映射；
 - 手势状态机；
 - Marker 草稿与 Episode 状态分离；

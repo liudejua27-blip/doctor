@@ -6,7 +6,7 @@
 | SafetyBaseline | 不调用 SafetyEngine；位置非诊断边界必须保持 |
 | 负责人 | iOS + QA + 3D 资产 |
 | 环境 | Swift Core、iOS SDK、最低支持 iPhone、RealityKit prototype harness |
-| 状态 | Active implementation spec / local Core、iOS build、文字部位 Area-only、完整感觉入口、accessibility-size 结构与候选 3D Simulator evidence recorded；`0105cd7` remote CI success，`31311301360` 与 `31312416395` 均仅 HOST-T-015 failed（exit 65），`e0f1089` local retry passed / remote retry pending；device gate open |
+| 状态 | Active implementation spec / local Core、iOS build、文字部位 Area-only、完整感觉入口、accessibility-size 结构与候选 3D Simulator evidence recorded；Canvas Zone/Pin 映射与 surface-aware Zone 语义修正仅已计划、尚未验证；`0105cd7` remote CI success，`31311301360`、`31312416395` 与 `31313515662` 均仅 HOST-T-015 failed（exit 65）；测试专用修复 `0ed0563` 的本地完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，remote retry 尚未推送；device gate open |
 
 ## 1. 测试目标和风险
 
@@ -31,8 +31,11 @@
 | TEST-BODY-013 | PRD-F03A | Simulator probe | 显式内部候选 Bundle 加载 | 先观察当前 Scene 的 `onLoadAttempted` 运行时确认，再只接受内部候选状态+列表入口，或加载/初始化错误、8 秒超时后的固定 2D 回退+列表入口；不点击网格、不创建位置事实 | 是 / 非真机 |
 | TEST-BODY-014 | PRD-F03A | Unit | 3D attempt 状态权威 | 只有当前 `request3D()` attempt 的 `onLoadAttempted` 后 `onReady` 可以进入 3D ready；初始/2D interactive、跳过确认、切回 2D 后的旧回调或被新请求替代的旧回调均不得改变当前状态 | 是 |
 | TEST-BODY-015 | PRD-F03A、NFR-A11Y-001 | UI | 共享文字入口 | 2D、候选 3D ready 与候选回退均能打开同一可搜索列表；无结果不改变位置草稿，选中后只显示待确认 Area 反馈 | 是 / 非真机 |
+| TEST-BODY-016 | PRD-F03A、ADR-0003 | Unit | Canvas Zone 映射（计划） | Zone 模式在 2D Canvas 命中区域时生成 `body_map_2d` 的 `Area + region_mask_id`，没有持久化 `anchor_2d.point`；文字列表现有 Area/Zone 语义不变 | 计划中 |
+| TEST-BODY-017 | PRD-F03A、ADR-0003 | Unit | Canvas Pin 映射（计划） | Pin 模式的明确 2D Canvas 点选才生成带真实归一化 `anchor_2d.point` 的 Point；不得把 Zone 或文字目录映射为 Point | 计划中 |
+| TEST-BODY-018 | PRD-F03A、NFR-A11Y-001 | Unit/UI | Zone 三元组键与表面共存（计划） | 同 `(region_id, laterality, surface)` 的 Zone 复选仅重新选中并保留 `marker_id`；同区域/侧别而不同 surface 的 Zone 必须共存、可分别选中/高亮且不互相覆盖 | 计划中 |
 
-V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、位置摘要/Inspector、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。地图只产生位置候选；感觉、程度和因素的结构化编辑另由 P1D 验收。
+V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、位置摘要/Inspector、焦点和已有点命中优先规则见 [TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md)。其中 `TEST-BODY-V2-023`～`026` 是与 `TEST-BODY-016`～`018` 对应的 Canvas/Zone 语义计划，当前均无执行收据。地图只产生位置候选；感觉、程度和因素的结构化编辑另由 P1D 验收。
 
 ## 3. 测试数据治理
 
@@ -52,7 +55,7 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 
 ## 5. 缺陷与停止规则
 
-任何左右侧错误、未批准资产加载、位置被解释为病因/组织、2D 回退不可用、未知字段被静默接受或无障碍路径缺失，均停止外部测试。修复后必须重跑受影响测试以及跨视图回归。
+任何左右侧错误、未批准资产加载、位置被解释为病因/组织、Canvas Zone 被持久化为 Point、不同表面 Zone 被错误折叠、2D 回退不可用、未知字段被静默接受或无障碍路径缺失，均停止外部测试。修复后必须重跑受影响测试以及跨视图回归。
 
 ## 6. 结果与签字
 
@@ -61,8 +64,9 @@ V2 的行为等价、Zone/Pin 共存、Zone + Pin 合计 20 个位置上限、�
 - `79f1f36`：本地 iPhone 17 Pro / iOS 26.5 的 9 项内部 Host UI 测试通过；`TEST-BODY-013` 实际观察到当前候选 Scene 的 loader-entry → candidate-ready → 3D 场景/列表入口，未点击网格、未创建位置事实；`TEST-BODY-014` 由 Core 回归锁定当前 attempt 与旧回调失效。`ea85c68` 的远端 CI run `31301067572` 已成功重建完整 Host suite；CI 不把 ready/fallback 分支外推为资产质量；
 - `9fc54d4`：本地 iPhone 17 Pro / iOS 26.5 的 10 项 Internal Host UI 流程通过；`TEST-BODY-004/015` 验证 2D 文字搜索“膝”可选择“左膝附近”、无结果不写草稿，候选专属 ready-or-fallback 终态与默认 2D fallback 均保留同一文字入口；不点击网格，文字条目始终是宽泛 Area/Zone。远端 CI run `31303340128` 已成功完成后端/契约、Swift tests、SDK build、Host boundary 与 internal Host smoke；
 - `0105cd7`：在同一内部 Simulator 完成 94 项 Swift Core、iPhoneOS SDK build、Host 静态检查和 12 项 UI 流程。它从既有位置入口进入结构化描述，展开“更多感觉（22 项）”并选择“麻木”，只保留带显式 marker 关联的未确认草稿；两位置时分别显示局部和全组 unknown 文案。该集成路径不点击网格、不产生 Point/3D anchor、不把位置解释为组织或病因。语义感觉修订的普通状态失效与高风险拒绝由 Core 覆盖；GitHub Actions run `31307042209` 已在 iPhone 16 / iOS Simulator 18.5 成功重建 Backend and contracts、Swift 94、SDK build、Host boundary 与 internal Host smoke；
-- `7d8bf59`：在本地 iPhone 17 Pro Max / iOS 26.5 完成 94 项 Swift Core、iPhoneOS SDK build、Host 静态检查和 13 项 UI 流程。HOST-T-015 仅以 `UICTContentSizeCategoryAccessibilityXXXL` 验证 2D/文字部位 Sheet 的选择、今天页两张情境提示卡以及结构化描述页成对动作在该尺寸下纵向且可达。远端 run `31311301360` 与 `31312416395`（iPhone 16 / iOS Simulator 18.5）均只失败于 HOST-T-015（exit 65）；第二次在 Xcode 16.4 为 12 passed、1 failed、0 skipped，断言未找到 `body-map.next` Button。`e0f1089` 把该断言移至文字部位 Sheet 关闭后，本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite 和单独 HOST-T-015 均通过，远端复测 pending；它不查询位置摘要、焦点/重置、3D 回退提示，也不证明 VoiceOver、完整最大 Dynamic Type、深色/高对比度、Reduce Motion、横屏、真机或资产质量。
+- `7d8bf59`：在本地 iPhone 17 Pro Max / iOS 26.5 完成 94 项 Swift Core、iPhoneOS SDK build、Host 静态检查和 13 项 UI 流程。HOST-T-015 仅以 `UICTContentSizeCategoryAccessibilityXXXL` 验证 2D/文字部位 Sheet 的选择、今天页两张情境提示卡以及结构化描述页成对动作在该尺寸下纵向且可达。远端 run `31311301360`、`31312416395` 与 `31313515662`（均为 iPhone 16 / iOS Simulator 18.5）都只失败于 HOST-T-015（exit 65）；后两次使用 Xcode 16.4，第二次未找到 `body-map.next` Button，第三次（pushed SHA `306f2b91`）为 12 passed、1 failed、0 skipped，未找到静态文案“已添加待确认位置：左膝附近”。测试专用修复 `0ed0563` 不再依赖该短暂本地化反馈，先确认无并存 `MarkEditor`、完成/关闭文字部位 Sheet 再检查 `body-map.next`，并同样加固 `selectBoth`；本地 iPhone 17 Pro / iOS 26.5 的完整 Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过，远端 retry 尚未推送；它不查询位置摘要、焦点/重置、3D 回退提示，也不证明 VoiceOver、完整最大 Dynamic Type、深色/高对比度、Reduce Motion、横屏、真机或资产质量。
 - 真机性能与无障碍证据：未运行前不得标记通过；
 - 资产权利/解剖签字：未完成前保持候选状态；
 - 发布评审：必须绑定 commit SHA、AssetManifest、区域目录和同一测试结果。
 - `TEST-BODY-013` 当前本地只补充候选 Scene 已进入加载入口且实际成功终态可达；它不关闭 TEST-BODY-009/010/012 的真机、性能、命中、无障碍或资产审批要求。
+- `TEST-BODY-016`～`018` 当前只有文档计划，未运行，不得由现有 Canvas、文字目录或 Simulator 结果推断其通过。

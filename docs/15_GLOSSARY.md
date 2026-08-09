@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TERM-01 |
-| 版本 | 1.2.1-draft |
+| 版本 | 1.2.2-draft |
 | 状态 | Baseline Draft |
 | 负责人 | 产品架构 + 临床安全 |
 | 原则 | 其他文档引用这里的术语，不自行创造近义状态 |
@@ -79,6 +79,9 @@
 | 身体位置 | `BodyLocation` | 可跨视图持久化的区域、侧别、表面和可选精确锚点 |
 | 区域标记 | `RegionMark` | 以稳定 `region_id` 表达的一片身体区域 |
 | 精确针点 | `PointMark` | 使用资产局部表面锚点表达的精确触点 |
+| 2D Canvas Zone | `CanvasZone` | P0 图形 2D 中选择一个预定义区域的未确认输入；必须映射为 `Area + region_mask_id`，Canvas 命中坐标不持久化为 Point |
+| 2D Canvas Pin | `CanvasPin` | 用户在 2D 图形中明确点选的未确认输入；只有该路径可以产生带真实归一化 2D point 的 `PointMark` |
+| Zone 交互语义键 | `ZoneInteractionKey` | 当前未确认地图中的 `(region_id, laterality, surface)`；同键复选保留 marker ID，不同 surface 可共存并分别高亮 | 不是 `BodyLocation` 字段、API 主键或正式档案去重规则 |
 | 文字部位选择 | `body_part_search` | 基于本地版本化身体区域目录的搜索或浏览输入；P0 只创建带 `region_mask_id` 的宽泛 `Area/Zone`，不从显示名称或代表性中心点伪造精确针点 |
 | 规范身体区域 | `CanonicalBodyRegion` | 与具体模型无关、经版本管理的身体区域身份 |
 | 侧别 | `Laterality` | `left`、`right`、`midline`、`bilateral`、`unspecified`；相对用户身体；未知或不适用均显式为 `unspecified`，不得猜为中线 |
