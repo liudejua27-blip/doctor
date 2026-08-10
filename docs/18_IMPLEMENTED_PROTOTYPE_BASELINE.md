@@ -15,6 +15,8 @@
 
 本文只回答“当前样机代码已经证明了什么”。产品需求、长期架构、字段语义、安全规则、隐私权限、发布门禁仍以对应核心规范为准；机器序列化以 `docs/contracts/` 为准；不可逆决策以 `docs/decisions/` 为准。
 
+> **2026-08-10 remote compatibility receipt.** SHA `9b6e10a` / run `31348638741` 在远端 Xcode 16.4 的 UI test 编译阶段失败：`XCTIssue.isFailure` 在该 XCTest SDK 不可用，0 个 UI test 执行；Backend/contracts、Swift、SDK 与 Host boundary 均已通过。失败诊断 artifact 已上传但没有测试附件；当前兼容性修复改用跨版本 `XCTIssue.type == .assertionFailure`，待提交、推送与重试。该事件不改变 Simulator-only、无障碍、真机或生产门禁边界。
+
 本文不能用于宣称 App 已完成、生产可用、临床安全、诊断有效、真实人体资产获批或真实 Provider 合规。
 
 ## 2. 当前实现快照

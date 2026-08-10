@@ -16,6 +16,8 @@
 
 ## 1. 目的
 
+> **2026-08-10 remote compatibility receipt.** SHA `9b6e10a` / run `31348638741` 在远端 Xcode 16.4 的 UI test 编译阶段失败：`XCTIssue.isFailure` 在该 XCTest SDK 不可用，0 个 UI test 执行；Backend/contracts、Swift、SDK 与 Host boundary 均已通过。失败诊断 artifact 已上传但没有测试附件；当前兼容性修复改用跨版本 `XCTIssue.type == .assertionFailure`，待提交、推送与重试。该事件不改变 Simulator-only、无障碍、真机或生产门禁边界。
+
 当前 `BodyCompanion` 是 Swift Package：它可以编译 Core 和 iOS library，但不能产生可由 Simulator 安装的 iOS `.app`，也没有可执行的 UI Test bundle。因此，当前的 Sheet、导航、Dynamic Type、可访问标识和页面启动只能由静态代码或临时预览说明，不能形成受版本控制的 Simulator 运行证据。
 
 本功能建立一个**内部专用、可版本控制**的 iOS App Host，将已存在的明亮中文 P0 壳运行在 Simulator 中，并提供最小黑箱 UI smoke 测试。它不是新的产品能力，而是对已有 `AppShell → BodyMapScreen → SignalIntakeScreen` 路径的运行时承载。

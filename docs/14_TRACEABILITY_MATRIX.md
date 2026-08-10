@@ -14,6 +14,8 @@
 - 样机实现只证明 BASELINE-01 和 EVIDENCE-01 明确列出的边界；`Prototype verified` 不等于发布验证。
 - 发布前所有 P0 行必须为 `Verified`，并链接受保护 commit、CI、专业签字和同一 SafetyBaseline。
 
+> **2026-08-10 remote compatibility receipt.** SHA `9b6e10a` / run `31348638741` 在远端 Xcode 16.4 的 UI test 编译阶段失败：`XCTIssue.isFailure` 在该 XCTest SDK 不可用，0 个 UI test 执行；Backend/contracts、Swift、SDK 与 Host boundary 均已通过。失败诊断 artifact 已上传但没有测试附件；当前兼容性修复改用跨版本 `XCTIssue.type == .assertionFailure`，待提交、推送与重试。该事件不改变 Simulator-only、无障碍、真机或生产门禁边界。
+
 > **2026-08-10 HOST-T-015 当前收据。** 最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功；internal Host smoke 为 12 passed、1 failed、0 skipped，唯一 H015 在 5 秒内未满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`。这不能归因于位置丢失。当前工作树修复为 active/empty count ID 在真实 count pill 上互斥可见/可访问、Host 对摘要只检查 stable ID 存在；CTA 仍以 stable-id any-element 的 `exists`/`isHittable`/`tap` 作为位置已保留的行为证明。本地 iPhone 17 Pro / iOS 26.5：targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端重试。此收据仍仅限内部 Simulator，不外推为真机或完整无障碍通过。
 - 历史 P1A～P2D 名称只用于解释现有代码/测试/ADR，不再作为独立路线图或文档层级。
 

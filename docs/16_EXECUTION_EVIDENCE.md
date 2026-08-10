@@ -15,6 +15,8 @@
 
 本文件只保留当前可复现结果，不再累计每个临时切片的重复流水账。已实现边界见 [BASELINE-01](18_IMPLEMENTED_PROTOTYPE_BASELINE.md)，需求到证据关系见 [TRACE-01](14_TRACEABILITY_MATRIX.md)，发布门禁见 [REL-01](13_DELIVERY_ROADMAP.md)。
 
+> **2026-08-10 remote compatibility receipt.** SHA `9b6e10a` / run `31348638741` 在远端 Xcode 16.4 的 UI test 编译阶段失败：`XCTIssue.isFailure` 在该 XCTest SDK 不可用，0 个 UI test 执行；Backend/contracts、Swift、SDK 与 Host boundary 均已通过。失败诊断 artifact 已上传但没有测试附件；当前兼容性修复改用跨版本 `XCTIssue.type == .assertionFailure`，待提交、推送与重试。该事件不改变 Simulator-only、无障碍、真机或生产门禁边界。
+
 历史 iOS Host 基线绑定提交 `5dddd83`：本地 iPhone 17 Pro Simulator 与远端 CI iPhone 16 Simulator 均已重建。当前候选 3D 运行时防护绑定 `79f1f36`，本地专用 probe 的证据提交 `ea85c68` 已由远端 CI run `31301067572` 成功重建。进入外测前仍必须由受保护提交、SafetyBaseline、真实设备和所有发布门禁另行验证。
 
 ## 2. 当前验证结果

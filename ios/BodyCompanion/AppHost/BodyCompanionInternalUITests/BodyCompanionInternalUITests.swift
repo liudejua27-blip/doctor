@@ -13,7 +13,9 @@ final class BodyCompanionInternalUITests: XCTestCase {
     private var didCaptureFailureDiagnostics = false
 
     override func record(_ issue: XCTIssue) {
-        guard issue.isFailure, !didCaptureFailureDiagnostics, let app = activeApp else {
+        guard issue.type == .assertionFailure,
+              !didCaptureFailureDiagnostics,
+              let app = activeApp else {
             super.record(issue)
             return
         }

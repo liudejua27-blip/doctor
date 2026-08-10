@@ -14,6 +14,8 @@
 
 ## 1. 目标
 
+> **2026-08-10 remote compatibility receipt.** SHA `9b6e10a` / run `31348638741` 在远端 Xcode 16.4 的 UI test 编译阶段失败：`XCTIssue.isFailure` 在该 XCTest SDK 不可用，0 个 UI test 执行；Backend/contracts、Swift、SDK 与 Host boundary 均已通过。失败诊断 artifact 已上传但没有测试附件；当前兼容性修复改用跨版本 `XCTIssue.type == .assertionFailure`，待提交、推送与重试。该事件不改变 Simulator-only、无障碍、真机或生产门禁边界。
+
 证明受版本控制的 `BodyCompanionInternal` 可以作为 iOS Simulator App 启动，并在不启用网络、Provider、真实资料读取、正式写入、持久化或产品分析的情况下，运行既有 P0 页面与完整 2D/列表回退。
 
 ## 2. 环境与数据
