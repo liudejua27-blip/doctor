@@ -3,14 +3,14 @@
 | 属性 | 值 |
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
-| 版本 | 0.5.14-draft |
-| 状态 | Historical local evidence: HOST-T-001～015 曾有 internal-only Simulator 收据；SHA `544c39a` 前的定向 HOST-T-015 1/0/0（86.0s）和完整 Host script exit 0（402.313s）仅为历史收据。SHA `544c39a` / run `31318855810` 为历史 H015 失败。最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 仅未在 5 秒内满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前修复要求 active/empty count ID 在真实 count pill 互斥可见、可访问，Host 仅检查 stable ID 存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端收据 Pending |
+| 版本 | 0.5.15-draft |
+| 状态 | HOST-T-001～015 的内部 Simulator 流程已在 `4cc46e2` / run `31350639359` 远端 CI 成功重建；Backend/contracts、Swift 94/94、SDK build、Host boundary 与 Host smoke 全部成功（iPhone 16 / iOS 18.5 / Xcode 16.4）。本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）与 full Host exit 0（446.330s）。仅 Simulator 证据；真机及完整辅助功能门禁保持开启 |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
 | 发布意义 | 内部 Simulator smoke；不构成真机、签名、临床、生产 3D 或生产 App 验收 |
 
-> **2026-08-10 H015 current evidence.** 最新远端 `cb5f798` / run `31321251024` terminal failed；Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0。唯一 H015 未在 5 秒内满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前工作树规定 active/empty count ID 在真实 count pill 互斥可见/可访问，Host 仅验证 stable ID 存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端重试 Pending。仅内部 Simulator。
+> **2026-08-10 H015 current evidence.** 最新远端 `4cc46e2` / run `31350639359` 全部成功；本地 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）与 full Host exit 0（446.330s）。Smoke 成功日志不提供精确 XCTest 数；仅内部 Simulator。
 
 ## 1. 目标
 
@@ -191,4 +191,5 @@ not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗
 | 2026-08-09 | 0.5.9-draft | 归档当前工作树的 map footer、展示卡语义、Today 内容滚动与 type-agnostic intake 查询修复；最后新增两条“情境卡为非操作元素”UI 断言后，iPhone 17 Pro / iOS 26.5 的 XcodeBuildMCP 定向 HOST-T-015 为 1 passed、0 failed、0 skipped（86.0s）。完整 `run_internal_ios_host_tests.sh` 已在该微调后 exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数）；远端 retry 尚未推送。该收据不构成 VoiceOver、完整 Dynamic Type、真机、性能、碰撞、资产或发布通过。 |
 | 2026-08-09 | 0.5.10-draft | 归档 SHA `544c39a` 的 run `31318855810`：Backend and contracts 成功，iOS 仅 internal Host smoke 失败（12 passed、1 failed、0 skipped）；HOST-T-015 报 `Expected element to exist: body-map.next Button`（exit 65）。CI 未上传 artifact/accessibility hierarchy，不能在文字选择未保留位置与 AX 投影/元素类型之间归因。下一次修复规格为底部独立、非滚动的安全内容布局区；文字选择后先验证 `body-map.marker-count-summary` 的一项位置，再以 stable-id any-element 查询验证 CTA 的存在、`isHittable` 与 `tap`，不以 `safeAreaInset` 或 `Button` class 为跨 OS 契约。新实现、本地复测和下一次远端 retry 均 Pending，不关闭无障碍或设备门禁。 |
 | 2026-08-09 | 0.5.11-draft | 当时工作树已实现 sibling footer 的独立非滚动安全内容区、marker-count 一项位置先验，以及 generic stable-ID any-element CTA exists/hittable/tap 验收；`safeAreaInset` 和 `Button` class 仍不是跨 OS 条件。随后收据见 0.5.12-draft；不关闭无障碍或设备门禁。 |
-| 2026-08-09 | 0.5.12-draft | 当前工作树在 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2 passed、0 failed、0 skipped（138.1s），完整 internal Host script exit 0（426.285s）。远端尚未推送、远端 retry Pending；该收据仅限内部 Simulator，不关闭无障碍或设备门禁。 |
+| 2026-08-09 | 0.5.12-draft | 历史工作树在 iPhone 17 Pro / iOS 26.5 的 targeted HOST-T-015 + MoreSensations 为 2 passed、0 failed、0 skipped（138.1s），完整 internal Host script exit 0（426.285s）；随后由 0.5.15 的当前收据取代。该收据仅限内部 Simulator，不关闭无障碍或设备门禁。 |
+| 2026-08-10 | 0.5.15-draft | `4cc46e2` 固定 per-location unknown stable ID、文字选项中心点击、bounded scroll 和跨 Xcode 兼容诊断；本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）、full Host exit 0（446.330s）；远端 run `31350639359` 在 iPhone 16 / iOS 18.5 / Xcode 16.4 的 Backend/contracts、Swift 94/94、SDK build、Host boundary 与 internal Host smoke 全成功。仅 Simulator 证据。 |

@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | BASELINE-01 |
-| 版本 | 1.12.8 |
+| 版本 | 1.12.9 |
 | 状态 | Current prototype snapshot |
 | 快照日期 | 2026-08-10 |
 | 作用 | 取代已完成切片的独立 Feature Spec 与 Test Plan；记录现有代码边界、契约、测试和未证明范围 |
@@ -11,7 +11,7 @@
 
 ## 1. 使用方式
 
-> **2026-08-10 当前 H015 收据。** 最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功；Host smoke 12/1/0，H015 仅未在 5 秒内满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前修复使 active/empty count ID 在真实 count pill 上互斥呈现，Host 对摘要仅检查 stable ID 存在；CTA 的 any-element `exists`/`isHittable`/`tap` 仍是位置已保留的行为证明。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，远端 Pending。仅内部 Simulator。
+> **2026-08-10 当前 H015 收据。** `4cc46e2` / run `31350639359` 的 Backend/contracts、Swift 94/94、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功（iPhone 16 / iOS Simulator 18.5 / Xcode 16.4）。本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s），完整 internal Host script exit 0（446.330s）。仅内部 Simulator；不证明真机或完整无障碍、性能、资产和生产门禁。
 
 本文只回答“当前样机代码已经证明了什么”。产品需求、长期架构、字段语义、安全规则、隐私权限、发布门禁仍以对应核心规范为准；机器序列化以 `docs/contracts/` 为准；不可逆决策以 `docs/decisions/` 为准。
 
@@ -23,7 +23,7 @@
 
 | 能力组 | 当前实现 | 已证明 | 未证明/保持关闭 |
 |---|---|---|---|
-| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、本地中文/英文文字部位 Sheet、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；文字目录固定产生宽泛 `Zone + Area + body_part_search`，即使当前图形模式为 Pin 也不伪造 Point/3D anchor；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；完整感觉目录由同一 32 个稳定 code 构成，首屏 10 项、展开后 22 项；扩展感觉、`other` 与 unknown 只写未确认且显式关联的位置。`0105cd7` 的 94 项 Core、iPhoneOS build、静态 Host 检查与本地 12 项 Host UI flow 已覆盖普通状态的感觉修订失效和高风险状态拒绝。历史 SHA `98a4200` / run `31314859140` 与 SHA `544c39a` / run `31318855810` 的 H015 失败保留。最新 `cb5f798` / run `31321251024` 的 Host smoke 为 12/1/0：H015 仅在 5 秒内未满足旧 marker summary label 断言，不能归因位置丢失。当前 active/empty count ID 在真实 count pill 上互斥可见/可访问，Host 只检查 stable ID 存在；CTA 保持 stable-id any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端收据。`9fc54d4` 的 87 项 Core 与 10 项文字部位 Host UI flow 保留为历史证据。Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中、CollisionGroup/triangle 证据、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现；CONFLICT-004 的高风险非感觉事实修订仍阻断外部发布 |
+| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、本地中文/英文文字部位 Sheet、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；文字目录固定产生宽泛 `Zone + Area + body_part_search`，即使当前图形模式为 Pin 也不伪造 Point/3D anchor；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；完整感觉目录由同一 32 个稳定 code 构成，首屏 10 项、展开后 22 项；扩展感觉、`other` 与 unknown 只写未确认且显式关联的位置。`0105cd7` 的 94 项 Core、iPhoneOS build、静态 Host 检查与本地 12 项 Host UI flow 已覆盖普通状态的感觉修订失效和高风险状态拒绝。`4cc46e2` 进一步固定跨版本 per-location unknown selector、文字选项中心点击和 bounded scroll；run `31350639359` 的远端 Host smoke 全部成功，本地 H015、多位置 unknown 与完整 Host script 也通过。Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中、CollisionGroup/triangle 证据、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现；CONFLICT-004 的高风险非感觉事实修订仍阻断外部发布 |
 | 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；内部 prototype 可显式展示候选状态；USDZ 容器和哈希读回通过 | 真实生产文件哈希/签名、商用权、App Store 分发、解剖与性能、下背实体/根变换/碰撞复核 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系；多位置时新增感觉必须显式选择 Marker；首屏常用 10 项与从同一枚举派生的扩展 22 项 | 未确认事实不会静默升级；新增位置不会复制既有感觉；空、重复或非活动 Marker 关联被拒绝；单位置/多位置 unknown 语义不重复；对 `not_run`/`unavailable`/`no_rule_triggered` 的语义感觉修订使旧本地 safety、普通 Agent 与审批资格失效，R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝 | 真实用户 30 秒完成率、公开 API 联调、生产持久化；服务端 retained action/revision 尚未完成，CONFLICT-004 仍阻断高风险非感觉事实修订 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机；P4 1.1 未确认感觉保留 code/可选标签/显式位置关联 | 所有者隔离、篡改失败、幂等/冲突状态；重复位置 ID、悬空感觉关联和旧 code-only 1.0 恢复被拒绝 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |
@@ -57,9 +57,9 @@
 | Markdown | 63 files、399 个已检查链接、0 尾随空白 | 临时测试缓存已排除；只证明清理后的文档结构完整 |
 | JSON Schema | 16 个可解析 | 只证明 Schema 结构有效 |
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
-| iOS Swift | `7d8bf59`：94 tests、0 failures；iOS `BodyCompanionIOS` SDK build、`check_internal_ios_host.py` 与本地 iPhone 17 Pro Max / iOS 26.5 的 13 项 `BodyCompanionInternal` UI flow 通过，覆盖 HOST-T-001～015。HOST-T-015 只以 `UICTContentSizeCategoryAccessibilityXXXL` 验证局部纵向/可达结构。SHA `98a4200` / run `31314859140` 与 SHA `544c39a` / run `31318855810` 为历史 H015 失败。最新 `cb5f798` / run `31321251024`：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 未在 5 秒内满足旧 marker summary label 断言，不能归因。当前实施保持 active/empty count ID 在真实 count pill 上互斥可见/可访问，Host 只检查 stable ID 存在；CTA 保持 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，远端重试 Pending。`0105cd7` 的 12 项完整感觉 Host 流程和 run `31307042209` 的远端 iPhone 16 / iOS Simulator 18.5 重建保留为历史证据；`9fc54d4` 的 87 tests、10 项 Area-only UI flow、历史 7 项本地/远端 Host smoke、`79f1f36` 本地 9 项候选 probe 与 `ea85c68` / run `31301067572` 的远端完整 Host suite 亦保留为历史证据 | 证明内部 Simulator 可安装/启动的 P0 壳、基础回退、文字目录契约、感觉目录入口、语义感觉修订的本地安全边界及局部 accessibility-size 结构；不能替代真机 UI、完整 Dynamic Type、VoiceOver、深色/高对比度、Reduce Motion 或临床验收 |
+| iOS Swift | `4cc46e2`：本地 Swift Core 94/94、iOS SDK build、`check_internal_ios_host.py` 与 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0、多位置 unknown 1/0/0、full Host exit 0；远端 run `31350639359` 在 iPhone 16 / iOS Simulator 18.5 通过 Swift、SDK、Host boundary 与 internal Host smoke。历史失败保留用于回溯 | 证明当前内部 Simulator Host、跨版本 selector/scroll 和既有 94 项 Core 回归；不能替代真机 UI、完整 Dynamic Type、VoiceOver、深色/高对比度、Reduce Motion 或临床验收 |
 | 后端 Python | 194 tests、0 failures；P2A 聚焦 19 tests | 受控时钟回归已修复；只证明合成/内存样机 |
-| Git/CI | `codex/initial-git-ci-baseline` 受保护默认分支合并提交 `2bb8e8a`；本轮复刻切片提交 `6f232b4`、内部 Host `5dddd83`、地图投影边界修复 `a796f0b`、候选 3D 运行时防护 `79f1f36`、证据提交 `ea85c68`、文字部位 Area-only 修复 `9fc54d4`、完整感觉与安全修订边界 `0105cd7`、accessibility-size 结构优化 `7d8bf59`、三次已提交 Host smoke 修复 `7e64833` / `e0f1089` / `0ed0563`；双作业 workflow；Python 3.11 constraints | 历史 run `31314859140`（SHA `98a4200`）和 run `31318855810`（SHA `544c39a`）的 H015 失败保留。最新 `cb5f798` / run `31321251024` 为 terminal failure：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 未在 5 秒内满足旧 marker summary label 断言，不能归因位置状态。当前修复：真实 count pill 上互斥的 active/empty count ID、Host-only 摘要存在检查及 CTA any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端重试。任何结果均不等于真机或发布验收 |
+| Git/CI | 当前分支 `codex/body-signal-intake-boundaries`、提交 `4cc46e2`；双作业 workflow；Python 3.11 constraints | 远端 run `31350639359` 全绿，本地 targeted/full 收据通过；历史失败 run 保留。任何结果均不等于真机或发布验收 |
 
 ## 6. 删除登记
 
@@ -74,6 +74,6 @@ ADR、核心规范、机器契约、许可证/资产边界和实际测试代码�
 
 ## 7. 下一步
 
-按 REL-01 顺序执行：内部 Host 与历史远端 CI 基线已完成；SHA `544c39a` / run `31318855810` 是历史 H015 失败。最新远端 `cb5f798` / run `31321251024` 为 terminal failure：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 未在 5 秒内满足旧 marker summary label 断言，不能诊断选择状态。当前工作树已实现底部独立、非滚动安全内容布局区，active/empty count ID 在真实 count pill 上互斥可见/可访问且 Host 仅检查 stable ID 存在；CTA 继续 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端重试。之后再关闭责任/地区、临床安全、Provider、身份同意数据库、真实资产与客户端、公开纵向联调、真实用户/设备验证门禁。
+按 REL-01 顺序执行：`4cc46e2` 的内部 Host、远端 CI 和本地复测已完成；下一步仍是关闭责任/地区、临床安全、Provider、身份同意数据库、真实资产与客户端、公开纵向联调、真实用户/设备验证门禁。Simulator 收据不关闭 GATE-02/06/07/08。
 
 当前实施入口为 [FEAT-BODY-MAP-V1](19_BODY_MAP_PRODUCTION_SLICE.md)、[FEAT-BODY-MAP-V2](22_REHABMATE_NATIVE_PARITY.md)、[TEST-BODY-MAP-V1](20_BODY_MAP_TEST_PLAN.md)、[TEST-BODY-MAP-V2](23_REHABMATE_NATIVE_PARITY_TEST_PLAN.md) 和 [BODY-ASSET-01](21_BODY_ASSET_PROVENANCE.md)。
