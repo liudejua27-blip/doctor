@@ -27,9 +27,23 @@ print(sorted(candidates)[0][3])
   } )"
 fi
 
-result_directory="$(mktemp -d)"
+diagnostics_parent_directory="${BODY_COMPANION_HOST_DIAGNOSTICS_DIR:-}"
+if [[ -n "$diagnostics_parent_directory" ]]; then
+  mkdir -p "$diagnostics_parent_directory"
+  result_directory="$(mktemp -d "$diagnostics_parent_directory/run.XXXXXX")"
+else
+  result_directory="$(mktemp -d)"
+fi
 result_bundle="$result_directory/body-companion-host-smoke.xcresult"
-trap 'rm -rf "$result_directory"' EXIT
+test_status=0
+
+cleanup() {
+  if [[ "$test_status" -ne 0 && -n "$diagnostics_parent_directory" ]]; then
+    return
+  fi
+  rm -rf "$result_directory"
+}
+trap cleanup EXIT
 
 set +e
 xcodebuild -quiet \
@@ -46,8 +60,20 @@ test_status=$?
 set -e
 
 if [[ "$test_status" -ne 0 ]]; then
-  echo "Internal Host smoke xcresult summary:"
-  xcrun xcresulttool get test-results summary --path "$result_bundle" --compact || true
+  if [[ -n "$diagnostics_parent_directory" && -e "$result_bundle" ]]; then
+    xcrun xcresulttool get test-results summary --path "$result_bundle" --compact \
+      > "$result_directory/test-results-summary.json" 2>/dev/null || true
+    xcrun xcresulttool get test-results tests --path "$result_bundle" --compact \
+      > "$result_directory/test-results.json" 2>/dev/null || true
+    mkdir -p "$result_directory/failure-attachments"
+    xcrun xcresulttool export attachments \
+      --only-failures \
+      --path "$result_bundle" \
+      --output-path "$result_directory/failure-attachments" >/dev/null 2>&1 || true
+    echo "Internal Host smoke failed; failure diagnostics retained for CI artifact upload."
+  else
+    echo "Internal Host smoke failed; no CI diagnostics directory was configured."
+  fi
 fi
 
 exit "$test_status"

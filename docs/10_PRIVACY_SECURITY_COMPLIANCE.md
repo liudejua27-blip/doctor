@@ -444,6 +444,8 @@ P1H 的 transient ledger 只保存进程内主体绑定、Turn 元数据、canon
 
 Host 的 `Info.plist`、entitlements、源代码和 UI test 必须作为负向证据接受扫描；任何新增权限 usage description、网络域名、Provider key、持久化、遥测或健康正文日志都构成新的隐私数据流，必须先更新本规范、DATA-01/API-01（如适用）、测试计划和相应同意/发布门禁。Simulator screenshot、XCTest attachment 和 accessibility hierarchy 只能使用合成或空白状态，不能变成健康数据外发渠道。
 
+为定位内部 Host 失败，CI **仅在该 Host smoke 失败时**可以上传受限诊断包：失败 `.xcresult`、失败 XCTest 生成的当前屏幕截图和 accessibility hierarchy，以及由该结果包导出的失败附件。它们只允许来自固定合成 fixture，禁止真实账号、用户输入、位置、感觉、程度、草稿序列化、3D 命中或生产数据；不得打印到 Actions 日志，不得包含工作区、DerivedData 或通配临时目录。诊断包必须写入 CI runner 的专用 temporary directory、使用仅 `contents: read` 的仓库 Actions 权限、最短保留 3 天，并在失败之外不上传。它是失败定位证据，不是产品遥测、研究录屏、健康资料共享或设备/无障碍通过证据。
+
 ### 10.2 服务端
 
 - 所有网络传输使用现代 TLS。

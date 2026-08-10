@@ -48,7 +48,8 @@ public struct AppShell: View {
                         BodyMapScreen(
                             model: intakeModel.bodyMapModel,
                             prototype3DEnabled: runtimeConfiguration.candidate3DEnabled,
-                            onLocationsChanged: { locations in intakeModel.setLocations(locations) }
+                            onLocationsChanged: { locations in intakeModel.setLocations(locations) },
+                            onContinue: { router.path.append(.intake) }
                         )
                     case .intake:
                         SignalIntakeScreen(model: intakeModel)

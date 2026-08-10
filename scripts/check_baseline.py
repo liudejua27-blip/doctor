@@ -208,10 +208,21 @@ def _check_ci_baseline(errors: list[str]) -> None:
         "swift test",
         "--triple arm64-apple-ios17.0",
         "-c backend/constraints-test.txt",
+        "BODY_COMPANION_HOST_DIAGNOSTICS_DIR: ${{ runner.temp }}/body-companion-host-smoke",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "retention-days: 3",
     )
     for fragment in required_fragments:
         if fragment not in workflow_text:
             errors.append(f".github/workflows/ci.yml: missing baseline fragment: {fragment}")
+    failure_diagnostics_fragments = (
+        "if: ${{ failure() }}",
+        "path: ${{ runner.temp }}/body-companion-host-smoke",
+        "if-no-files-found: warn",
+    )
+    for fragment in failure_diagnostics_fragments:
+        if fragment not in workflow_text:
+            errors.append(f".github/workflows/ci.yml: missing failure diagnostics fragment: {fragment}")
     uses_lines = [line for line in workflow_text.splitlines() if line.lstrip().startswith("uses:")]
     if len(PINNED_ACTION_PATTERN.findall(workflow_text)) != len(uses_lines):
         errors.append(".github/workflows/ci.yml: every Action must be pinned to a full 40-character SHA")

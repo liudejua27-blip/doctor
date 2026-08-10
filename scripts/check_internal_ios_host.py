@@ -116,6 +116,10 @@ def main() -> int:
         '"body-map.text-picker-open"',
         '"body-map.text-picker.search"',
         '"body-map.text-picker.option-body.knee.general-left"',
+        '"body-map.text-picker.selection-notice"',
+        '"body-map.pending-mark-summary"',
+        '"body-map.continuation-unavailable"',
+        '"body-map.marker-count-empty"',
         '"body-map.fallback-notice"',
         '"body-map.candidate-3d-ready"',
         '"body-map.candidate-3d-fallback-notice"',
@@ -128,6 +132,7 @@ def main() -> int:
         '"这些位置的感觉都说不清"',
         "testMoreSensationsKeepsStructuredInternalDraftFlow",
         "testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown",
+        "failure-accessibility-hierarchy",
         "launchCandidateThreeDProbe",
     ):
         if expected not in ui_test:
@@ -143,6 +148,9 @@ def main() -> int:
         "allowsPrototypeCandidate: true",
         "identifierPrefix).selection-notice",
         "identifierPrefix).empty",
+        '"body-map.pending-mark-summary"',
+        '"body-map.continuation-unavailable"',
+        "Button(action: onContinue)",
     ):
         if expected not in body_map_screen:
             fail(f"missing_candidate_probe_boundary:{expected}")

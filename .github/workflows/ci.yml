@@ -61,4 +61,15 @@ jobs:
       - name: Verify internal iOS App Host boundary
         run: python3 scripts/check_internal_ios_host.py
       - name: Run internal iOS App Host smoke
+        env:
+          BODY_COMPANION_HOST_DIAGNOSTICS_DIR: ${{ runner.temp }}/body-companion-host-smoke
         run: bash scripts/run_internal_ios_host_tests.sh
+      - name: Upload internal Host failure diagnostics
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: internal-ios-host-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/body-companion-host-smoke
+          if-no-files-found: warn
+          retention-days: 3

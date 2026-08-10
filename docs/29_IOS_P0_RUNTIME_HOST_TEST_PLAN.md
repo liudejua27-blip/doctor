@@ -4,13 +4,13 @@
 |---|---|
 | 测试 ID | TEST-IOS-P0-RUNTIME-01 |
 | 版本 | 0.5.14-draft |
-| 状态 | Historical local evidence: HOST-T-001～015 曾有 internal-only Simulator 收据；SHA `544c39a` 前的定向 HOST-T-015 1/0/0（86.0s）和完整 Host script exit 0（402.313s）仅为历史收据。SHA `544c39a` / run `31318855810` 为历史 H015 失败。最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 仅未在 5 秒内满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前修复要求摘要可见/可访问、stable ID 在真实 count pill，Host 仅检查摘要存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（136.2s），完整 internal Host script exit 0（421.656s）；新修复未推送、远端收据 Pending |
+| 状态 | Historical local evidence: HOST-T-001～015 曾有 internal-only Simulator 收据；SHA `544c39a` 前的定向 HOST-T-015 1/0/0（86.0s）和完整 Host script exit 0（402.313s）仅为历史收据。SHA `544c39a` / run `31318855810` 为历史 H015 失败。最新远端 `cb5f798` / run `31321251024` terminal failed：Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0；H015 仅未在 5 秒内满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前修复要求 active/empty count ID 在真实 count pill 互斥可见、可访问，Host 仅检查 stable ID 存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端收据 Pending |
 | 关联功能 | FEAT-IOS-P0-RUNTIME-01、FEAT-COMP-01 P0、FEAT-BODY-MAP-V1/V2 |
 | 负责人 | iOS + QA + 无障碍负责人（待 GOV-01 指定） |
 | 依赖 | IOS-01、PRIV-01、QA-01、BODY-01、TEST-BODY-MAP-V1/V2、TEST-COMP-01、EVIDENCE-DEVICE-01 |
 | 发布意义 | 内部 Simulator smoke；不构成真机、签名、临床、生产 3D 或生产 App 验收 |
 
-> **2026-08-10 H015 current evidence.** 最新远端 `cb5f798` / run `31321251024` terminal failed；Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0。唯一 H015 未在 5 秒内满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前工作树规定摘要可见/可访问、stable ID 在真实 count pill，Host 仅验证摘要 identifier 存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（136.2s），完整 internal Host script exit 0（421.656s）；新修复未推送、远端重试 Pending。仅内部 Simulator。
+> **2026-08-10 H015 current evidence.** 最新远端 `cb5f798` / run `31321251024` terminal failed；Backend and contracts、Swift、SDK 与 Host boundary 成功，Host smoke 12/1/0。唯一 H015 未在 5 秒内满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失。当前工作树规定 active/empty count ID 在真实 count pill 互斥可见/可访问，Host 仅验证 stable ID 存在；CTA 仍验证 any-element `exists`/`isHittable`/`tap`。本地 iPhone 17 Pro / iOS 26.5 targeted H015 + MoreSensations 2/0/0（138.685s），完整 internal Host script exit 0（441.966s）；本次修复已在本地完成，待提交推送与远端重试 Pending。仅内部 Simulator。
 
 ## 1. 目标
 
@@ -25,7 +25,9 @@
 | 数据 | 仅空白/合成测试状态；不得使用真实身体信号、真实账号、真实截图/录屏或生产 Provider |
 | Host 模式 | `DebugInternal` 或等价内部配置；UI test 默认禁用候选 3D |
 | 网络 | 断言无应用发起的网络/Provider 请求；测试工具下载不属于产品网络能力 |
-| 记录 | 仅保存命令、构建版本、成功/失败、截图中不含真实健康内容的合成状态 |
+| 记录 | 仅保存命令、构建版本、成功/失败、截图中不含真实健康内容的合成状态；Host smoke 失败时才可将专用 CI temporary directory 的 `.xcresult`、失败 screenshot、accessibility hierarchy 与失败附件上传 3 天，且不得打印到日志 |
+
+Host smoke 失败时，脚本可以在明确的 CI temporary directory 保留 `.xcresult`、失败 XCTest screenshot、accessibility hierarchy、结果摘要和从 `.xcresult` 导出的失败附件；workflow 只能在 failure 条件上传该目录，保留 3 天。不得输出附件正文到日志，不得上传工作区、DerivedData、任意通配 temporary path 或真实/人工健康输入；失败诊断不改变 Simulator-only、无障碍或设备证据边界。
 
 ## 3. 自动化覆盖矩阵
 
@@ -45,7 +47,7 @@
 | HOST-T-012 | identifier 与动态文字基础 | 自定义主要按钮和路径状态有稳定 identifier；文字入口、搜索框、无结果状态和选项使用稳定目录 ID（不能使用过滤后的序号或用户输入）；系统 confirmationDialog 以固定可见中文标题断言；不得只以颜色传达状态 | UI 静态 + Simulator |
 | HOST-T-013 | 候选 3D 显式 probe | 独立 `XCUIApplication` 只设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1`；进入 3D 后，先等待本次 Scene 的 `onLoadAttempted` 确认，再等待“内部候选已加载并保留共享文字列表入口”或“加载/初始化错误或 8 秒超时后的固定 2D 回退公告并保留同一入口”之一。不得设置 `BODY_COMPANION_UI_SMOKE=1`、不得点击人体或断言命中 | Simulator UI |
 | HOST-T-014 | 更多感觉与未知边界 | 从结构化描述页展开具有稳定、非健康内容 identifier `sensation-picker.more-open` 的“更多感觉”，以固定内部中文标签“麻木”选中既有稳定枚举中的扩展项（不依赖用户输入或过滤序号）；它沿用显式位置关联、只形成未确认草稿，不显示 AI 建议、网络、保存成功或医学结论。两个位置时还必须分别呈现“部分位置的感觉说不清”和“这些位置的感觉都说不清”，不能再出现重复的单位置同义入口 | Simulator UI + Core |
-| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路；经内容滚动后，今天页两张展示性情境提示卡必须各自作为单一合并、非动作卡片元素以稳定 identifier 存在，并由 vertical 布局分支 identifier 佐证自适应分支。所有布局分支容器不得把自己的 identifier 传播或覆盖到子卡片或子动作；结构化描述页的“确认/未知”和“保存/未知”成对**动作**均可滚动到且可点击。情境提示卡不是 P0 可点击入口，自动化不得把它们误当作 `Button` 或以 `isHittable` 代替语义验证；布局分支 identifier 也不构成 VoiceOver 朗读结论。文字部位 Sheet 的 `body-map.text-picker-done` 完成并关闭后，按 stable identifier 的任意元素查询 `body-map.marker-count-summary`，只验证可见、可访问的非动作摘要存在；精确数量/去重由 Core 回归锁定，Host 不把 SwiftUI `Text` 的 AX label/value 当跨 OS 状态协议。随后对 `body-map.next` 同样按 stable identifier 的任意元素查询，依次验证存在、`isHittable` 并执行 `tap`；该条件主动作证明位置已保留。CTA 必须位于底部独立、非滚动的安全内容布局区；不得用通用滚动循环把不可达动作伪装为通过。不得把具体 `safeAreaInset` API 或 AX element class（尤其 `Button`）作为跨 OS 契约。在该尺寸下，三组并列内容必须暴露稳定的 `.vertical` 容器 identifier 且同名 `.horizontal` 容器不存在，证明运行时选择纵向布局分支；测试不比较滚动后控件的瞬时屏幕坐标。只使用稳定 identifier，不判断 VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
+| HOST-T-015 | accessibility-size 结构回归 | 以 iOS Simulator 的 accessibility-size 启动参数冷启动；以合成草稿验证 2D/文字部位 Sheet 的选择链路；经内容滚动后，今天页两张展示性情境提示卡必须各自作为单一合并、非动作卡片元素以稳定 identifier 存在，并由 vertical 布局分支 identifier 佐证自适应分支。所有布局分支容器不得把自己的 identifier 传播或覆盖到子卡片或子动作；结构化描述页的“确认/未知”和“保存/未知”成对**动作**均可滚动到且可点击。情境提示卡不是 P0 可点击入口，自动化不得把它们误当作 `Button` 或以 `isHittable` 代替语义验证；布局分支 identifier 也不构成 VoiceOver 朗读结论。地图底部继续布局区必须持续位于独立、非滚动的安全内容区：无位置时只呈现非动作说明 `body-map.continuation-unavailable`，文字选择成功后才呈现既有动作 `body-map.next`。选择后先验证 Sheet 内可见的 `body-map.text-picker.selection-notice`；`body-map.text-picker-done` 关闭 Sheet 后，按 stable identifier 的任意元素查询 `body-map.pending-mark-summary` 和 count pill 的互斥 active/empty identifier（有位置为 `body-map.marker-count-summary`，无位置为 `body-map.marker-count-empty`），确认无自动 Marker editor；精确数量/去重由 Core 回归锁定，Host 不把 SwiftUI `Text` 的 AX label/value 当跨 OS 状态协议。随后对 `body-map.next` 同样按 stable identifier 的任意元素查询，验证它已启用、`isHittable` 并执行 `tap`；该条件主动作证明位置已保留。不得用通用滚动循环把不可达动作伪装为通过，也不得把具体 `safeAreaInset` API 或 AX element class（尤其 `Button`）作为跨 OS 契约。在该尺寸下，三组并列内容必须暴露稳定的 `.vertical` 容器 identifier 且同名 `.horizontal` 容器不存在，证明运行时选择纵向布局分支；测试不比较滚动后控件的瞬时屏幕坐标。只使用稳定 identifier，不判断 VoiceOver 朗读、实际对比度数值、横屏或真机辅助功能 | Simulator UI |
 
 ### 3.1 候选 3D probe 的可接受结果
 
@@ -157,8 +159,8 @@ remote CI history: SHA 98a4200 / run 31314859140 / iPhone 16 / iOS Simulator 18.
 historical local evidence before SHA 544c39a: safe-area map footer、展示卡/动作 identifier、Today 内容滚动、type-agnostic intake 查询和两条“情境卡为非操作元素”断言后的 XcodeBuildMCP targeted HOST-T-015 / iPhone 17 Pro / iOS 26.5 / 1 passed, 0 failed, 0 skipped / 86.0s；完整 `BODY_COMPANION_SIMULATOR_UDID=68F37251-71BE-4F42-9849-62D61BFFE7C3 bash scripts/run_internal_ios_host_tests.sh` exit 0（402.313s；脚本安静输出，不记录精确 XCTest 数）
 remote CI historical: SHA 544c39a / run 31318855810；Backend and contracts 成功；iOS 仅 internal Host smoke 失败，12 passed、1 failed、0 skipped；HOST-T-015 报 `Expected element to exist: body-map.next Button`（exit 65）。CI 无 artifact/accessibility hierarchy，不能在“文字选择未保留位置”与“AX 投影/元素类型”之间归因
 remote CI latest: SHA cb5f798 / run 31321251024；Backend and contracts、Swift、SDK 与 Host boundary 成功；internal Host smoke 12 passed、1 failed、0 skipped。唯一 H015 在 5 秒内未满足 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1`，不能归因位置丢失
-current repair implementation: sibling footer 的底部独立、非滚动安全内容布局区；`body-map.marker-count-summary` 位于真实 count pill，保持可见/可访问，Host 只检查 stable identifier 存在；再以 generic stable-ID any-element 查询验证 `body-map.next` 存在、`isHittable` 与 `tap`；不以具体 `safeAreaInset` API、SwiftUI `Text` AX label/value 或 `Button` class 为跨 OS 条件
-current validation: iPhone 17 Pro / iOS 26.5 targeted HOST-T-015 + MoreSensations 2 passed, 0 failed, 0 skipped (136.2s); full internal Host script exit 0 (421.656s). New repair not yet pushed; remote receipt pending
+current repair implementation: sibling footer 的底部独立、非滚动安全内容布局区；active/empty count identifier（有位置为 `body-map.marker-count-summary`，无位置为 `body-map.marker-count-empty`）互斥地位于真实 count pill，保持可见/可访问，Host 只检查 stable ID 存在；再以 generic stable-ID any-element 查询验证 `body-map.next` 存在、`isHittable` 与 `tap`；不以具体 `safeAreaInset` API、SwiftUI `Text` AX label/value 或 `Button` class 为跨 OS 条件
+current validation: iPhone 17 Pro / iOS 26.5 targeted HOST-T-015 + MoreSensations 2 passed, 0 failed, 0 skipped (138.685s); full internal Host script exit 0 (441.966s). Current repair is locally verified; commit/push and remote receipt are pending
 not proven: 不判断位置摘要、焦点/重置、回退提示、VoiceOver 朗读或焦点顺序、真实最大 Dynamic Type、横屏、Switch Control、实际深色/高对比度数值、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名、临床/生产发布
 ```
 

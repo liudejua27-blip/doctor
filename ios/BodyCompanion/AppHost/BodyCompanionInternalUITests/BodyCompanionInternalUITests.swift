@@ -1,6 +1,48 @@
 import XCTest
 
 final class BodyCompanionInternalUITests: XCTestCase {
+    private final class IssueBox: @unchecked Sendable {
+        var issue: XCTIssue
+
+        init(_ issue: XCTIssue) {
+            self.issue = issue
+        }
+    }
+
+    private var activeApp: XCUIApplication?
+    private var didCaptureFailureDiagnostics = false
+
+    override func record(_ issue: XCTIssue) {
+        guard issue.isFailure, !didCaptureFailureDiagnostics, let app = activeApp else {
+            super.record(issue)
+            return
+        }
+
+        didCaptureFailureDiagnostics = true
+        let issueBox = IssueBox(issue)
+        MainActor.assumeIsolated { [app, issueBox] in
+            var enrichedIssue = issueBox.issue
+
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "failure-screen"
+            screenshot.lifetime = .keepAlways
+            enrichedIssue.add(screenshot)
+
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "failure-accessibility-hierarchy"
+            hierarchy.lifetime = .keepAlways
+            enrichedIssue.add(hierarchy)
+            issueBox.issue = enrichedIssue
+        }
+
+        super.record(issueBox.issue)
+    }
+
+    override func tearDown() {
+        activeApp = nil
+        super.tearDown()
+    }
+
     @MainActor
     func testColdStartShowsP0TodayEntry() {
         let app = launchApp()
@@ -166,12 +208,15 @@ final class BodyCompanionInternalUITests: XCTestCase {
         dismissKeyboard(in: app)
 
         assertExists(app.staticTexts["没有匹配的部位"])
-        XCTAssertFalse(mapContinuationAction(in: app).exists)
 
         let done = app.buttons["body-map.text-picker-done"]
         assertExists(done)
         done.tap()
-        XCTAssertFalse(mapContinuationAction(in: app).exists)
+        XCTAssertFalse(pendingMarkSummary(in: app).exists)
+        assertMarkerCountEmpty(in: app)
+        XCTAssertFalse(markerCountSummary(in: app).exists)
+        assertExists(continuationUnavailableStatus(in: app))
+        XCTAssertFalse(mapContinuationAction(in: app).exists, "Closing an empty text picker must not expose the enabled continuation action.")
     }
 
     @MainActor
@@ -237,7 +282,10 @@ final class BodyCompanionInternalUITests: XCTestCase {
         confirmDiscard.tap()
 
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.body-map").firstMatch)
-        XCTAssertFalse(mapContinuationAction(in: app).exists)
+        assertMarkerCountEmpty(in: app)
+        XCTAssertFalse(markerCountSummary(in: app).exists)
+        assertExists(continuationUnavailableStatus(in: app))
+        XCTAssertFalse(mapContinuationAction(in: app).exists, "A reset draft must not expose the enabled continuation action.")
 
         returnToToday(in: app)
         assertExists(app.buttons["intake-entry.start-record"])
@@ -325,6 +373,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["BODY_COMPANION_UI_SMOKE"] = "1"
         app.launch()
+        activeApp = app
         return app
     }
 
@@ -338,6 +387,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
             "UICTContentSizeCategoryAccessibilityXXXL",
         ]
         app.launch()
+        activeApp = app
         return app
     }
 
@@ -347,6 +397,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["BODY_COMPANION_ENABLE_CANDIDATE_3D"] = "1"
         app.launch()
+        activeApp = app
         return app
     }
 
@@ -384,9 +435,9 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // background map never competes for the same vertical swipe.
         scrollUntilHittable(leftKnee, in: app, within: pickerList)
         leftKnee.tap()
-        // The selection notice is transient view feedback inside a lazy List,
-        // not the selected-location fact. Verify the stable interaction
-        // boundary instead: text selection must not open a competing editor.
+        assertTextRegionSelectionFeedback(in: app)
+        // Text selection must not present a competing editor while its Sheet
+        // is still in control of the interaction.
         XCTAssertFalse(
             app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
             "Text selection must not present a competing mark editor."
@@ -402,11 +453,21 @@ final class BodyCompanionInternalUITests: XCTestCase {
             "Expected the text-region picker to dismiss after the explicit completion action."
         )
 
-        // The map's next action is a persistent bottom safe-area action. It
-        // must become directly reachable after the same explicit completion
-        // action a user takes, without generic scrolling to compensate for a
-        // layout defect at accessibility sizes.
+        // The product-visible pending summary proves the broad location
+        // survived the explicit Sheet completion. The marker editor must not
+        // automatically cover the map when the Sheet goes away.
+        assertExists(pendingMarkSummary(in: app))
         assertMarkerCountSummaryExists(in: app)
+        XCTAssertFalse(markerCountEmpty(in: app).exists)
+        XCTAssertFalse(continuationUnavailableStatus(in: app).exists)
+        XCTAssertFalse(
+            app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
+            "Finishing text selection must not automatically present the marker editor."
+        )
+
+        // The persistent footer exists even before a selection, but becomes
+        // actionable only after the pending summary above proves a location is
+        // retained. Do not scroll to compensate for a layout defect.
         let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
@@ -436,6 +497,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
         leftKnee.tap()
         scrollUntilHittable(rightKnee, in: app, within: pickerList)
         rightKnee.tap()
+        assertTextRegionSelectionFeedback(in: app)
         XCTAssertFalse(
             app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
             "Text selection must not present a competing mark editor."
@@ -450,7 +512,14 @@ final class BodyCompanionInternalUITests: XCTestCase {
             done.waitForExistence(timeout: 5),
             "Expected the text-region picker to dismiss after the explicit completion action."
         )
+        assertExists(pendingMarkSummary(in: app))
         assertMarkerCountSummaryExists(in: app)
+        XCTAssertFalse(markerCountEmpty(in: app).exists)
+        XCTAssertFalse(continuationUnavailableStatus(in: app).exists)
+        XCTAssertFalse(
+            app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
+            "Finishing text selection must not automatically present the marker editor."
+        )
         let next = mapContinuationAction(in: app)
         assertExists(next)
         XCTAssertTrue(next.isHittable, "Expected the persistent map continuation action to be immediately reachable after the picker closes.")
@@ -486,12 +555,38 @@ final class BodyCompanionInternalUITests: XCTestCase {
 
     @MainActor
     private func mapContinuationAction(in app: XCUIApplication) -> XCUIElement {
-        // A SwiftUI NavigationLink can be projected as a Button, Link, or
-        // another interactive accessibility element across iOS releases. The
-        // stable identifier—not XCTest's element class—is the contract.
+        // The persistent native Button must not be queried through a specific
+        // XCTest role: the stable identifier—not an accessibility class—is
+        // the cross-runtime contract.
         app.descendants(matching: .any)
             .matching(identifier: "body-map.next")
             .firstMatch
+    }
+
+    @MainActor
+    private func continuationUnavailableStatus(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "body-map.continuation-unavailable")
+            .firstMatch
+    }
+
+    @MainActor
+    private func pendingMarkSummary(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "body-map.pending-mark-summary")
+            .firstMatch
+    }
+
+    @MainActor
+    private func assertTextRegionSelectionFeedback(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let feedback = app.descendants(matching: .any)
+            .matching(identifier: "body-map.text-picker.selection-notice")
+            .firstMatch
+        assertExists(feedback, file: file, line: line)
     }
 
     @MainActor
@@ -504,6 +599,29 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .matching(identifier: "body-map.marker-count-summary")
             .firstMatch
         assertExists(summary, file: file, line: line)
+    }
+
+    @MainActor
+    private func markerCountSummary(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "body-map.marker-count-summary")
+            .firstMatch
+    }
+
+    @MainActor
+    private func markerCountEmpty(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "body-map.marker-count-empty")
+            .firstMatch
+    }
+
+    @MainActor
+    private func assertMarkerCountEmpty(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertExists(markerCountEmpty(in: app), file: file, line: line)
     }
 
     @MainActor
@@ -538,9 +656,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
 
         for _ in 0..<maxSwipes where !isReachable() {
             if let scrollContainer {
-                let start = scrollContainer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72))
-                let end = scrollContainer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.32))
-                start.press(forDuration: 0.01, thenDragTo: end)
+                scrollContainer.swipeUp()
             } else {
                 app.swipeUp()
             }

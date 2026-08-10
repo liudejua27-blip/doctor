@@ -8,6 +8,7 @@ public struct BodyMapScreen: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let onLocationsChanged: ([BodyLocation]) -> Bool
+    private let onContinue: () -> Void
     private let prototype3DEnabled: Bool
 
     /// `prototype3DEnabled` is intentionally explicit. The current executable
@@ -16,11 +17,13 @@ public struct BodyMapScreen: View {
     public init(
         model: BodyMapModel = BodyMapModel(),
         prototype3DEnabled: Bool = false,
-        onLocationsChanged: @escaping ([BodyLocation]) -> Bool = { _ in true }
+        onLocationsChanged: @escaping ([BodyLocation]) -> Bool = { _ in true },
+        onContinue: @escaping () -> Void = {}
     ) {
         _model = State(initialValue: model)
         self.prototype3DEnabled = prototype3DEnabled
         self.onLocationsChanged = onLocationsChanged
+        self.onContinue = onContinue
     }
 
     public var body: some View {
@@ -146,9 +149,7 @@ public struct BodyMapScreen: View {
             .accessibilityIdentifier("screen.body-map")
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            if !model.marks.isEmpty {
-                continuationFooter
-            }
+            continuationFooter
         }
         .navigationTitle("记录这次不适")
         .safeAreaPadding(.top)
@@ -163,7 +164,7 @@ public struct BodyMapScreen: View {
                 .navigationTitle("用文字选择部位")
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("完成") { isTextRegionPickerPresented = false }
+                        Button("完成", action: finishTextRegionPicker)
                             .accessibilityIdentifier("body-map.text-picker-done")
                     }
                 }
@@ -182,17 +183,37 @@ public struct BodyMapScreen: View {
         }
     }
 
+    private var hasLocationSelection: Bool {
+        !model.marks.isEmpty
+    }
+
     private var continuationAction: some View {
-        NavigationLink(value: AppRoute.intake) {
-            Label("下一步：描述你的感受", systemImage: "arrow.right")
+        Button(action: onContinue) {
+            Label(
+                hasLocationSelection ? "下一步：描述你的感受" : "先选择一个不适位置",
+                systemImage: hasLocationSelection ? "arrow.right" : "mappin.slash"
+            )
         }
         .buttonStyle(CompanionPrimaryButtonStyle())
-        .accessibilityHint("进入结构化草稿填写，后续仍可返回修改位置")
+        .disabled(!hasLocationSelection)
+        .opacity(hasLocationSelection ? 1 : 0.52)
+        .accessibilityLabel(hasLocationSelection ? "下一步：描述你的感受" : "先选择一个不适位置")
+        .accessibilityHint(
+            hasLocationSelection
+                ? "进入结构化草稿填写，后续仍可返回修改位置"
+                : "请先从人体地图或文字部位列表选择至少一个位置"
+        )
         .accessibilityIdentifier("body-map.next")
     }
 
     private var continuationFooter: some View {
-        continuationAction
+        Group {
+            if hasLocationSelection {
+                continuationAction
+            } else {
+                continuationUnavailableState
+            }
+        }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(BodyCompanionTheme.canvas)
@@ -202,6 +223,30 @@ public struct BodyMapScreen: View {
                     .frame(height: 1)
             }
             .layoutPriority(1)
+    }
+
+    private var continuationUnavailableState: some View {
+        Label("先选择一个不适位置", systemImage: "mappin.slash")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+            .frame(maxWidth: .infinity, minHeight: 54)
+            .background(
+                BodyCompanionTheme.surfaceTinted.opacity(0.7),
+                in: RoundedRectangle(cornerRadius: BodyCompanionTheme.cornerRadius, style: .continuous)
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("先选择一个不适位置")
+            .accessibilityHint("请先从人体地图或文字部位列表选择至少一个位置")
+            .accessibilityIdentifier("body-map.continuation-unavailable")
+    }
+
+    private func finishTextRegionPicker() {
+        // A text-list choice creates a broad, provisional location. Returning
+        // to the map should show that location in the summary, not immediately
+        // present the separate marker editor. Clearing this visual selection
+        // neither removes the BodyLocation nor changes the typed draft.
+        model.selectMark(id: nil)
+        isTextRegionPickerPresented = false
     }
 
     @ViewBuilder
@@ -243,17 +288,31 @@ public struct BodyMapScreen: View {
     }
 
     private var markerCountPill: some View {
-        CompanionStatusPill(
-            "位置 \(model.markerCount) / \(BodyMapModel.maximumMarkerCount)",
-            systemImage: "mappin.and.ellipse",
-            tint: model.markerCount >= BodyMapModel.maximumMarkerCount
-                ? BodyCompanionTheme.warm
-                : BodyCompanionTheme.accent
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("已选位置")
-        .accessibilityValue("\(model.markerCount) / \(BodyMapModel.maximumMarkerCount)")
-        .accessibilityIdentifier("body-map.marker-count-summary")
+        Group {
+            if model.marks.isEmpty {
+                CompanionStatusPill(
+                    "尚未选择位置",
+                    systemImage: "mappin.slash",
+                    tint: BodyCompanionTheme.secondaryInk
+                )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("尚未选择位置")
+                .accessibilityValue("0 / \(BodyMapModel.maximumMarkerCount)")
+                .accessibilityIdentifier("body-map.marker-count-empty")
+            } else {
+                CompanionStatusPill(
+                    "位置 \(model.markerCount) / \(BodyMapModel.maximumMarkerCount)",
+                    systemImage: "mappin.and.ellipse",
+                    tint: model.markerCount >= BodyMapModel.maximumMarkerCount
+                        ? BodyCompanionTheme.warm
+                        : BodyCompanionTheme.accent
+                )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("已选位置")
+                .accessibilityValue("\(model.markerCount) / \(BodyMapModel.maximumMarkerCount)")
+                .accessibilityIdentifier("body-map.marker-count-summary")
+            }
+        }
     }
 
     private var markerCountDetail: some View {
@@ -673,74 +732,80 @@ private struct AccessibleRegionPicker: View {
     }
 
     var body: some View {
-        List {
-            Section {
-                TextField("搜索部位", text: $query)
-                    .accessibilityIdentifier("\(identifierPrefix).search")
-                Text("仅搜索本机目录的中文或英文名称；文字选择只会添加大致区域。")
-                    .font(.footnote)
-                    .foregroundStyle(BodyCompanionTheme.secondaryInk)
-            }
-
-            if showsViewPicker {
-                Section("目录视图") {
-                    Picker("选择身体目录", selection: Binding(get: { model.view }, set: { model.view = $0 })) {
-                        Text("前面").tag(BodyMapView.front)
-                        Text("后面").tag(BodyMapView.back)
-                    }
-                    .pickerStyle(.segmented)
-                    .accessibilityHint("切换前面或后面的目录筛选；不会改变已选择位置的表面语义。")
-                }
-            }
-
+        VStack(spacing: 0) {
             if let selectionFeedback {
-                Section {
-                    Text(selectionFeedback)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(BodyCompanionTheme.accent)
-                        .accessibilityIdentifier("\(identifierPrefix).selection-notice")
-                }
+                Label(selectionFeedback, systemImage: "checkmark.circle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(BodyCompanionTheme.accent)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(BodyCompanionTheme.accentSoft.opacity(0.62))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(selectionFeedback)
+                    .accessibilityIdentifier("\(identifierPrefix).selection-notice")
             }
 
-            Section("可选部位") {
-                if options.isEmpty {
-                    ContentUnavailableView(
-                        "没有匹配的部位",
-                        systemImage: "magnifyingglass",
-                        description: Text("请尝试中文或英文目录名称。")
-                    )
-                    .accessibilityIdentifier("\(identifierPrefix).empty")
-                } else {
-                    ForEach(options) { option in
-                        Button {
-                            select(option)
-                        } label: {
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(option.label)
-                                        .font(.body.weight(.semibold))
-                                    Text("\(localizedLaterality(option.laterality)) · \(localizedSurface(option.surface)) · \(model.view == .front ? "前面目录" : "后面目录")")
-                                        .font(.caption)
-                                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
-                                }
-                                Spacer()
-                                Image(systemName: "plus.circle")
-                                    .foregroundStyle(BodyCompanionTheme.accent)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            List {
+                Section {
+                    TextField("搜索部位", text: $query)
+                        .accessibilityIdentifier("\(identifierPrefix).search")
+                    Text("仅搜索本机目录的中文或英文名称；文字选择只会添加大致区域。")
+                        .font(.footnote)
+                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                }
+
+                if showsViewPicker {
+                    Section("目录视图") {
+                        Picker("选择身体目录", selection: Binding(get: { model.view }, set: { model.view = $0 })) {
+                            Text("前面").tag(BodyMapView.front)
+                            Text("后面").tag(BodyMapView.back)
                         }
-                        .buttonStyle(.bordered)
-                        .frame(minHeight: 44)
-                        .accessibilityLabel("选择\(option.label)，\(localizedLaterality(option.laterality))，\(localizedSurface(option.surface))")
-                        .accessibilityHint("添加一个待确认的大致区域，不会创建精确针点")
-                        .accessibilityIdentifier("\(identifierPrefix).option-\(stableIdentifier(for: option))")
+                        .pickerStyle(.segmented)
+                        .accessibilityHint("切换前面或后面的目录筛选；不会改变已选择位置的表面语义。")
+                    }
+                }
+
+                Section("可选部位") {
+                    if options.isEmpty {
+                        ContentUnavailableView(
+                            "没有匹配的部位",
+                            systemImage: "magnifyingglass",
+                            description: Text("请尝试中文或英文目录名称。")
+                        )
+                        .accessibilityIdentifier("\(identifierPrefix).empty")
+                    } else {
+                        ForEach(options) { option in
+                            Button {
+                                select(option)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(option.label)
+                                            .font(.body.weight(.semibold))
+                                        Text("\(localizedLaterality(option.laterality)) · \(localizedSurface(option.surface)) · \(model.view == .front ? "前面目录" : "后面目录")")
+                                            .font(.caption)
+                                            .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "plus.circle")
+                                        .foregroundStyle(BodyCompanionTheme.accent)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.bordered)
+                            .frame(minHeight: 44)
+                            .accessibilityLabel("选择\(option.label)，\(localizedLaterality(option.laterality))，\(localizedSurface(option.surface))")
+                            .accessibilityHint("添加一个待确认的大致区域，不会创建精确针点")
+                            .accessibilityIdentifier("\(identifierPrefix).option-\(stableIdentifier(for: option))")
+                        }
                     }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .accessibilityIdentifier(identifierPrefix)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .accessibilityIdentifier(identifierPrefix)
     }
 
     private func select(_ option: BodyRegionOption) {
@@ -845,6 +910,7 @@ private struct MarkSummaryPanel: View {
         Text("待确认标记（\(model.marks.count)）")
             .font(.headline)
             .foregroundStyle(BodyCompanionTheme.ink)
+            .accessibilityIdentifier("body-map.pending-mark-summary")
     }
 
     private var clearMarkersButton: some View {

@@ -418,7 +418,7 @@ FEAT-COMP-01 的验证以 TEST-COMP-01 为最低测试计划，且不得用页�
 
 [FEAT-IOS-P0-RUNTIME-01](28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) 只验证现有 P0 壳能在受版本控制的 iOS App Host 中构建、安装和启动；它不新增 Agent、资料读取、正式写入、持久化或健康字段。执行证据必须同时证明：Host 仅依赖本地 `BodyCompanionIOS`、默认 UI smoke 关闭候选 3D、专用 probe 只有在当前 loader-entry 确认后才接受 ready/fallback、网络/Provider/权限/持久化/遥测入口为零，以及 2D/部位列表、草稿继续/明确放弃、普通 AI 关闭和回退路径可达。
 
-该检查只能产生 `Simulator host smoke passed`。它不能证明或关闭 VoiceOver 实操、最大 Dynamic Type、Reduce Motion、真机触控、GPU/热/内存、RealityKit 碰撞、资产许可、签名、临床安全、隐私合规或 GATE-06/07/08；这些仍按 EVIDENCE-DEVICE-01 和相应设备/发布计划另行验证。
+该检查只能产生 `Simulator host smoke passed`。Host smoke 失败时可以保留仅含固定合成 fixture 的 `.xcresult`、失败截图和 accessibility hierarchy，供内部 CI 诊断；它们不得打印到日志、不得保留超过 3 天，也不得成为产品遥测、健康资料传输、真机或无障碍通过证据。该检查不能证明或关闭 VoiceOver 实操、最大 Dynamic Type、Reduce Motion、真机触控、GPU/热/内存、RealityKit 碰撞、资产许可、签名、临床安全、隐私合规或 GATE-06/07/08；这些仍按 EVIDENCE-DEVICE-01 和相应设备/发布计划另行验证。
 
 ## 8. 内容库测试
 

@@ -105,10 +105,9 @@ P0 原型的进入策略不得假装已经实现正式会话或持久恢复：�
 - 模式：`2D` / `3D`；专业 3D 只有资产通过且能力开关启用时显示。
 - 3D 入口先经过 `BodyAssetRuntimeGate`；清单未知、未批准、撤回、变体不匹配或文件验证失败时，直接显示中性回退说明并进入 2D/列表，不显示“加载失败=身体有问题”。
 - 工具：区域 / 精确点；前、后、左、右视角；回到全身。
-- 内容：人体视图、已添加 Marker 数量、选中部位名称。
-- 底部：`添加这个位置` 或 `继续（n 个位置）`。
-- 当前未确认草稿已有至少一个位置时，继续动作使用稳定 identifier `body-map.next`，并位于页面底部独立、非滚动的安全内容布局区；不得被人体地图、已添加位置摘要、Tab bar 或超大字体下的长内容遮挡。具体 SwiftUI API 不是契约，`safeAreaInset` 或任何等价原生布局机制都可以，只要该区域不随主内容滚动。
-- 承载地图的可滚动内容必须为该布局区预留等价的底部空间。文字部位 Sheet 已通过 `body-map.text-picker-done` 完成并关闭后，稳定 `body-map.marker-count-summary` 必须附在实际 count pill 上，作为可见、可访问的非动作摘要存在；精确数量/去重由 Core 回归锁定。跨 OS Host 对该摘要只检查稳定 identifier 的存在，不把 SwiftUI `Text` 的 AX label/value 或精确文案当状态协议。随后 `body-map.next` 必须通过按 stable identifier 的任意元素查询验证存在、可点击并可触发，无需再进行通用滚动；该条件主动作是本路径“至少一个未确认位置已保留”的黑箱证明。元素的 AX class（尤其 `Button`）不得作为跨 OS 验收契约；没有位置时不得显示或启用该动作。
+- 内容：人体视图、已添加 Marker 数量、选中部位名称。数量仅是当前会话未确认 `BodyLocation` 集合的表现投影：没有任何位置时显示独立、非动作的空状态 `body-map.marker-count-empty`；至少保留一个 provisional `BodyLocation` 时，才显示实际 count pill `body-map.marker-count-summary`。两者必须互斥，不能用同一 identifier 代表不同状态，也不产生新的健康字段、位置映射、API 或持久化事实。
+- 底部：固定的继续布局区位于页面底部独立、非滚动的安全内容区；不得被人体地图、已添加位置摘要、Tab bar 或超大字体下的长内容遮挡。没有位置时，它显示非动作的不可用说明 `body-map.continuation-unavailable`，绝不进入下一页；已有至少一个未确认位置时，同一固定布局区才呈现既有继续动作 `body-map.next`，显示“下一步：描述你的感受”。不得以选择后才插入整个底部布局区的方式改变可访问层级；`body-map.next` 不得被复用为不可用说明。具体 SwiftUI API 不是契约，只要该区域不随主内容滚动即可。
+- 承载地图的可滚动内容必须为该布局区预留等价的底部空间。文字部位 Sheet 已通过 `body-map.text-picker-done` 完成并关闭后，选择的宽泛位置必须仍显示在实际“待确认标记”摘要 `body-map.pending-mark-summary`；该摘要是可见、可访问的非动作内容，且文字选择完成时只清除临时视觉选中态，不得删除位置、改写 typed draft 或自动弹出编辑 Sheet。实际 count pill 的 `body-map.marker-count-summary` 保持可见、可访问，但精确数量/去重由 Core 回归锁定。跨 OS Host 先验证 Sheet 内稳定、当前可见的文字选择反馈；关闭 Sheet 后，选择路径必须验证 active count identifier 存在且 `body-map.marker-count-empty` 不存在。无搜索结果或清空最后一个 provisional `BodyLocation` 后，只能在 Sheet 已关闭时验证 `body-map.marker-count-empty` 存在且 active count identifier 不存在。Host 不读取 label/value 或精确数量，最后再验证 `body-map.next` 已启用、可点击并可触发；不把 SwiftUI `Text` 的 AX label/value、精确文案或元素 AX class 当状态协议，也不得以通用滚动掩盖主动作不可达。
 - 该继续动作只进入后续的未确认结构化描述；它不保存或确认正式位置，不运行安全分级、AI、网络或持久化，也不改变 `BodyLocation`、数据/API 或医疗语义。
 - 无障碍替代：`从列表选择部位`，支持搜索、侧别和前后表面。
 
@@ -418,7 +417,7 @@ R2 只显示 Application Service 固定的专业评估准备：当前事实摘�
 ### Dynamic Type 与布局
 
 - 不固定关键文案高度；超大字号时卡片、状态摘要和并列主/次动作纵向排列，不截断行动、位置、回退或安全说明。
-- 位置步骤已有至少一个未确认位置时，`body-map.next` 保持在底部独立、非滚动的安全内容布局区；滚动内容为该区保留空间，因此在 accessibility-size 下完成文字部位 Sheet 后，实际 count pill 上的可见、可访问 `body-map.marker-count-summary` 必须存在；Host 只检查其 stable identifier 存在，再无需把关键继续动作滚到可视区域即可按 stable identifier 查询、命中并触发。精确数量/去重留给 Core 回归；具体布局 API、SwiftUI `Text` 的 AX label/value/精确文案与 AX 元素 class 不是该 Host 验收的契约。
+- 位置步骤的底部布局区始终保持在独立、非滚动的安全内容区；无位置时可见的 `body-map.continuation-unavailable` 是非动作说明，已有至少一个未确认位置后才由既有主动作 `body-map.next` 替换。滚动内容为该区预留空间，因此在 accessibility-size 下完成文字部位 Sheet 后，先验证可见、可访问的 `body-map.pending-mark-summary`；有位置时验证实际 count pill `body-map.marker-count-summary` 存在且 `body-map.marker-count-empty` 不存在，无结果或清空最后一个位置后（且 Sheet 已关闭）验证相反的空状态。无需把关键继续动作滚到可视区域即可按 stable identifier 查询、命中并触发。精确数量/去重留给 Core 回归，Host 不读 label/value 或精确数；具体布局 API、SwiftUI `Text` 的 AX label/value/精确文案与 AX 元素 class 不是该 Host 验收的契约。
 - 含有独立动作的行不得因视觉合并而失去单独焦点；例如“删除位置”“返回全身”和“知道了”仍必须可分别操作。
 - 内部 Simulator 的放大字号 smoke 只能证明主入口、2D/列表和结构化描述的关键控件仍可达；最大字号、横屏、真实 VoiceOver 与 Switch Control 仍由真机验收关闭。
 - 3D 控件不覆盖系统返回、Sheet 指示器或确认按钮。
