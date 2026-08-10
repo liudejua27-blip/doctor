@@ -237,6 +237,11 @@ public struct SignalIntakeScreen: View {
                     set: { selected in setSensationSelection(code, selected: selected) }
                 ))
                 .frame(minHeight: 44)
+                .accessibilityIdentifier(
+                    code == .unknown && requiresExplicitSensationLocationSelection
+                        ? "sensation-picker.per-location-unknown"
+                        : "sensation-picker.sensation-\(code.rawValue)"
+                )
                 if isSensationSelected(code), requiresExplicitSensationLocationSelection {
                     sensationAssociationPicker(for: code)
                 }

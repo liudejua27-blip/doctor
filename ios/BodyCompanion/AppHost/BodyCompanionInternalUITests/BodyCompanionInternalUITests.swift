@@ -146,9 +146,13 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .matching(identifier: "screen.signal-intake")
             .firstMatch
         assertExists(intakeScroll)
-        let reviewSensation = app.buttons["sensation-picker.review"]
-        let unknownSensation = app.buttons["sensation-picker.unknown-all"]
-        scrollUntilHittable(reviewSensation, in: app, within: intakeScroll, maxSwipes: 30)
+        let reviewSensation = app.descendants(matching: .any)
+            .matching(identifier: "sensation-picker.review")
+            .firstMatch
+        let unknownSensation = app.descendants(matching: .any)
+            .matching(identifier: "sensation-picker.unknown-all")
+            .firstMatch
+        scrollUntilHittableEitherDirection(reviewSensation, in: app, within: intakeScroll)
         let sensationActions = app.descendants(matching: .any)
             .matching(identifier: "sensation-picker.actions.vertical")
             .firstMatch
@@ -159,11 +163,15 @@ final class BodyCompanionInternalUITests: XCTestCase {
                 .firstMatch
                 .exists
         )
-        scrollUntilHittable(unknownSensation, in: app, within: intakeScroll, maxSwipes: 30)
+        scrollUntilHittableEitherDirection(unknownSensation, in: app, within: intakeScroll)
 
-        let saveTemporal = app.buttons["temporal.save"]
-        let unknownTemporal = app.buttons["temporal.unknown"]
-        scrollUntilHittable(saveTemporal, in: app, within: intakeScroll, maxSwipes: 30)
+        let saveTemporal = app.descendants(matching: .any)
+            .matching(identifier: "temporal.save")
+            .firstMatch
+        let unknownTemporal = app.descendants(matching: .any)
+            .matching(identifier: "temporal.unknown")
+            .firstMatch
+        scrollUntilHittableEitherDirection(saveTemporal, in: app, within: intakeScroll)
         let temporalActions = app.descendants(matching: .any)
             .matching(identifier: "temporal.actions.vertical")
             .firstMatch
@@ -174,7 +182,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
                 .firstMatch
                 .exists
         )
-        scrollUntilHittable(unknownTemporal, in: app, within: intakeScroll, maxSwipes: 30)
+        scrollUntilHittableEitherDirection(unknownTemporal, in: app, within: intakeScroll)
     }
 
     @MainActor
@@ -184,7 +192,13 @@ final class BodyCompanionInternalUITests: XCTestCase {
         tapMapContinuationAction(in: app)
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.signal-intake").firstMatch)
 
-        let perLocationUnknown = app.switches["部分位置的感觉说不清"]
+        // SwiftUI Form Toggle rows are exposed as `Switch` on some runtimes
+        // and as a combined accessibility row on others. The stable product
+        // identifier is the contract; do not bind this smoke test to the
+        // native element class.
+        let perLocationUnknown = app.descendants(matching: .any)
+            .matching(identifier: "sensation-picker.per-location-unknown")
+            .firstMatch
         scrollUntilHittable(perLocationUnknown, in: app)
         assertExists(perLocationUnknown)
 
@@ -435,8 +449,8 @@ final class BodyCompanionInternalUITests: XCTestCase {
         // text, so the lazy List has not materialized this row until it is
         // scrolled into view. Limit the gesture to the sheet list so the
         // background map never competes for the same vertical swipe.
-        scrollUntilHittable(leftKnee, in: app, within: pickerList)
-        leftKnee.tap()
+        scrollPickerOptionIntoView(leftKnee, in: pickerList)
+        leftKnee.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         assertTextRegionSelectionFeedback(in: app)
         // Text selection must not present a competing editor while its Sheet
         // is still in control of the interaction.
@@ -495,10 +509,10 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(pickerList)
         let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
         let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right"]
-        scrollUntilHittable(leftKnee, in: app, within: pickerList)
-        leftKnee.tap()
-        scrollUntilHittable(rightKnee, in: app, within: pickerList)
-        rightKnee.tap()
+        scrollPickerOptionIntoView(leftKnee, in: pickerList)
+        leftKnee.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        scrollPickerOptionIntoView(rightKnee, in: pickerList)
+        rightKnee.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         assertTextRegionSelectionFeedback(in: app)
         XCTAssertFalse(
             app.buttons["body-map.mark-editor-done"].waitForExistence(timeout: 1),
@@ -664,6 +678,113 @@ final class BodyCompanionInternalUITests: XCTestCase {
             }
         }
         XCTAssertTrue(isReachable(), "Expected element to become hittable: \(element)", file: file, line: line)
+    }
+
+    @MainActor
+    private func scrollPickerOptionIntoView(
+        _ element: XCUIElement,
+        in pickerList: XCUIElement,
+        maxSwipes: Int = 12,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0..<maxSwipes {
+            guard element.exists else {
+                pickerList.swipeUp()
+                continue
+            }
+
+            let visibleFrame = pickerList.frame.insetBy(dx: 0, dy: 32)
+            let elementFrame = element.frame
+            if elementFrame.minY >= visibleFrame.minY,
+               elementFrame.maxY <= visibleFrame.maxY,
+               elementFrame.height > 0,
+               element.isHittable {
+                return
+            }
+            pickerList.swipeUp()
+        }
+
+        XCTAssertTrue(
+            element.exists && element.isHittable,
+            "Expected text-picker option to be fully visible and hittable: \(element)",
+            file: file,
+            line: line
+        )
+    }
+
+    @MainActor
+    private func scrollUntilHittableEitherDirection(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        within scrollContainer: XCUIElement,
+        maxSwipes: Int = 18,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        func isReachable() -> Bool {
+            element.exists && element.isHittable
+        }
+
+        func visibleFrame() -> CGRect {
+            // Form's content viewport is inset by the navigation and tab bars.
+            // Keeping a small guard band avoids treating a partly clipped row as
+            // reachable on older Simulator runtimes.
+            scrollContainer.frame.insetBy(dx: 0, dy: 110)
+        }
+
+        func moveTowardElement() {
+            guard element.exists else {
+                // A lazy Form row may not be in the accessibility tree yet. The
+                // intake screen starts near the top, so discover it by moving
+                // down the content (a swipe up).
+                scrollContainer.swipeUp()
+                return
+            }
+
+            let target = element.frame
+            let viewport = visibleFrame()
+            if target.maxY < viewport.minY {
+                scrollContainer.swipeDown()
+            } else if target.minY > viewport.maxY {
+                scrollContainer.swipeUp()
+            } else {
+                // The row intersects the viewport but may still be clipped by a
+                // Form section boundary. A small upward move usually materializes
+                // the complete cell without traversing the entire form.
+                scrollContainer.swipeUp()
+            }
+        }
+
+        for _ in 0..<maxSwipes {
+            if isReachable() { return }
+            moveTowardElement()
+        }
+
+        // If the screen was restored at the bottom, search back toward the top.
+        for _ in 0..<maxSwipes {
+            if isReachable() { return }
+            guard element.exists else {
+                scrollContainer.swipeDown()
+                continue
+            }
+
+            let target = element.frame
+            let viewport = visibleFrame()
+            if target.maxY < viewport.minY {
+                scrollContainer.swipeDown()
+            } else if target.minY > viewport.maxY {
+                scrollContainer.swipeUp()
+            } else {
+                scrollContainer.swipeDown()
+            }
+        }
+        XCTAssertTrue(
+            isReachable(),
+            "Expected intake action to become hittable after scrolling either direction: \(element)",
+            file: file,
+            line: line
+        )
     }
 
     @MainActor

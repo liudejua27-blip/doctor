@@ -128,7 +128,7 @@ def main() -> int:
         '"analysis.standard-chat-unavailable"',
         '"sensation-picker.more-open"',
         '"麻木"',
-        '"部分位置的感觉说不清"',
+        '"sensation-picker.per-location-unknown"',
         '"这些位置的感觉都说不清"',
         "testMoreSensationsKeepsStructuredInternalDraftFlow",
         "testMultipleLocationsKeepPerLocationUnknownDistinctFromGroupUnknown",
