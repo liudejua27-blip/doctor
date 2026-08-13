@@ -1,6 +1,6 @@
 # BodyCompanionInternal App Host
 
-这是一个受版本控制、仅限内部的 iOS Simulator App Host。它只链接父目录 Swift Package 的 `BodyCompanionIOS`，不复制任何页面或 USDZ 资产，也不使用 `BodyCompanionPrototype`。
+这是一个受版本控制、仅限内部的 iOS Simulator App Host。它只链接父目录 Swift Package 的 `BodyCompanionIOS`；候选 render/collision USDZ 与映射/相机 JSON 由本 target 显式复制进 App Bundle。可复用的 `BodyCompanionIOS` Swift Package 本身不再携带候选资产，生产 target 不会因链接 UI 库而隐式分发候选模型。
 
 默认运行能力：2D/部位列表和进程内未确认草稿。候选 3D 只有在手动运行或专用 probe 显式设置 `BODY_COMPANION_ENABLE_CANDIDATE_3D=1` 才可尝试；默认 UI smoke 关闭它，专用 probe 则先确认当前 loader-entry 后只接受 ready 或安全回退。Host 不接入网络、Provider、正式写入、分享、Keychain、文件持久化、遥测或系统健康/媒体权限。
 

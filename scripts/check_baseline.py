@@ -23,6 +23,8 @@ EXPECTED_SCHEMAS = {
     "agent-turn.schema.json",
     "approval-decision-application-result.schema.json",
     "body-asset-manifest.schema.json",
+    "body-region-map.schema.json",
+    "body-surface-correspondence.schema.json",
     "body-location.schema.json",
     "body-signal-event.schema.json",
     "confirmation-intent-application-result.schema.json",
@@ -123,7 +125,7 @@ def _check_asset_manifests(errors: list[str]) -> int:
         return 0
 
     manifests = sorted(asset_dir.glob("*.manifest.json"))
-    resources = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "Resources"
+    resources = ROOT / "ios" / "BodyCompanion" / "AppHost" / "BodyCompanionInternal" / "Resources"
     for path in manifests:
         try:
             manifest = json.loads(path.read_text(encoding="utf-8"))

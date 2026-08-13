@@ -22,7 +22,7 @@ cd /Users/liuchongjiang/Documents/3D人体
 ./.venv311/bin/python -m pip check
 ```
 
-当前本地聚合结果为 189 tests、0 failures；P2A 默认时钟由测试 fixture 冻结，过期边界继续显式注入时间。该结果仍不等于真实 Provider、数据库或临床安全已验证，详细证据见 [EVIDENCE-01](../docs/16_EXECUTION_EVIDENCE.md)。
+当前本地聚合结果为 204 tests、0 failures；P2A 默认时钟由测试 fixture 冻结，过期边界继续显式注入时间。该结果仍不等于真实 Provider、数据库或临床安全已验证，详细证据见 [EVIDENCE-01](../docs/16_EXECUTION_EVIDENCE.md)。
 
 架构、契约和当前实现说明：
 

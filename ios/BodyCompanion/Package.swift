@@ -20,8 +20,7 @@ let package = Package(
         .target(
             name: "BodyCompanionIOS",
             dependencies: ["BodyCompanionCore"],
-            path: "Sources/BodyCompanionIOS",
-            resources: [.process("Resources")]
+            path: "Sources/BodyCompanionIOS"
         ),
         .executableTarget(
             name: "BodyCompanionPrototype",

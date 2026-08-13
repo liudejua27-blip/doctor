@@ -1,0 +1,43 @@
+{
+  "asset_id": "body-neutral-procedural-v1",
+  "asset_version": "1.2.0",
+  "camera_preset_version": "1.2.0",
+  "presets": [
+    {
+      "distance_m": 1.1,
+      "fov_deg": 45.0,
+      "name": "front",
+      "pitch_deg": 0.0,
+      "yaw_deg": 0.0
+    },
+    {
+      "distance_m": 1.1,
+      "fov_deg": 45.0,
+      "name": "back",
+      "pitch_deg": 0.0,
+      "yaw_deg": 180.0
+    },
+    {
+      "distance_m": 1.15,
+      "fov_deg": 45.0,
+      "name": "left",
+      "pitch_deg": 0.0,
+      "yaw_deg": -90.0
+    },
+    {
+      "distance_m": 1.15,
+      "fov_deg": 45.0,
+      "name": "right",
+      "pitch_deg": 0.0,
+      "yaw_deg": 90.0
+    },
+    {
+      "distance_m": 1.85,
+      "fov_deg": 45.0,
+      "name": "top",
+      "pitch_deg": -90.0,
+      "yaw_deg": 0.0
+    }
+  ],
+  "topology_id": "body-neutral-procedural-topology-v2"
+}

@@ -13,14 +13,18 @@
 
 | 项目 | 值 |
 |---|---|
-| Bundle 文件 | `ios/BodyCompanion/Sources/BodyCompanionIOS/Resources/BodyNeutralPrototype.usdz` |
-| 生成脚本 | `tools/generate_neutral_body_asset.py` |
+| Render Bundle 文件 | `ios/BodyCompanion/AppHost/BodyCompanionInternal/Resources/BodyNeutralPrototype.usdz` |
+| Collision Bundle 文件 | `ios/BodyCompanion/AppHost/BodyCompanionInternal/Resources/BodyNeutralPrototypeCollision.usdz` |
+| 映射/相机文件 | `body-neutral-procedural-v1.region_map.json`、`body-neutral-procedural-v1.surface_correspondence.json`、`body-neutral-procedural-v1.camera_presets.json`（均只在内部 AppHost Resources） |
+| 生成脚本 | `tools/generate_neutral_body_asset.py`、`tools/generate_body_collision_asset.py` |
 | 资产 ID / 版本 | `body-neutral-procedural-v1` / `1.2.0` |
 | 生成方式 | 项目脚本直接按 Y-up/米制坐标创建球体、圆柱、倒角方块，导出 USDA 后由 `usdzip --arkitAsset` 生成 USDZ；未导入第三方网格 |
 | 固定工具链 | Blender 5.1.2；Apple USD Tools 0.25.2；工具链变更必须升候选版本并重跑全部资产门禁 |
-| SHA-256 | `3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f` |
+| Render SHA-256 | `3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f` |
+| Collision SHA-256 | `54bc86d6466de1a4acef43a2b1bc526a9ddcb2431d1b96cfe4a0cf742ab49176` |
 | 坐标约定 | RealityKit Y-up、右手、米制；脚底中点为根原点语义 |
-| 拓扑快照 | 24,020 个三角面（1.2.0 候选快照，仍需设备/碰撞复核） |
+| Render 拓扑快照 | 24,020 个三角面（1.2.0 候选快照） |
+| Collision 拓扑快照 | 1,904 个三角面；`body_collision_v1`；几何摘要 `c3c61d9588fd3df877ce97e1d43cf40f4737153d455e6044dc894c67005d3918` |
 
 1.2.0 的哈希由 2026-08-13 同一生成脚本连续三次输出一致后记录。脚本不再用通用 ZIP 库重打包 USDZ，而是调用 OpenUSD 的 `usdzip --arkitAsset` 保持文件 64-byte alignment，仅在原位归一化 ZIP 时间字段；Blender/OpenUSD 工具链升级仍可能改变二进制输出。任何重新生成、导出、压缩或工具链升级都必须重新哈希、同步清单并重新评审。
 
@@ -28,7 +32,7 @@
 
 ## 3. 权利与禁用边界
 
-- 当前 `release_status=candidate`、签名 `unverified`、解剖审核 `pending`、性能 `pending`。1.2.0 修复坐标/容器契约、增加 `body_lower_back`，并把 `body_*` 写为实际 Mesh prim 名称；它仍是分段几何，不是连续高质量人体，也不改变其非医学语义。
+- 当前 `release_status=candidate`、清单离线签名 `verified`、解剖审核 `pending`、性能 `pending`。1.2.0 修复坐标/容器契约、增加 `body_lower_back`，并把 `body_*` 写为实际 Mesh prim 名称；它仍是分段几何，不是连续高质量人体，也不改变其非医学语义。
 - 当前清单将商业使用和 App Store 分发设为 `false`；`example.invalid` 仅表示尚未建立可验证的公共权利凭证，不是资产下载来源。
 - 该资产只由内部 prototype flag 加载；生产调用默认要求 `BodyAssetRuntimeGate` 返回 `metadataEligible`，candidate 必须回退 2D/列表。
 - 不得把此候选模型描述为“标准人体”“肌肉模型”或“专业模型”；专业肌肉/关节模型仍是独立采购/委托/审核任务。
@@ -41,7 +45,7 @@
 1. 可核验的作者链、许可证全文、商业/App Store 分发和修改/衍生权利；
 2. 项目法务记录、归属文本和发布包中的 attribution 位置；
 3. 解剖/视觉审查明确“仅显示位置”语义，且不暗示临床定位；
-4. 独立 region map、碰撞策略、前后左右视角和本体迁移测试；
+4. 独立 region map、surface correspondence、collision artifact、碰撞策略、前后左右视角和本体迁移测试；
 5. 目标 iPhone 真机的冷启动、命中 P95、帧率、内存、VoiceOver 和降级证据；
 6. 签名清单、文件哈希读回、撤回/回滚和 2D/列表 fail-closed 验收。
 
@@ -51,4 +55,4 @@
 
 历史设备记录见 [EVIDENCE-DEVICE-01](24_DEVICE_VALIDATION_EVIDENCE.md)，当前 1.2.0 命令收据见 [EVIDENCE-01](16_EXECUTION_EVIDENCE.md)。USDZ 容器可由 `usdcat`/`usdchecker --arkit` 读取，ZIP 对齐、Bundle SHA-256 与清单一致；这只证明文件结构和完整性，不证明 RealityKit 视觉、碰撞、解剖或设备性能。仓库已有内部 Simulator Host，但没有本轮签名真机执行证据，因此真机性能、VoiceOver、Dynamic Type、Reduce Motion 和黄金点命中均保持未测。
 
-该次 1.1.0 审核发现 USD 根层有 `xformOp:rotateXYZ = (-90, 0, 0)`，清单却声明 identity canonical transform；模型缺少 `body_lower_back` 分段实体，且当时 loader 尚未实现独立 CollisionGroup 与 triangle/barycentric 命中证据。1.2.0 在资产侧修复根变换与 lower_back，iOS 18 代码已将 `TriangleHit.uv` 转为三分量 barycentric；固定工具链下的 `usdchecker --arkit`、读回层级和连续三次生成 SHA 验证已通过。当前仍无独立 CollisionGroup/碰撞产物、签名 region map 与 RealityKit 真机 faceIndex 黄金集；帧率/内存与无障碍也仍须由 iOS/QA/审核共同关闭，不能通过改写 `release_status` 绕过。
+该次 1.1.0 审核发现 USD 根层有 `xformOp:rotateXYZ = (-90, 0, 0)`，清单却声明 identity canonical transform；模型缺少 `body_lower_back` 分段实体，且当时 loader 尚未实现独立 CollisionGroup 与 triangle/barycentric 命中证据。1.2.0 在资产侧修复根变换与 lower_back，新增真正独立的 `body_collision_v1`、triangle region map、surface correspondence 和 camera preset；iOS 18 代码已将 `TriangleHit.uv` 转为三分量 barycentric，并只让 collision group 参与人体命中。固定工具链下的 `usdchecker --arkit`、读回层级、映射连续 face range、离线签名和连续三次生成 SHA 验证已通过。当前仍无 RealityKit 真机 faceIndex 黄金集；帧率/内存、无障碍、解剖/视觉、权利与正式发布仍须由 iOS/QA/审核共同关闭，不能通过改写 `release_status` 绕过。

@@ -22,19 +22,31 @@
   },
   "integrity": {
     "source_sha256": "sha256:3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f",
-    "manifest_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-    "signature_status": "unverified",
-    "signing_key_id": null
+    "manifest_sha256": "sha256:72a6afbaf09780e3d6a52567b44eed9fd8899151b9dbad34954a1ca5967dbe7f",
+    "signature_status": "verified",
+    "signing_key_id": "body-asset-offline-v1"
   },
   "coordinate_system": {
     "convention": "realitykit_y_up_right_handed",
     "unit": "meter",
     "root_origin": "feet_midpoint_ground_projection",
     "canonical_transform": [
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
     ]
   },
   "artifacts": [
@@ -50,8 +62,35 @@
       "artifact_id": "body-neutral-procedural-v1-runtime-collision-candidate",
       "role": "collision",
       "format": "usdz",
-      "uri": "bundle://BodyNeutralPrototype.usdz",
-      "sha256": "sha256:3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f",
+      "uri": "bundle://BodyNeutralPrototypeCollision.usdz",
+      "sha256": "sha256:54bc86d6466de1a4acef43a2b1bc526a9ddcb2431d1b96cfe4a0cf742ab49176",
+      "required": true,
+      "mesh_id": "body_collision_v1",
+      "triangle_count": 1904,
+      "geometry_sha256": "sha256:c3c61d9588fd3df877ce97e1d43cf40f4737153d455e6044dc894c67005d3918"
+    },
+    {
+      "artifact_id": "body-neutral-procedural-v1-region-map",
+      "role": "region_map",
+      "format": "json",
+      "uri": "bundle://body-neutral-procedural-v1.region_map.json",
+      "sha256": "sha256:3ed14b3c942e4623b2e67aa268d0025492fc251f71b5e2e26c70f8966db99865",
+      "required": true
+    },
+    {
+      "artifact_id": "body-neutral-procedural-v1-surface-correspondence",
+      "role": "surface_correspondence",
+      "format": "json",
+      "uri": "bundle://body-neutral-procedural-v1.surface_correspondence.json",
+      "sha256": "sha256:688541e24f56e051820081831f6762d3979bd3cc3e74c6f00490c107d74aa252",
+      "required": true
+    },
+    {
+      "artifact_id": "body-neutral-procedural-v1-camera-presets",
+      "role": "camera_preset",
+      "format": "json",
+      "uri": "bundle://body-neutral-procedural-v1.camera_presets.json",
+      "sha256": "sha256:ca781bf00046ba6ae05b4a17b8f0d1db7fb5d5a1c0700514b84ce4c7dbc7de58",
       "required": true
     }
   ],
@@ -92,5 +131,5 @@
     "fallback_asset_id": "body-map-2d-v1"
   },
   "created_at": "2026-08-08T01:34:00Z",
-  "updated_at": "2026-08-13T02:00:00Z"
+  "updated_at": "2026-08-13T05:20:00Z"
 }

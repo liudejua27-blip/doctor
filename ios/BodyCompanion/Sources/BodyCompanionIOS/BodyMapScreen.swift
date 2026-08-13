@@ -549,13 +549,14 @@ public struct BodyMapScreen: View {
                 onFailure: { model.mark3DFailed($0, for: attemptID) },
                 onHitEvidence: { evidence in
                     guard model.isCurrentThreeDReady(for: attemptID),
-                          let option = BodyRegionCatalog.option(forEntityID: evidence.entityID),
+                          let resolution = Body3DAssetRuntimeMetadata.shared.resolveRegion(from: evidence),
                           let location = BodyLocationMapper.from3D(
                               evidence,
-                              regionID: option.regionID,
-                              laterality: option.laterality,
-                              surface: option.surface,
-                              depth: option.depth
+                              regionID: resolution.option.regionID,
+                              laterality: resolution.option.laterality,
+                              surface: resolution.option.surface,
+                              depth: resolution.option.depth,
+                              mappingConfidence: resolution.confidence
                           ) else { return }
                     let mutation = model.applySelection(location)
                     if mutation == .rejectedMarkerLimit || mutation == .rejectedDuplicateLocation {

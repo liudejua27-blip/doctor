@@ -1,0 +1,644 @@
+{
+  "schema_version": "1.0",
+  "asset_id": "body-neutral-procedural-v1",
+  "asset_version": "1.2.0",
+  "topology_id": "body-neutral-procedural-topology-v2",
+  "render_artifact_id": "body-neutral-procedural-v1-render",
+  "collision_artifact_id": "body-neutral-procedural-v1-runtime-collision-candidate",
+  "collision_mesh_id": "body_collision_v1",
+  "entries": [
+    {
+      "entry_id": "000",
+      "render_mesh_id": "body_abdomen",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 0,
+          "end": 79
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "001",
+      "render_mesh_id": "body_head",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 80,
+          "end": 159
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "002",
+      "render_mesh_id": "body_left_calf",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 160,
+          "end": 199
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "003",
+      "render_mesh_id": "body_left_chest",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 200,
+          "end": 279
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "004",
+      "render_mesh_id": "body_left_elbow",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 280,
+          "end": 359
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "005",
+      "render_mesh_id": "body_left_foot",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 187
+      },
+      "render_triangle_count": 188,
+      "render_vertex_count": 96,
+      "collision_face_ranges": [
+        {
+          "start": 360,
+          "end": 371
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "006",
+      "render_mesh_id": "body_left_forearm",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 372,
+          "end": 411
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "007",
+      "render_mesh_id": "body_left_hand",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 412,
+          "end": 491
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "008",
+      "render_mesh_id": "body_left_hip",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 492,
+          "end": 571
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "009",
+      "render_mesh_id": "body_left_knee",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 572,
+          "end": 651
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "010",
+      "render_mesh_id": "body_left_shoulder",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 652,
+          "end": 731
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "011",
+      "render_mesh_id": "body_left_thigh",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 732,
+          "end": 771
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "012",
+      "render_mesh_id": "body_left_upper_arm",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 772,
+          "end": 811
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "013",
+      "render_mesh_id": "body_left_upper_back",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 812,
+          "end": 891
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "014",
+      "render_mesh_id": "body_lower_back",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 892,
+          "end": 971
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "015",
+      "render_mesh_id": "body_neck",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 972,
+          "end": 1011
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "016",
+      "render_mesh_id": "body_pelvis",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1012,
+          "end": 1091
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "017",
+      "render_mesh_id": "body_right_calf",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 1092,
+          "end": 1131
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "018",
+      "render_mesh_id": "body_right_chest",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1132,
+          "end": 1211
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "019",
+      "render_mesh_id": "body_right_elbow",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1212,
+          "end": 1291
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "020",
+      "render_mesh_id": "body_right_foot",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 187
+      },
+      "render_triangle_count": 188,
+      "render_vertex_count": 96,
+      "collision_face_ranges": [
+        {
+          "start": 1292,
+          "end": 1303
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "021",
+      "render_mesh_id": "body_right_forearm",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 1304,
+          "end": 1343
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "022",
+      "render_mesh_id": "body_right_hand",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1344,
+          "end": 1423
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "023",
+      "render_mesh_id": "body_right_hip",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1424,
+          "end": 1503
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "024",
+      "render_mesh_id": "body_right_knee",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1504,
+          "end": 1583
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "025",
+      "render_mesh_id": "body_right_shoulder",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1584,
+          "end": 1663
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "026",
+      "render_mesh_id": "body_right_thigh",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 1664,
+          "end": 1703
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "027",
+      "render_mesh_id": "body_right_upper_arm",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 59
+      },
+      "render_triangle_count": 60,
+      "render_vertex_count": 32,
+      "collision_face_ranges": [
+        {
+          "start": 1704,
+          "end": 1743
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "028",
+      "render_mesh_id": "body_right_upper_back",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1744,
+          "end": 1823
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    },
+    {
+      "entry_id": "029",
+      "render_mesh_id": "body_torso",
+      "collision_mesh_id": "body_collision_v1",
+      "render_triangle_range": {
+        "start": 0,
+        "end": 1215
+      },
+      "render_triangle_count": 1216,
+      "render_vertex_count": 610,
+      "collision_face_ranges": [
+        {
+          "start": 1824,
+          "end": 1903
+        }
+      ],
+      "method": "semantic_mesh_to_static_proxy",
+      "confidence": 0.86,
+      "quality_status": "candidate_proxy_unmeasured",
+      "boundary_candidates": []
+    }
+  ],
+  "generated_at": "2026-08-13T05:20:00Z",
+  "mapping_kind": "render_mesh_to_collision_face_ranges",
+  "mapping_version": "1.2.0"
+}

@@ -10,19 +10,33 @@ from __future__ import annotations
 
 import hashlib
 import json
+import base64
 import re
 import shutil
 import struct
 import subprocess
 import sys
 import zipfile
+import tempfile
+from datetime import datetime, timezone
+from copy import deepcopy
+from typing import Any
 from pathlib import Path
+
+from jsonschema import Draft202012Validator
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "docs/assets/body-neutral-procedural-v1.manifest.json"
 SWIFT_PATH = ROOT / "ios/BodyCompanion/Sources/BodyCompanionCore/BodyAssetManifest.swift"
-RESOURCE_ROOT = ROOT / "ios/BodyCompanion/Sources/BodyCompanionIOS/Resources"
+# Candidate resources are copied only by the internal AppHost. Keeping this
+# root outside the reusable Swift package prevents a production package link
+# from silently shipping a candidate asset.
+RESOURCE_ROOT = ROOT / "ios/BodyCompanion/AppHost/BodyCompanionInternal/Resources"
+ASSET_REGISTRY_ROOT = ROOT / "docs/assets"
+SIGNING_ROOT = ASSET_REGISTRY_ROOT / "signing"
+REGION_MAP_SCHEMA_PATH = ROOT / "docs/contracts/body-region-map.schema.json"
+SURFACE_CORRESPONDENCE_SCHEMA_PATH = ROOT / "docs/contracts/body-surface-correspondence.schema.json"
 
 EXPECTED_MESH_NAMES = {
     "body_head",
@@ -85,6 +99,72 @@ def run_tool(name: str, *arguments: str) -> str:
     return output
 
 
+def manifest_body_digest(path: Path) -> str:
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    normalized = deepcopy(manifest)
+    integrity = normalized.setdefault("integrity", {})
+    if not isinstance(integrity, dict):
+        fail("manifest integrity section is malformed")
+    integrity["manifest_sha256"] = "sha256:" + "0" * 64
+    canonical = json.dumps(normalized, ensure_ascii=False, indent=2) + "\n"
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def verify_manifest_signature(path: Path, manifest: dict[str, Any]) -> None:
+    integrity = manifest.get("integrity", {})
+    if integrity.get("signature_status") != "verified":
+        return
+    key_id = integrity.get("signing_key_id")
+    if not isinstance(key_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,120}", key_id):
+        fail(f"manifest signature key is missing or malformed: {integrity.get('signing_key_id')}")
+    public_key = SIGNING_ROOT / f"{key_id}.pub.pem"
+    if not public_key.is_file():
+        fail(f"manifest signing key public artifact is missing: {public_key.relative_to(ROOT)}")
+
+    signature_path = ASSET_REGISTRY_ROOT / f"{path.stem}.signature"
+    if not signature_path.is_file():
+        fail(f"manifest signature artifact is missing: {signature_path.relative_to(ROOT)}")
+    try:
+        signature = base64.b64decode(signature_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        fail(f"manifest signature artifact decode failed: {exc}")
+
+    if shutil.which("openssl") is None:
+        fail("openssl not found, cannot verify manifest signature chain")
+
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_sig:
+        tmp_sig.write(signature)
+        tmp_sig_path = Path(tmp_sig.name)
+    with tempfile.NamedTemporaryFile(suffix=".manifest", mode="wb", delete=False) as tmp_manifest:
+        tmp_manifest.write(path.read_bytes())
+        tmp_manifest_path = Path(tmp_manifest.name)
+
+    try:
+        completed = subprocess.run(
+            (
+                "openssl",
+                "pkeyutl",
+                "-verify",
+                "-inkey",
+                str(public_key),
+                "-pubin",
+                "-rawin",
+                "-sigfile",
+                str(tmp_sig_path),
+                "-in",
+                str(tmp_manifest_path),
+            ),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            fail(f"manifest signature verification failed: {completed.stdout}{completed.stderr}")
+    finally:
+        tmp_sig_path.unlink(missing_ok=True)
+        tmp_manifest_path.unlink(missing_ok=True)
+
+
 def verify_archive_layout(path: Path) -> int:
     payload = path.read_bytes()
     entry_count = 0
@@ -102,6 +182,153 @@ def verify_archive_layout(path: Path) -> int:
     if entry_count == 0:
         fail("USDZ archive is empty")
     return entry_count
+
+
+def archive_payload_digests(path: Path) -> dict[str, str]:
+    with zipfile.ZipFile(path) as archive:
+        return {info.filename: hashlib.sha256(archive.read(info)).hexdigest() for info in archive.infolist()}
+
+
+def usd_text_from_archive(path: Path) -> str:
+    with zipfile.ZipFile(path) as archive:
+        usdc_names = [info.filename for info in archive.infolist() if info.filename.lower().endswith((".usdc", ".usd"))]
+        if len(usdc_names) != 1:
+            fail(f"USDZ must contain exactly one USDC/USD payload: {path.name} => {usdc_names}")
+        with tempfile.NamedTemporaryFile(suffix=Path(usdc_names[0]).suffix, delete=False) as extracted:
+            extracted.write(archive.read(usdc_names[0]))
+            extracted_path = Path(extracted.name)
+    try:
+        return run_tool("usdcat", str(extracted_path))
+    finally:
+        extracted_path.unlink(missing_ok=True)
+
+
+def usd_geometry_digest(layer_text: str) -> tuple[str, int, int]:
+    """Hash only mesh topology/points, excluding ZIP and USD metadata."""
+    records: list[tuple[str, str, str, str]] = []
+    for match in re.finditer(r'\bdef Mesh "([^"]+)"', layer_text):
+        start = match.start()
+        opening = layer_text.find("{", match.end())
+        closing = matching_brace(layer_text, opening)
+        block = layer_text[start : closing + 1]
+        counts = re.search(r"int\[\] faceVertexCounts = \[(.*?)\]", block, re.DOTALL)
+        indices = re.search(r"int\[\] faceVertexIndices = \[(.*?)\]", block, re.DOTALL)
+        points = re.search(r"point3f\[\] points = \[(.*?)\]", block, re.DOTALL)
+        if counts is None or indices is None or points is None:
+            fail(f"mesh lacks topology arrays: {match.group(1)}")
+        records.append((match.group(1), counts.group(1), indices.group(1), points.group(1)))
+    if not records:
+        fail("USD has no Mesh prim")
+    canonical = json.dumps(records, ensure_ascii=True, separators=(",", ":"))
+    triangles = sum(len(re.findall(r"\d+", record[1])) for record in records)
+    vertices = sum(len(re.findall(r"\([^)]*\)", record[3])) for record in records)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest(), triangles, vertices
+
+
+def verify_collision_usd(path: Path, expected_triangle_count: int, expected_mesh_id: str) -> str:
+    checker_output = run_tool("usdchecker", "--arkit", str(path))
+    if "Success!" not in checker_output:
+        fail("collision usdchecker --arkit did not report Success")
+    layer_text = usd_text_from_archive(path)
+    for value in (
+        'defaultPrim = "BodyCompanionCollision"',
+        "metersPerUnit = 1",
+        'upAxis = "Y"',
+        f'def Mesh "{expected_mesh_id}"',
+        'subdivisionScheme = "none"',
+        'userProperties:collision_kind = "static_triangle_proxy"',
+    ):
+        if value not in layer_text:
+            fail(f"collision USD missing canonical metadata: {value}")
+    mesh_names = set(re.findall(r'\bdef Mesh "([^"]+)"', layer_text))
+    if mesh_names != {expected_mesh_id}:
+        fail(f"collision USD must expose one canonical Mesh: {sorted(mesh_names)}")
+    geometry_digest, triangles, vertices = usd_geometry_digest(layer_text)
+    if triangles != expected_triangle_count:
+        fail(f"collision triangle count mismatch: manifest={expected_triangle_count} usd={triangles}")
+    if vertices <= 0:
+        fail("collision USD has no vertices")
+    return geometry_digest
+
+
+def _validate_schema(path: Path, payload: dict[str, Any]) -> None:
+    try:
+        schema = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        fail(f"mapping schema missing: {path.relative_to(ROOT)}: {exc}")
+    errors = sorted(Draft202012Validator(schema).iter_errors(payload), key=lambda error: list(error.absolute_path))
+    if errors:
+        location = ".".join(str(item) for item in errors[0].absolute_path)
+        fail(f"{path.relative_to(ROOT)} invalid at {location}: {errors[0].message}")
+
+
+def _parse_iso8601(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        fail(f"invalid ISO-8601 mapping timestamp: {value}: {exc}")
+    return parsed.astimezone(timezone.utc)
+
+
+def verify_mapping_artifacts(
+    manifest: dict[str, Any],
+    *,
+    collision_triangle_count: int,
+    collision_mesh_id: str,
+    render_mesh_ids: set[str],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    region_artifact = next((item for item in manifest["artifacts"] if item["role"] == "region_map"), None)
+    correspondence_artifact = next((item for item in manifest["artifacts"] if item["role"] == "surface_correspondence"), None)
+    if region_artifact is None or correspondence_artifact is None:
+        fail("region_map and surface_correspondence artifacts are required")
+    region_path = RESOURCE_ROOT / region_artifact["uri"].removeprefix("bundle://")
+    correspondence_path = RESOURCE_ROOT / correspondence_artifact["uri"].removeprefix("bundle://")
+    region = json.loads(region_path.read_text(encoding="utf-8"))
+    correspondence = json.loads(correspondence_path.read_text(encoding="utf-8"))
+    _validate_schema(REGION_MAP_SCHEMA_PATH, region)
+    _validate_schema(SURFACE_CORRESPONDENCE_SCHEMA_PATH, correspondence)
+    for payload, kind in ((region, "region_map"), (correspondence, "surface_correspondence")):
+        for key in ("asset_id", "asset_version", "topology_id"):
+            if payload[key] != manifest[key]:
+                fail(f"{kind} identity mismatch for {key}: {payload[key]} != {manifest[key]}")
+        if _parse_iso8601(payload["generated_at"]) < _parse_iso8601(manifest["updated_at"]):
+            fail(f"{kind} generated_at predates manifest updated_at")
+    if region["collision_mesh_id"] != collision_mesh_id:
+        fail("region_map collision mesh ID does not match collision artifact")
+    if region["collision_triangle_count"] != collision_triangle_count:
+        fail("region_map collision triangle count does not match collision artifact")
+    ranges = sorted(region["entries"], key=lambda item: item["face_start"])
+    expected_start = 0
+    for entry in ranges:
+        if entry["collision_mesh_id"] != collision_mesh_id:
+            fail(f"region_map entry uses unexpected collision mesh: {entry['entry_id']}")
+        if entry["face_start"] != expected_start or entry["face_end"] < entry["face_start"]:
+            fail(f"region_map face ranges are not contiguous at {entry['entry_id']}")
+        expected_start = entry["face_end"] + 1
+    if expected_start != collision_triangle_count:
+        fail(f"region_map does not cover every collision face: end={expected_start - 1} count={collision_triangle_count}")
+
+    if correspondence["render_artifact_id"] != next(item["artifact_id"] for item in manifest["artifacts"] if item["role"] == "render"):
+        fail("surface correspondence render artifact ID is not bound to manifest")
+    if correspondence["collision_artifact_id"] != next(item["artifact_id"] for item in manifest["artifacts"] if item["role"] == "collision"):
+        fail("surface correspondence collision artifact ID is not bound to manifest")
+    correspondence_meshes = {item["render_mesh_id"] for item in correspondence["entries"]}
+    if correspondence_meshes != render_mesh_ids:
+        fail(f"surface correspondence mesh set mismatch: {sorted(correspondence_meshes ^ render_mesh_ids)}")
+    region_by_mesh = {item["region_id"] + "|" + item["laterality"]: item for item in ranges}
+    for entry in correspondence["entries"]:
+        if entry["collision_mesh_id"] != collision_mesh_id:
+            fail(f"surface correspondence entry uses unexpected collision mesh: {entry['entry_id']}")
+        for face_range in entry["collision_face_ranges"]:
+            if face_range["start"] < 0 or face_range["end"] < face_range["start"] or face_range["end"] >= collision_triangle_count:
+                fail(f"surface correspondence collision range is out of bounds: {entry['entry_id']}")
+        mapped = [item for item in ranges if any(
+            face_range["start"] == item["face_start"] and face_range["end"] == item["face_end"]
+            for face_range in entry["collision_face_ranges"]
+        )]
+        if len(mapped) != 1:
+            fail(f"surface correspondence must reference exactly one region face range: {entry['entry_id']}")
+    return region, correspondence
 
 
 def prim_own_properties(layer_text: str, declaration: str) -> str:
@@ -207,6 +434,12 @@ def verify_usd(
 
 def main() -> int:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    expected_digest = f"sha256:{manifest_body_digest(MANIFEST_PATH)}"
+    actual_digest = manifest.get("integrity", {}).get("manifest_sha256", "")
+    if actual_digest != expected_digest:
+        fail(f"manifest self-hash mismatch: manifest={actual_digest} expected={expected_digest}")
+    verify_manifest_signature(MANIFEST_PATH, manifest)
+
     swift_source = SWIFT_PATH.read_text(encoding="utf-8")
     swift_values = {
         "asset_id": swift_string(swift_source, "assetID"),
@@ -230,7 +463,21 @@ def main() -> int:
     ]
     if not bundle_artifacts:
         fail("candidate manifest has no bundle artifact")
+
+    required_roles = {
+        "render",
+        "collision",
+        "region_map",
+        "surface_correspondence",
+        "camera_preset",
+    }
+    present_roles = {artifact["role"] for artifact in bundle_artifacts if artifact.get("role") in required_roles}
+    missing_roles = sorted(required_roles - present_roles)
+    if missing_roles:
+        fail(f"candidate manifest missing required artifact roles: {missing_roles}")
     for artifact in bundle_artifacts:
+        if artifact.get("role") in {"render", "collision", "region_map", "surface_correspondence", "camera_preset"} and artifact.get("required") is not True:
+            fail(f"required artifact role is not marked required: {artifact['role']} => {artifact.get('artifact_id')}")
         artifact_path = RESOURCE_ROOT / artifact["uri"].removeprefix("bundle://")
         if not artifact_path.is_file():
             fail(f"bundle artifact is missing: {artifact['uri']}")
@@ -243,9 +490,20 @@ def main() -> int:
     if render_artifacts[0]["sha256"] != f"sha256:{digest}":
         fail("Swift candidate resource digest does not match manifest render artifact")
 
+    collision_artifacts = [artifact for artifact in bundle_artifacts if artifact["role"] == "collision"]
+    if len(collision_artifacts) != 1:
+        fail("candidate manifest must have exactly one required collision artifact")
+    if (
+        collision_artifacts[0]["uri"] == render_artifacts[0]["uri"]
+        or collision_artifacts[0]["sha256"] == render_artifacts[0]["sha256"]
+    ):
+        fail("candidate manifest collision artifact must be independent from render")
+
     entry_count = verify_archive_layout(resource_path)
     if len(manifest["lods"]) != 1:
         fail("current candidate must have exactly one frozen LOD")
+    render_layer_text = usd_text_from_archive(resource_path)
+    render_geometry_digest, render_triangle_count, _ = usd_geometry_digest(render_layer_text)
     verify_usd(
         resource_path,
         asset_id=manifest["asset_id"],
@@ -255,11 +513,35 @@ def main() -> int:
         canonical_ground=swift_float(swift_source, "canonicalGroundYMeters"),
         canonical_height=swift_float(swift_source, "canonicalHeightMeters"),
     )
+    collision_path = RESOURCE_ROOT / collision_artifacts[0]["uri"].removeprefix("bundle://")
+    collision_layer_text = usd_text_from_archive(collision_path)
+    collision_geometry_digest, collision_triangle_count, _ = usd_geometry_digest(collision_layer_text)
+    collision_mesh_id = "body_collision_v1"
+    if collision_artifacts[0].get("geometry_sha256") != f"sha256:{collision_geometry_digest}":
+        fail("collision artifact geometry_sha256 does not match USD topology/points")
+    if collision_artifacts[0].get("triangle_count") != collision_triangle_count:
+        fail("collision artifact triangle_count does not match USD")
+    if collision_artifacts[0].get("mesh_id") != collision_mesh_id:
+        fail("collision artifact mesh_id is not the canonical collision mesh")
+    verify_collision_usd(collision_path, collision_triangle_count, collision_mesh_id)
+    render_payloads = archive_payload_digests(resource_path)
+    collision_payloads = archive_payload_digests(collision_path)
+    if render_payloads.get("BodyNeutralPrototype.usdc") == collision_payloads.get("BodyNeutralPrototypeCollision.usdc"):
+        fail("render and collision internal USDC payloads are identical")
+    if render_geometry_digest == collision_geometry_digest:
+        fail("render and collision geometry/topology digests are identical")
+    verify_mapping_artifacts(
+        manifest,
+        collision_triangle_count=collision_triangle_count,
+        collision_mesh_id=collision_mesh_id,
+        render_mesh_ids=set(re.findall(r'\bdef Mesh "([^"]+)"', render_layer_text)),
+    )
     print(
         "body_asset_release_checks=passed "
         f"asset={manifest['asset_id']}@{manifest['asset_version']} "
         f"sha256={digest} meshes={len(EXPECTED_MESH_NAMES)} "
-        f"triangles={manifest['lods'][0]['triangle_count']} zip_entries={entry_count}"
+        f"render_triangles={render_triangle_count} collision_triangles={collision_triangle_count} "
+        f"zip_entries={entry_count}"
     )
     return 0
 

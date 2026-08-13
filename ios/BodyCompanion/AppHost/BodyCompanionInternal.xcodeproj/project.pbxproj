@@ -11,6 +11,11 @@
 		A100000000000000000000002 /* InternalHostLaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000002 /* InternalHostLaunchOptions.swift */; };
 		A100000000000000000000003 /* BodyCompanionInternalUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000004 /* BodyCompanionInternalUITests.swift */; };
 		A100000000000000000000004 /* BodyCompanionIOS in Frameworks */ = {isa = PBXBuildFile; productRef = K100000000000000000000002 /* BodyCompanionIOS */; };
+		A100000000000000000000005 /* BodyNeutralPrototype.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000011 /* BodyNeutralPrototype.usdz */; };
+		A100000000000000000000006 /* BodyNeutralPrototypeCollision.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000012 /* BodyNeutralPrototypeCollision.usdz */; };
+		A100000000000000000000007 /* body-neutral-procedural-v1.camera_presets.json in Resources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000013 /* body-neutral-procedural-v1.camera_presets.json */; };
+		A100000000000000000000008 /* body-neutral-procedural-v1.region_map.json in Resources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000014 /* body-neutral-procedural-v1.region_map.json */; };
+		A100000000000000000000009 /* body-neutral-procedural-v1.surface_correspondence.json in Resources */ = {isa = PBXBuildFile; fileRef = B100000000000000000000015 /* body-neutral-procedural-v1.surface_correspondence.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +39,11 @@
 		B100000000000000000000008 /* InternalSigning.local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = InternalSigning.local.xcconfig.example; sourceTree = "<group>"; };
 		B100000000000000000000009 /* BodyCompanionInternal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyCompanionInternal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B100000000000000000000010 /* BodyCompanionInternalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BodyCompanionInternalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B100000000000000000000011 /* BodyNeutralPrototype.usdz */ = {isa = PBXFileReference; lastKnownFileType = archive.usdz; path = BodyNeutralPrototype.usdz; sourceTree = "<group>"; };
+		B100000000000000000000012 /* BodyNeutralPrototypeCollision.usdz */ = {isa = PBXFileReference; lastKnownFileType = archive.usdz; path = BodyNeutralPrototypeCollision.usdz; sourceTree = "<group>"; };
+		B100000000000000000000013 /* body-neutral-procedural-v1.camera_presets.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = body-neutral-procedural-v1.camera_presets.json; sourceTree = "<group>"; };
+		B100000000000000000000014 /* body-neutral-procedural-v1.region_map.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = body-neutral-procedural-v1.region_map.json; sourceTree = "<group>"; };
+		B100000000000000000000015 /* body-neutral-procedural-v1.surface_correspondence.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = body-neutral-procedural-v1.surface_correspondence.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +64,21 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXResourcesBuildPhase section */
+		G100000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000000000000000000005 /* BodyNeutralPrototype.usdz in Resources */,
+				A100000000000000000000006 /* BodyNeutralPrototypeCollision.usdz in Resources */,
+				A100000000000000000000007 /* body-neutral-procedural-v1.camera_presets.json in Resources */,
+				A100000000000000000000008 /* body-neutral-procedural-v1.region_map.json in Resources */,
+				A100000000000000000000009 /* body-neutral-procedural-v1.surface_correspondence.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXGroup section */
 		D100000000000000000000001 = {
 			isa = PBXGroup;
@@ -71,6 +96,7 @@
 				B100000000000000000000001 /* BodyCompanionInternalApp.swift */,
 				B100000000000000000000002 /* InternalHostLaunchOptions.swift */,
 				B100000000000000000000003 /* Info.plist */,
+				D100000000000000000000006 /* Resources */,
 			);
 			path = BodyCompanionInternal;
 			sourceTree = "<group>";
@@ -103,6 +129,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D100000000000000000000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B100000000000000000000011 /* BodyNeutralPrototype.usdz */,
+				B100000000000000000000012 /* BodyNeutralPrototypeCollision.usdz */,
+				B100000000000000000000013 /* body-neutral-procedural-v1.camera_presets.json */,
+				B100000000000000000000014 /* body-neutral-procedural-v1.region_map.json */,
+				B100000000000000000000015 /* body-neutral-procedural-v1.surface_correspondence.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -112,6 +150,7 @@
 			buildPhases = (
 				G100000000000000000000001 /* Sources */,
 				G100000000000000000000002 /* Frameworks */,
+				G100000000000000000000005 /* Resources */,
 			);
 			buildRules = (
 			);

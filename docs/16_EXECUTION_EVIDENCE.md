@@ -8,8 +8,8 @@
 | 工作区 | `/Users/liuchongjiang/Documents/3D人体` |
 | 快照日期 | 2026-08-13 |
 | 对应 Git | `codex/body-signal-intake-boundaries`；本轮为保留既有用户改动之上的未提交工作树，尚无可引用 commit/远端 CI 收据；历史提交与失败 run 保留 |
-| 本轮变更状态 | FEAT-TRUSTED-COMPANION-01 已形成内部本地实现：后端 204/204、Swift 102/102、generic iPhoneOS build、Host 静态检查、13/13 Simulator smoke、baseline/diff、候选 USDZ ARKit/跨层身份校验均通过。它仍不构成真机、完整辅助功能、真实 Provider/认证/数据库、临床、法务、资产发布或生产批准 |
-| **2026-08-13 当前收据** | `baseline_checks=passed markdown_files=65 checked_links=404 ... prohibited_source_matches=0`；Backend 204/204；Swift 102/102；13 项 Host smoke 最终 exit 0（461.853s）。`check_body_asset_release.py` 读回 30 Mesh / 24,020 triangles / 2 个 64-byte aligned ZIP entries，身份与 SHA `3120c9de...45d5f` 一致；候选资产仍为 candidate/fail-closed |
+| 本轮变更状态 | FEAT-TRUSTED-COMPANION-01 已形成内部本地实现：后端 204/204、Swift 103/103、generic iPhoneOS build、Host 静态检查、候选资源 AppHost 隔离、baseline/diff、render/collision USDZ ARKit/跨层身份校验均通过；Simulator smoke 收据仍只代表受控内部路径。它仍不构成真机、完整辅助功能、真实 Provider/认证/数据库、临床、法务、资产发布或生产批准 |
+| **2026-08-13 当前收据** | `baseline_checks=passed markdown_files=65 checked_links=404 json_schemas=18 ... prohibited_source_matches=0`；Backend 204/204；Swift 103/103；`check_body_asset_release.py` 读回 30 render Mesh / 24,020 render triangles / 1,904 collision triangles / 2 个 64-byte aligned USDZ ZIP entries，manifest self-hash/离线签名 verified；候选资产仍为 candidate/fail-closed |
 
 ## 1. 证据解释
 
@@ -23,26 +23,26 @@
 
 | ID | 检查 | 当前结果 | 证明范围 |
 |---|---|---|---|
-| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=65 checked_links=404 json_schemas=16 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁；`.pytest_cache` 等临时目录不计入工程文档清单 |
+| EV-CURRENT-001 | `scripts/check_baseline.py` | `passed; markdown_files=65 checked_links=404 json_schemas=18 openapi_paths=36 openapi_schemas=111 asset_manifests=1 prohibited_source_matches=0` | 文档、契约清单、CI Action SHA/权限、依赖 pin、资产清单/Bundle SHA、退役路径和禁止源码引用的本地静态门禁；`.pytest_cache` 等临时目录不计入工程文档清单 |
 | EV-CURRENT-002 | P2A 聚焦回归 | `19 passed` | 默认时钟被 fixture 冻结；显式过期路径仍可测试 |
 | EV-CURRENT-003 | Python 编译与依赖 | `compileall` 通过；`pip check` 无破损依赖 | Python 3.11 当前约束环境可导入；不证明其他平台/版本 |
-| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `102 tests, 0 failures` | Swift Core 样机；新增 2D Zone=Area、Pin=Point、surface 身份、3D triangle/barycentric/UV、3D ready 看门狗、approved 资产独立产物门禁等回归；不证明真机/签名/生产资产、临床规则或服务端 retained action |
+| EV-CURRENT-004 | `cd ios/BodyCompanion && swift test` | `103 tests, 0 failures` | Swift Core 样机；新增 2D Zone=Area、Pin=Point、surface 身份、3D triangle/barycentric/UV、region-map confidence、3D ready 看门狗、approved 资产独立产物门禁等回归；不证明真机/签名/生产资产、临床规则或服务端 retained action |
 | EV-CURRENT-005 | `./.venv311/bin/python -m pytest backend/tests --tb=short` | `204 passed` | 后端合成/内存样机全量绿色；非布尔目录控制、损坏规则/伪造 hit/matched 空证据整体 fail-closed，R0/R1 最高风险行动不被低优先级 undetermined 覆盖，Agent 调用为 0；不证明真实 Provider、生产规则、认证或数据库 |
 | EV-CURRENT-006 | 退役文档/旧链接/旧过程 OPEN ID 扫描 | `retired_slice_files=0 stale_retired_links=0 stale_open_process_ids=0` | 32 份过程文档已删除，非归并登记处不存在旧路径或旧门禁引用 |
 | EV-CURRENT-007 | RehabMate 禁止生产实现扫描 | `0 matches` | iOS/后端源码未出现被禁止的 Web/算法/资产关键词；不替代许可证人工审计 |
 | EV-CURRENT-008 | iOS SDK target build | `swift build --sdk $(xcrun --sdk iphoneos --show-sdk-path) --triple arm64-apple-ios17.0 --target BodyCompanionIOS` 构建通过；generic prototype build 亦通过 | 只证明 Swift Package/RealityKit 适配器编译，不证明签名安装/真机运行 |
 | EV-CURRENT-009 | `.github/workflows/ci.yml` | Ubuntu 24.04 后端/契约 + macOS 15 iOS；官方 Action 固定完整 SHA；iOS job 含 Host 静态扫描与 Simulator smoke | `4cc46e2` / run `31350639359` 的 Backend/contracts、Swift 94/94、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功；CI 目的地为 iPhone 16 / iOS Simulator 18.5 / Xcode 16.4。Smoke 成功日志不提供精确 XCTest 数；本地 targeted/full 收据见 EV-CURRENT-018。历史失败 run 保留，不外推为真机或生产通过 |
-| EV-CURRENT-010 | BODY-ASSET-01 候选资产 | 1.2.0 / topology-v2；SHA-256 `3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f`；600,103 bytes；24,020 triangles；连续三次生成 SHA 一致；`usdchecker --arkit` Success；Y-up/米制/identity root/groundY=0/height=1.86m，30 个实际 `body_*` ModelEntity 含 `body_lower_back` | 证明固定工具链下容器对齐、确定性、清单/Bundle 和结构读回；仍是分段 candidate，同文件 render/collision，未签名、无独立碰撞/region map、未解剖/法务/性能/真机审核，不能发布 |
+| EV-CURRENT-010 | BODY-ASSET-01 候选资产 | 1.2.0 / topology-v2；render SHA-256 `3120c9de64d26c98aed073776107e154c0450b52d7e289aa61fa6dc63fc45d5f`、collision SHA-256 `54bc86d6466de1a4acef43a2b1bc526a9ddcb2431d1b96cfe4a0cf742ab49176`；render 600,103 bytes / 24,020 triangles，collision 1,904 triangles；连续三次 render 生成 SHA 一致；`usdchecker --arkit` Success；Y-up/米制/identity root/groundY=0/height=1.86m，30 个实际 render `body_*` ModelEntity 含 `body_lower_back`；离线 manifest 签名 verified | 证明固定工具链下 render/collision 容器对齐、确定性、清单/Bundle/Swift/USD 身份、collision face range、region map/correspondence schema 与资源隔离；仍是分段 candidate，未解剖/法务/性能/真机审核，不能发布 |
 | EV-CURRENT-011 | 默认分支保护 | GitHub API 读回成功：`Backend and contracts`、`iOS Swift package` 为必需检查；strict=true、管理员强制、线性历史开启、禁止强推/删除；PR #1 与 PR #4 已合并 | 证明远端设置和两次 PR 合并路径；不证明所有后续变更或发布门禁自动安全 |
 | EV-CURRENT-012 | FEAT-BODY-MAP-V2 上游行为基线 | RehabMate commit `1378a752dfb0d656a27a73c234269f9f5be2c3ca`、代码 MIT、上游 `body.glb` Git blob SHA-1 `adbf4de165f5698b770e36d33fa953a2210f968c` 和 raw SHA-256 `ffd98cc59f128d1c162e1d63af905e4f459b6e18618a7c853b1cbe8a43cf0ce2` 已记录；内置浏览器打开成品站超时 | 证明源审计锚点和采用边界；不证明成品站视觉加载或生产资产权利 |
 | EV-CURRENT-013 | FEAT-BODY-MAP-V2.1 窄屏编辑与反馈 | `swift test --parallel`：`64 tests, 0 failures`；iOS SDK target 构建通过；窄屏编辑器使用系统 Sheet/Detent，Pin 上限和 3D 回退使用固定文本提示；不证明真机 Sheet/VoiceOver/动态字体行为 | 证明代码和 Core 回归已覆盖 V2.1 逻辑；设备、无障碍和生产门禁仍未关闭 |
-| EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核 | 历史 `5dddd83` 已解除“无 Simulator App target”阻塞：本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 与远端 iPhone 16 / iOS 18.5 的同一脚本均成功。`79f1f36` 在本地 iPhone 17 Pro / iOS 26.5 运行 9 项 UI 测试，专用 probe 实际观察到当前 Scene 的 loader-entry，随后进入 candidate-ready，并保留 3D 场景与列表入口；`ea85c68` 的远端 run `31301067572` 成功运行同一完整 Host suite。当前 1.2.0 已修复旧版 lower_back/根变换，iOS 18 代码已实现 triangle+barycentric；这些只有静态/Core/Simulator 证据。两部登记 iPhone 仍 Offline/unavailable；当前未关闭的是 CollisionGroup、独立碰撞/region map、真机 faceIndex 黄金集与性能 | 证明 Simulator Host 与一次内部候选加载生命周期及其远端可重建性；不证明 Sheet 的真机体验、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集、签名或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
+| EV-CURRENT-014 | EVIDENCE-DEVICE-01 真机与候选资产审核 | 历史 `5dddd83` 已解除“无 Simulator App target”阻塞：本地 iPhone 17 Pro / iOS 26.5 的 7 项 UI smoke 与远端 iPhone 16 / iOS 18.5 的同一脚本均成功。`79f1f36` 在本地 iPhone 17 Pro / iOS 26.5 运行 9 项 UI 测试，专用 probe 实际观察到当前 Scene 的 loader-entry，随后进入 candidate-ready，并保留 3D 场景与列表入口；`ea85c68` 的远端 run `31301067572` 成功运行同一完整 Host suite。当前 1.2.0 已修复旧版 lower_back/根变换，iOS 18 代码已实现独立 collision group、triangle+barycentric、region map/surface correspondence；这些只有静态/Core/Simulator 证据。两部登记 iPhone 仍 Offline/unavailable；当前未关闭的是真机 faceIndex 黄金集、真实性能/无障碍、解剖/权利和生产批准 | 证明 Simulator Host 与一次内部候选加载生命周期及其远端可重建性；不证明 Sheet 的真机体验、VoiceOver、Dynamic Type、Reduce Motion、3D FPS/内存、碰撞黄金集、签名或生产批准；详见 [`EVIDENCE-DEVICE-01`](24_DEVICE_VALIDATION_EVIDENCE.md) |
 | EV-CURRENT-015 | P0 明亮中文体验壳与录入完整性 | `9fc54d4` 的 Area-only 文字部位收据仍保留。`0105cd7` 在本地完成 94 项 Swift Core、iPhoneOS SDK build、静态 Host 检查和 iPhone 17 Pro / iOS 26.5 的 12 项 Internal Host UI 流程：结构化页可展开“更多感觉（22 项）”并选中“麻木”，仅形成带显式位置关联的未确认草稿；多位置分别显示“部分位置的感觉说不清”和“这些位置的感觉都说不清”。普通本地安全状态的语义感觉修订会撤销旧安全、普通 Agent 与审批下游资格；高风险安全行动中控件禁用并由 Core 拒绝直接修订。没有新增 API/Schema/健康字段、网络、Provider、资料读取、行动建议、持久化或正式写入 | 证明 P0 路由、未确认草稿、感觉目录入口和该感觉修订安全边界的内部本地回归；不证明 P0 视觉可用性、VoiceOver、Dynamic Type、Reduce Motion、签名安装、真机 3D、真实 AI、临床安全或高风险非感觉事实修订 |
 | EV-CURRENT-016 | 内部 iOS App Host | `xcodebuild -list` 发现 App target、UI test target 与共享 scheme；`check_internal_ios_host.py` 通过；`0105cd7` 本地 `bash scripts/run_internal_ios_host_tests.sh` 在 iPhone 17 Pro / iOS 26.5 产生 `12 passed, 0 failures`，覆盖 HOST-T-001～014。HOST-T-014 使用稳定 identifier 展开“更多感觉”，以原生 Toggle 选中“麻木”，并验证两位置的局部 unknown 与全组 unknown 文案互不重复；不点击人体。远端 run `31307042209` 亦成功完成 Backend and contracts，以及 iPhone 16 / iOS Simulator 18.5 上的 Swift 94、iPhoneOS SDK build、Host boundary 与 internal Host smoke。历史远端 run `31295533318`、`31301067572` 与 `31303340128` 的成功记录保留 | 只证明无网络/Provider/权限/持久化/遥测入口的内部 Simulator UI smoke；不证明系统权限弹窗、网络抓包、真机、VoiceOver、Dynamic Type、Reduce Motion、性能、碰撞、资产许可或发布 |
 | EV-CURRENT-017 | P0 accessibility-size 结构回归 | `7d8bf59` 的局部 accessibility-size 结构历史收据保留；后续 selector 与 bounded-scroll 修复已在 `4cc46e2` 合入。最新远端 run `31350639359` 全部成功；本地 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s），full Host exit 0（446.330s） | 只证明受控 Simulator 的局部结构化自动化；不证明 VoiceOver、完整 Dynamic Type、横屏、Switch Control、实际深色/高对比度、Reduce Motion、真机、3D 性能/碰撞、资产许可、签名或发布 |
 | EV-CURRENT-018 | `4cc46e2` accessibility host selectors 与 CI 重建 | 最新远端 run `31350639359`：Backend/contracts、Swift 94/94、iPhoneOS SDK build、Host boundary、internal Host smoke 全成功；CI 目的地 iPhone 16 / iOS 18.5 / Xcode 16.4。成功 smoke 脚本只输出 `Testing started`，不提供精确 XCTest 数。本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s），full Host script exit 0（446.330s） | 当前内部 Simulator Host 与跨版本 selector/scroll 行为已重建；不证明真机、VoiceOver、完整 Dynamic Type、Reduce Motion、暗色/高对比度、3D 性能/碰撞、资产许可、签名、临床或生产通过 |
 | EV-CURRENT-019 | FEAT-TRUSTED-COMPANION-01 本地整体验证 | generic iPhoneOS build exit 0；`check_internal_ios_host.py` 通过；候选 3D probe 进入 ready 后等待 8.5 秒仍保持 ready。加入该断言后的首次 full Host 仅 accessibility-size 场景偶发失败（471.327s）；该场景定向重跑 exit 0，最终 13 项 iPhone 17 Pro / iOS 26.5 Host smoke 全量复验 exit 0（461.853s） | 证明四根页入口、2D/列表、结构化草稿、草稿确认、局部 accessibility-size 结构和 candidate ready/fallback 的受控 Simulator 路径；不证明真实 3D 点击、真机、完整无障碍、性能、临床或发布 |
-| EV-CURRENT-020 | `scripts/check_body_asset_release.py` 与 approved 负向门禁 | `body_asset_release_checks=passed asset=body-neutral-procedural-v1@1.2.0 sha256=3120c9de...45d5f meshes=30 triangles=24020 zip_entries=2`；只将当前清单改为 approved 时 JSON Schema 产生 5 个缺产物错误 | 绑定 Bundle/清单/Swift/USD identity、ARKit 容器、根/坐标、Mesh 集合与三角数；证明当前 candidate 不能仅改 metadata 逃逸到 approved。不证明尚不存在的独立碰撞/region map 或生产归档隔离 |
+| EV-CURRENT-020 | `scripts/check_body_asset_release.py` 与 approved 负向门禁 | `body_asset_release_checks=passed asset=body-neutral-procedural-v1@1.2.0 sha256=3120c9de...45d5f meshes=30 render_triangles=24020 collision_triangles=1904 zip_entries=2`；manifest self-hash/离线签名 verified；只将当前清单改为 approved 时 JSON Schema 仍拒绝权利/审核/性能等缺口 | 绑定 render/collision Bundle/清单/Swift/USD identity、ARKit 容器、根/坐标、Mesh 集合、collision geometry digest、连续 region map、surface correspondence、camera preset、签名和 AppHost 资源隔离；不证明真机命中、解剖、性能、无障碍或发布批准 |
 
 ## 3. 当前已证明
 
@@ -90,7 +90,7 @@
 
 ### PARTIAL-EV-006 可信助手与候选 3D 1.2.0
 
-2026-08-13 未提交工作树在本地完成 Backend 204/204、Swift 102/102、generic iPhoneOS build、Host 静态门禁、13 项 Simulator smoke、baseline/diff 和 USDZ ARKit/跨层身份校验。候选 probe 已锁定 ready 后 8.5 秒不得被看门狗降级；一次 full Host accessibility-size 偶发失败后，定向与最终全量复验均 exit 0。该切片没有实现真实 Provider、开放式健康聊天、正式记录搜索、签名 instrumentation 配置或生产数据库；候选 3D 也没有真实点击黄金集、独立碰撞/region map、性能、真机、解剖/权利批准或生产资源隔离。当前工作树尚未提交/推送，不能外推为远端 CI 或受保护分支证据。
+2026-08-13 未提交工作树在本地完成 Backend 204/204、Swift 103/103、generic iPhoneOS build、Host 静态门禁、baseline/diff、AppHost 资源隔离和 USDZ ARKit/跨层身份校验。候选 render/collision/map/correspondence/camera 与离线签名读回通过；历史候选 probe 已锁定 ready 后 8.5 秒不得被看门狗降级。该切片没有实现真实 Provider、开放式健康聊天、正式记录搜索、签名 instrumentation 配置或生产数据库；候选 3D 仍没有真实点击黄金集、性能、真机、解剖/权利批准或生产发布。当前工作树尚未提交/推送，不能外推为远端 CI 或受保护分支证据。
 
 ## 5. 不得外推
 
@@ -125,7 +125,7 @@ cd ../..
 python3 scripts/check_internal_ios_host.py
 bash scripts/run_internal_ios_host_tests.sh
 usdchecker --arkit \
-  ios/BodyCompanion/Sources/BodyCompanionIOS/Resources/BodyNeutralPrototype.usdz
+  ios/BodyCompanion/AppHost/BodyCompanionInternal/Resources/BodyNeutralPrototype.usdz
 ```
 
 远端创建后使用同一 workflow 重跑，记录 run URL、commit SHA 和必需状态检查；本地结果不得改写为云端通过。

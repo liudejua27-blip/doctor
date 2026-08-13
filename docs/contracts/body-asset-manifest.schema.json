@@ -159,8 +159,17 @@
         "format": {"type": "string", "enum": ["usdz", "usdc", "json", "png", "jpg", "bin"]},
         "uri": {"type": "string", "pattern": "^(bundle|https)://[^\\s]+$"},
         "sha256": {"$ref": "#/$defs/Sha256"},
-        "required": {"type": "boolean"}
-      }
+        "required": {"type": "boolean"},
+        "mesh_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+        "triangle_count": {"type": "integer", "minimum": 1},
+        "geometry_sha256": {"$ref": "#/$defs/Sha256"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"role": {"const": "collision"}}, "required": ["role"]},
+          "then": {"required": ["mesh_id", "triangle_count", "geometry_sha256"]}
+        }
+      ]
     },
     "LOD": {
       "type": "object",

@@ -61,6 +61,9 @@ public enum BodyAssetCandidateNeutralProcedural {
     public static let topologyID = "body-neutral-procedural-topology-v2"
     public static let modelResourceName = "BodyNeutralPrototype"
     public static let modelResourceExtension = "usdz"
+    public static let collisionResourceName = "BodyNeutralPrototypeCollision"
+    public static let collisionResourceExtension = "usdz"
+    public static let collisionMeshID = "body_collision_v1"
 
     // Canonical-space constants are frozen with assetVersion/topologyID. They
     // must be revised together instead of being inferred from runtime bounds.
@@ -247,14 +250,30 @@ public struct BodyAssetArtifact: Codable, Equatable, Hashable, Sendable {
     public let uri: String
     public let sha256: String
     public let required: Bool
+    public let meshID: String?
+    public let triangleCount: Int?
+    public let geometrySHA256: String?
 
-    public init(artifactID: String, role: BodyAssetArtifactRole, format: BodyAssetArtifactFormat, uri: String, sha256: String, required: Bool) {
+    public init(
+        artifactID: String,
+        role: BodyAssetArtifactRole,
+        format: BodyAssetArtifactFormat,
+        uri: String,
+        sha256: String,
+        required: Bool,
+        meshID: String? = nil,
+        triangleCount: Int? = nil,
+        geometrySHA256: String? = nil
+    ) {
         self.artifactID = artifactID
         self.role = role
         self.format = format
         self.uri = uri
         self.sha256 = sha256
         self.required = required
+        self.meshID = meshID
+        self.triangleCount = triangleCount
+        self.geometrySHA256 = geometrySHA256
     }
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
@@ -264,6 +283,9 @@ public struct BodyAssetArtifact: Codable, Equatable, Hashable, Sendable {
         case uri
         case sha256
         case required
+        case meshID = "mesh_id"
+        case triangleCount = "triangle_count"
+        case geometrySHA256 = "geometry_sha256"
     }
 
     public init(from decoder: Decoder) throws {
@@ -275,6 +297,9 @@ public struct BodyAssetArtifact: Codable, Equatable, Hashable, Sendable {
         uri = try values.decode(String.self, forKey: .uri)
         sha256 = try values.decode(String.self, forKey: .sha256)
         required = try values.decode(Bool.self, forKey: .required)
+        meshID = try values.decodeIfPresent(String.self, forKey: .meshID)
+        triangleCount = try values.decodeIfPresent(Int.self, forKey: .triangleCount)
+        geometrySHA256 = try values.decodeIfPresent(String.self, forKey: .geometrySHA256)
     }
 }
 

@@ -11,7 +11,7 @@
 
 ## 1. 使用方式
 
-> **2026-08-13 当前本地收据。** 未提交的 FEAT-TRUSTED-COMPANION-01 工作树已完成 Backend 204/204、Swift Core 102/102、iPhoneOS SDK build、Host 静态门禁和 13 项 iPhone 17 Pro / iOS 26.5 Simulator smoke（最终 exit 0，461.853s）；候选 3D 1.2.0 的 ARKit 容器与 Bundle/manifest/Swift/USD 身份读回通过。它不是远端 CI、真机、生产资产或发布证据；详见 EVIDENCE-01。
+> **2026-08-13 当前本地收据。** 未提交的 FEAT-TRUSTED-COMPANION-01 工作树已完成 Backend 204/204、Swift Core 103/103、iPhoneOS SDK build、Host 静态门禁和 13 项 iPhone 17 Pro / iOS 26.5 Simulator smoke（历史候选 probe 收据最终 exit 0）；候选 3D 1.2.0 的 render/collision、region map、surface correspondence、camera preset、离线签名、ARKit 容器与 Bundle/manifest/Swift/USD 身份读回通过。它不是远端 CI、真机、生产资产或发布证据；详见 EVIDENCE-01。
 
 > **2026-08-10 当前 H015 收据。** `4cc46e2` / run `31350639359` 的 Backend/contracts、Swift 94/94、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功（iPhone 16 / iOS Simulator 18.5 / Xcode 16.4）。本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s），完整 internal Host script exit 0（446.330s）。仅内部 Simulator；不证明真机或完整无障碍、性能、资产和生产门禁。
 
@@ -25,8 +25,8 @@
 
 | 能力组 | 当前实现 | 已证明 | 未证明/保持关闭 |
 |---|---|---|---|
-| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、本地中文/英文文字部位 Sheet、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；文字目录固定产生宽泛 `Zone + Area + body_part_search`，即使当前图形模式为 Pin 也不伪造 Point/3D anchor；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；完整感觉目录由同一 32 个稳定 code 构成，首屏 10 项、展开后 22 项；扩展感觉、`other` 与 unknown 只写未确认且显式关联的位置。当前 1.2.0 候选路径用 `Entity.load` 保留语义层级，iOS 18 命中转换为成对 triangle+barycentric，位置/法线相对语义 Mesh；已 ready 场景不再被旧看门狗降级。Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中、CollisionGroup/独立碰撞与 faceIndex 黄金集、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现；CONFLICT-004 的高风险非感觉事实修订仍阻断外部发布 |
-| 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate 和内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；1.2.0 的 Bundle/清单/Swift/USD 身份、ARKit 对齐、identity root、lower_back 与三角数已有自动读回 | 独立 render/collision/region map/correspondence/camera 产物、真实签名、商用权、App Store 分发、解剖、真机性能/命中与候选资源生产归档隔离 |
+| iOS 身体位置与 P0 体验壳 | SwiftUI 全身 2D/列表、本地中文/英文文字部位 Sheet、RealityKit 原生 prototype loader、2D/3D 状态、规范 `BodyLocation`、2D 回退、候选资产哈希清单、单次选择的 Zone/Pin/位置摘要状态、窄屏系统 Sheet 与上限/回退反馈；今天/AI 身体助手/地图/结构化描述的明亮中文原型壳；进程内草稿的继续/明确放弃后新建入口；受版本控制的 `BodyCompanionInternal` Simulator App Host | 位置身份不随视图改变；文字目录固定产生宽泛 `Zone + Area + body_part_search`，即使当前图形模式为 Pin 也不伪造 Point/3D anchor；Zone + Pin 共享 20 个位置总上限，超限明确拒绝且不截断 typed draft；地图只写位置、不覆盖结构化感觉/程度/因素；完整感觉目录由同一 32 个稳定 code 构成，首屏 10 项、展开后 22 项；扩展感觉、`other` 与 unknown 只写未确认且显式关联的位置。当前 1.2.0 候选路径用 `Entity.load` 保留语义层级，独立 collision group 产出 triangle+barycentric，位置/法线相对 collision Mesh，region map 解析后保留映射 confidence；已 ready 场景不再被旧看门狗降级。Host 默认禁用候选 3D、网络/Provider、权限、持久化和遥测 | 生产资产权利、真机命中/faceIndex 黄金集、视觉/解剖准确性、生产性能、真机 Sheet/VoiceOver/Dynamic Type/Reduce Motion；P0 不等于 AI 对话、情境资料读取、行动建议、正式档案或跨进程草稿恢复已实现；CONFLICT-004 的高风险非感觉事实修订仍阻断外部发布 |
+| 3D 资产门禁 | `BodyAssetManifest` Schema、Swift metadata gate、独立 collision/region map/surface correspondence/camera artifacts 与内部候选模型描述 | 未批准、未知、blocked/retired 资产 fail closed；1.2.0 的 render/collision 二进制与几何摘要不同，collision face range 覆盖 1,904 个三角面，映射 Schema/身份/哈希/离线签名、Bundle/清单/Swift/USD 身份、ARKit 对齐、identity root、lower_back 与三角数已有自动读回；候选资源仅由 AppHost 显式打包 | 商用权、App Store 分发、解剖/视觉审核、真机 faceIndex 黄金集、真实性能/无障碍与正式发布签字仍关闭；当前几何仍是分段代理，不是高质量连续人体 |
 | 结构化录入 | `SignalIntakeDraft`、八类事实、来源/确认状态、感觉—marker 关系；多位置时新增感觉必须显式选择 Marker；首屏常用 10 项与从同一枚举派生的扩展 22 项 | 未确认事实不会静默升级；新增位置不会复制既有感觉；空、重复或非活动 Marker 关联被拒绝；单位置/多位置 unknown 语义不重复；对 `not_run`/`unavailable`/`no_rule_triggered` 的语义感觉修订使旧本地 safety、普通 Agent 与审批资格失效，R0/R1/R2/`undetermined`/`safety_action` 直接修订拒绝 | 真实用户 30 秒完成率、公开 API 联调、生产持久化；服务端 retained action/revision 尚未完成，CONFLICT-004 仍阻断高风险非感觉事实修订 |
 | 离线草稿 | CryptoKit/AES-GCM 端口、进程内密文仓和同步状态机；P4 1.1 未确认感觉保留 code/可选标签/显式位置关联 | 所有者隔离、篡改失败、幂等/冲突状态；重复位置 ID、悬空感觉关联和旧 code-only 1.0 恢复被拒绝 | Keychain、Data Protection、文件 durability、后台同步、真机恢复 |
 | 安全与 Agent | 确定性 SafetyEngine、PydanticAI typed candidate、PolicyValidator、授权只读上下文 | Safety 先于 Agent；R2 只进入固定专业评估准备，普通 Agent 仅完整、支持、无未解决安全且 `ordinary_agent_allowed=true` 的 R3；LLM 不能降级、确认或正式写入 | 临床规则批准、真实 Provider、Golden Set、影子验证 |
@@ -57,9 +57,9 @@
 | 检查 | 当前结果 | 解释 |
 |---|---|---|
 | Markdown | 65 files、404 个已检查链接、0 尾随空白 | 临时测试缓存已排除；只证明清理后的文档结构完整 |
-| JSON Schema | 16 个可解析 | 只证明 Schema 结构有效 |
+| JSON Schema | 18 个可解析 | 只证明 Schema 结构有效 |
 | OpenAPI | 1.1.0-draft、36 paths、111 schemas | 只证明草案可解析 |
-| iOS Swift | 当前未提交工作树：Swift Core 102/102、iPhoneOS SDK build、`check_internal_ios_host.py` 和 13 项 iPhone 17 Pro / iOS 26.5 full Host exit 0（461.853s）；候选 ready 跨过 8.5 秒看门狗。历史 `4cc46e2` / run `31350639359` 远端收据另行保留 | 证明当前内部 Simulator Host、定位/草稿状态和既有 102 项 Core 回归；不能替代真机 UI、完整 Dynamic Type、VoiceOver、深色/高对比度、Reduce Motion 或临床验收 |
+| iOS Swift | 当前未提交工作树：Swift Core 103/103、generic iPhoneOS SDK build、`check_internal_ios_host.py` 通过；候选资源由 AppHost 显式复制，runtime 使用 `Bundle.main` 并 fail closed。历史 13 项 iPhone 17 Pro / iOS 26.5 full Host 收据最终 exit 0，候选 ready 跨过 8.5 秒看门狗 | 证明当前内部 Simulator/SDK、定位/草稿状态、资源隔离和 103 项 Core 回归；不能替代真机 UI、真实网格点击/faceIndex 黄金集、完整 Dynamic Type、VoiceOver、深色/高对比度、Reduce Motion 或临床验收 |
 | 后端 Python | 204 tests、0 failures；P2A 聚焦 19 tests | 严格目录/hit 验证、R0/R1 行动优先与受控时钟回归通过；只证明合成/内存样机 |
 | Git/CI | 当前分支 `codex/body-signal-intake-boundaries`；FEAT-TRUSTED-COMPANION-01 仍是未提交工作树；双作业 workflow 已增 macOS 资产深读回；Python 3.11 constraints | 当前只有本地验证，不能外推为远端 CI/受保护分支收据；历史 run `31350639359` 只对应旧提交 |
 

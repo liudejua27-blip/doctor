@@ -48,7 +48,7 @@
 | GitHub Actions run `31318855810` | SHA `544c39a`：Backend and contracts 成功；iOS 仅 internal Host smoke 失败，12 passed、1 failed、0 skipped；HOST-T-015 报 `Expected element to exist: body-map.next Button`（exit 65）。CI 未上传 artifact 或 accessibility hierarchy | 历史 H015 CTA failure；不能断定文字选择未保留位置还是 AX 投影/元素类型，也不证明无障碍、真机或发布通过 |
 | GitHub Actions run `31321251024` | SHA `cb5f798`：Backend and contracts、Swift、iPhoneOS SDK build 与 Host boundary 成功；internal Host smoke 12 passed、1 failed、0 skipped；唯一 H015 在 5 秒内未满足旧 `body-map.marker-count-summary` label CONTAINS `位置标记数量 1` | 历史 terminal failure；不能归因位置丢失；不证明无障碍、真机或发布通过 |
 | GitHub Actions run `31350639359` | SHA `4cc46e2`：Backend/contracts、Swift 94/94、iPhoneOS SDK build、Host boundary 与 internal Host smoke 全部成功；iPhone 16 / iOS Simulator 18.5 / Xcode 16.4 | 当前远端 Simulator receipt；成功 smoke 日志不提供精确 XCTest 数，不证明真机或生产通过 |
-| 2026-08-13 可信助手本地复验 | 未提交工作树：Swift 102/102、iPhoneOS SDK build、Host 静态门禁通过；候选 probe 进入 ready 后等待 8.5 秒仍 ready；最终 13 项 iPhone 17 Pro / iOS 26.5 full Host exit 0（461.853s） | 只证明当前 Simulator 上的受控状态与 UI 路径；未点击网格，不证明真机、faceIndex、性能、完整无障碍或生产资产 |
+| 2026-08-13 可信助手本地复验 | 未提交工作树：Swift 103/103、generic iPhoneOS build、Host 静态门禁和 AppHost 资源隔离通过；历史候选 probe 进入 ready 后等待 8.5 秒仍 ready；最终 13 项 iPhone 17 Pro / iOS 26.5 full Host 收据 exit 0 | 只证明当前 Simulator/SDK 上的受控状态与资源读取路径；未点击网格，不证明真机、faceIndex、性能、完整无障碍或生产资产 |
 | 本地 HOST-T-015 历史测试专用修复（`0ed0563`） | iPhone 17 Pro / iOS 26.5；不再依赖短暂选择反馈，先验证无并存 `MarkEditor`、完成/关闭文字部位 Sheet 后检查 `body-map.next`，并同样加固 `selectBoth`；完整 Internal Host suite、单独 HOST-T-015 与 Swift Core 94/94 通过 | 历史本地 Simulator 复测；后续 run `31314859140` 说明该断言修复本身未解决远端布局可点击性 |
 | SHA `544c39a` 前的 H015 本地收据 | 先前 safe-area CTA/identifier/Today 内容滚动/type-agnostic 查询及展示卡非动作断言后的 iPhone 17 Pro / iOS 26.5：定向 HOST-T-015 1 passed、0 failed、0 skipped（86.0s）；完整 script exit 0（402.313s） | 历史本地内部 Simulator 收据。当前 `4cc46e2` 的 targeted/full 收据另列，均不证明真机或资产质量 |
 | GitHub Actions run `31295533318` | macOS runner 的 iPhone 16 / iOS 18.5 成功执行 `scripts/run_internal_ios_host_tests.sh`；iOS job 总时长 7m11s | 云端 Simulator 可重建；不是物理 iPhone 或签名证据 |
@@ -57,7 +57,7 @@
 | GitHub Actions run `31307042209` | `0105cd7` 的 Backend and contracts 成功；iOS package and internal host 在 iPhone 16 / iOS Simulator 18.5 成功执行 Swift 94、iPhoneOS SDK build、Host boundary 与 internal Host smoke（Host smoke 09:55:37–10:04:42 UTC） | 云端 Simulator 可重建当前完整感觉/感觉修订边界；不是物理 iPhone、真实 VoiceOver、性能、碰撞或签名证据 |
 | Swift iPhoneOS build | `BodyCompanionIOS` target 成功 | 只证明 iOS SDK 编译 |
 | Swift iPhoneSimulator build | `BodyCompanionIOS` target 成功 | 只证明 Simulator SDK 编译 |
-| Swift Core tests | 历史 `5dddd83` / `9fc54d4` / `0105cd7` 收据分别为 80/87/94 tests；2026-08-13 当前未提交 checkout 已复验 `102 tests, 0 failures`，新增 Zone/Pin+surface、triangle/barycentric、watchdog 和 approved 资产门禁回归 | 只证明状态/契约，不证明 UI/设备 |
+| Swift Core tests | 历史 `5dddd83` / `9fc54d4` / `0105cd7` 收据分别为 80/87/94 tests；2026-08-13 当前未提交 checkout 已复验 `103 tests, 0 failures`，新增 Zone/Pin+surface、triangle/barycentric、region-map confidence、watchdog 和 approved 资产门禁回归 | 只证明状态/契约，不证明 UI/设备 |
 
 运行时前置条件缺失时，不能使用临时 `swift run`、macOS prototype 或无签名的 library 产物替代 iOS App 安装测试。
 
@@ -69,9 +69,9 @@
 | VoiceOver | **Blocked** | 2D 有部位列表等价路径；主要按钮有 label/hint；3D 仅提供整体语义说明并保留 2D/列表回退 | 开启 VoiceOver，从 Today → 记录 → 2D/列表 → 位置 Inspector → 结构化描述 → 删除 → 继续全程完成；验证提示、计数、结构化程度控件、回退公告和导航顺序 |
 | Dynamic Type | **Simulator structural smoke / device blocked** | `4cc46e2` 与 run `31350639359` 已重建 H015；本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）。仍只覆盖局部结构与稳定 selector，不证明 VoiceOver、真实最大字号、横屏或真机 | 最大可访问字号和横屏下不截断标题、位置摘要、提示、结构化程度控件和按钮；确认 Sheet 可滚动且关键操作仍可达 |
 | Reduce Motion | **Blocked** | 主题按钮的按压缩放使用 `.animation`，但在 `accessibilityReduceMotion` 时显式置为 `nil`；视角切换代码是直接 `look(at:from:)`，未发现持续旋转 | 开启 Reduce Motion，重复 front/back/left/right/top、焦点和 Sheet 展开；确认无不必要动画、闪烁或自动旋转，手势仍可用 |
-| 3D 性能 | **Blocked** | 1.2.0 USDZ 为 600,103 bytes、manifest LOD 为 24,020 triangles；专用 Simulator probe 显式开启后进入 ready 且 8.5 秒后仍保持 ready。代码仍在 MainActor 同步 `Entity.load` 和 `generateCollisionShapes(recursive:)`，现有日志没有单独计时碰撞生成 | 最低支持 iPhone 冷启动、首次交互、连续旋转/缩放 5 分钟；采集分段 load/collision/attach 耗时、P95 命中、FPS、内存、热状态和崩溃 |
-| 碰撞命中 | **Blocked** | 使用 `hitTest(.nearest, mask: .all)`；先识别 `marker_`，再向父链解析稳定 `body_` 语义 Mesh；位置/法线相对该 Mesh，iOS 18 将 `TriangleHit.uv` 转为与 triangle index 成对的 barycentric，iOS 17 仅保留合法局部点回退 | 真机逐区域黄金点、边界点、遮挡点和已有 Marker 重叠点；验证 RealityKit faceIndex 与冻结面顺序、命中延迟、误落点、Marker 优先级和 2D 回退 |
-| 候选资产生产审核 | **Candidate only / blocked by gate** | `usdchecker --arkit` Success、ZIP payload 64-byte 对齐、SHA/清单/Swift/USD identity 一致；Y-up/米制/identity root，30 个实际 Mesh 含 lower_back。清单仍为 candidate/unverified/anatomy pending/performance pending/商业与 App Store false | 作者链/许可证、法务署名、独立 render/collision/region map/correspondence/camera 产物、解剖语义、真机性能/命中、无障碍、签名读回与生产资源隔离全部通过后才可申请 approved |
+| 3D 性能 | **Blocked** | 1.2.0 render USDZ 为 600,103 bytes/24,020 triangles，独立 collision 为 1,904 triangles；专用 Simulator probe 显式开启后进入 ready 且 8.5 秒后仍保持 ready。代码在 MainActor 同步 `Entity.load` 和 `generateCollisionShapes(recursive:)`，现有日志仍没有单独计时 collision 生成 | 最低支持 iPhone 冷启动、首次交互、连续旋转/缩放 5 分钟；采集分段 load/collision/attach 耗时、P95 命中、FPS、内存、热状态和崩溃 |
+| 碰撞命中 | **Static path implemented / device validation blocked** | 只对独立 `body_collision_v1` 设置人体 CollisionGroup，marker 使用独立 group；`hitTest(.nearest, mask: body ∪ marker)` 先识别 `marker_`，再解析稳定 collision Mesh；位置/法线相对 collision Mesh，iOS 18 将 `TriangleHit.uv` 转为与 triangle index 成对的 barycentric，face range 由签名 region map 解析，iOS 17 无 TriangleHit 时保持 2D/列表回退 | 真机逐区域黄金点、边界点、遮挡点和已有 Marker 重叠点；验证 RealityKit faceIndex 与冻结面顺序、命中延迟、误落点、Marker 优先级和 2D 回退 |
+| 候选资产生产审核 | **Candidate only / blocked by gate** | `usdchecker --arkit` Success、render/collision ZIP payload 64-byte 对齐、SHA/清单/Swift/USD identity 一致；独立 collision geometry digest、region map/surface correspondence/camera preset、manifest self-hash 和离线签名 verified；Y-up/米制/identity root，30 个 render Mesh 含 lower_back；候选资源仅由内部 AppHost 显式打包。清单仍为 candidate、commercial/app_store=false、anatomy/performance pending | 作者链/许可证、法务署名、解剖语义、真机性能/命中、无障碍和生产签字全部通过后才可申请 approved |
 
 ## 4. 本次静态审核发现
 
@@ -80,9 +80,9 @@
 | ID | 严重度 | 发现 | 处理要求 |
 |---|---|---|---|
 | DEVICE-FINDING-001 | P0 | 无 App target 的 Simulator 阻塞已由 `5dddd83` 解除；仍没有受真实 Team/Bundle ID/证书支持的签名 App target，无法安装、切换真实设备辅助功能设置或采集设备性能 | 由具名 iOS/安全负责人提供正式 Bundle ID、Team/证书、必要 entitlements 与真机 scheme；完成后重跑本记录 |
-| DEVICE-FINDING-002 | P1 | RealityKit 命中使用 `.all`，未实现 BODY-01 要求的人体/Marker/覆盖层 CollisionGroup 分离 | 增加独立 collision groups/masks，并用真机黄金点证明 Marker 优先与命中边界；不能以最近实体或 mask 全开替代 |
+| DEVICE-FINDING-002 | P1 剩余验证 | 当前代码已实现独立 collision/marker CollisionGroup 与 mask，且不再使用 `.all`；尚未有真机黄金点和 collision 生成耗时收据 | 用真机黄金点证明 Marker 优先、命中边界、遮挡行为和 P95；不能以 Simulator ready 替代 |
 | DEVICE-FINDING-003 | P1 剩余验证 | 1.1.0 历史代码未读取 triangle/barycentric；当前 iOS 18 已把 `TriangleHit.uv` 转成 `{u,v,1-u-v}` 并与 triangle index 成对，Core 对非法/缺配对命中 fail closed | 使用不对称冻结网格在真机验证 RealityKit faceIndex 与 region map 顺序；iOS 17 继续明确降级，不得伪造精确面 |
-| DEVICE-FINDING-004 | P1 剩余验证 | 1.1.0 缺少 `body_lower_back`；1.2.0 已以实际 Mesh prim 补齐并通过 USD/RealityKit 静态遍历。当前仍无已签名 region map，不能由分段名称代替区域语义 | 建立独立 region map、完成解剖/视觉审核和边界黄金集；禁止仅根据实体名声称下背命中 |
+| DEVICE-FINDING-004 | P1 剩余验证 | 1.1.0 缺少 `body_lower_back`；1.2.0 已以实际 Mesh prim 补齐，并有独立 collision triangle region map、surface correspondence 和离线签名通过静态读回。当前仍无解剖/视觉签字和真机黄金集，不能由分段名称或静态映射声称下背命中 | 完成解剖/视觉审核、真机 faceIndex 黄金集和边界集；禁止仅根据实体名声称下背命中 |
 | DEVICE-FINDING-005 | P1 剩余验证 | 1.1.0 根层 `-90°` 与清单冲突；1.2.0 的 `/BodyCompanion` 与 `/body_root` 已是 identity，Y-up/米制/groundY=0/height=1.86 已由跨层脚本读回 | 在真机以方向哨兵点验证前后/左右和相机 preset；缺该证据仍不得批准 |
 | DEVICE-FINDING-006 | P1 | manifest `performance.status=pending` 且冷启动/P95/FPS/内存均为 0；代码没有 FPS/内存/signpost 采集 | 在目标 iPhone 上建立不含健康正文的性能采集和阈值评审；未测量不能改为 passed |
 | DEVICE-FINDING-007 | P2 | 2026-08-09 已从 `MarkEditor` 移除程度 Slider；结构化 `SignalIntakeScreen` 的程度控件虽有可见“程度”标签与 accessibility value，仍未经过真机 VoiceOver/最大 Dynamic Type 验证。`4cc46e2` 的 Simulator H015/multi-location/full receipts 不关闭该设备发现；位置摘要、完整页面、深色/高对比度和横屏仍未经过设备验证。 | 真机 VoiceOver/Dynamic Type 验证结构化程度控件；必要时取消摘要硬截断，并保留部位列表等价路径。 |
@@ -109,4 +109,4 @@
 
 ## 7. 发布决定
 
-本轮决定：**在既有历史收据之外，记录 2026-08-13 未提交工作树的 102 项 Core、候选 ready 跨 8.5 秒和最终 13 项 full Host exit 0 收据。** 这些结果只证明内部 Simulator；不批准生产 3D，不声称真机或完整无障碍通过，不关闭 GATE-06/GATE-07/GATE-08。当前也没有远端 CI/受保护分支新收据。设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。
+本轮决定：**在既有历史收据之外，记录 2026-08-13 未提交工作树的 103 项 Core、AppHost 资源隔离、候选资产闭环读回和历史候选 ready 跨 8.5 秒/13 项 full Host 收据。** 这些结果只证明内部 Simulator/SDK；不批准生产 3D，不声称真机或完整无障碍通过，不关闭 GATE-06/GATE-07/GATE-08。当前也没有远端 CI/受保护分支新收据。设备和正式 App target 到位前，生产路径保持 2D/列表 fail-closed；候选资产和 3D loader 仅限内部 prototype flag。

@@ -466,6 +466,7 @@ public enum BodyLocationMapper {
         laterality: Laterality,
         surface: BodySurface,
         depth: BodyDepth = .unspecified,
+        mappingConfidence: Double = 0,
         markerID: UUID = UUID()
     ) -> BodyLocation? {
         guard let normal = evidence.localNormal else { return nil }
@@ -504,7 +505,7 @@ public enum BodyLocationMapper {
                 assetVersion: evidence.assetVersion,
                 variant: .defaultNeutral
             ),
-            mapping: BodyLocationMapping(method: .assetRegionMap, confidence: 0, reviewedByUser: false),
+            mapping: BodyLocationMapping(method: .assetRegionMap, confidence: mappingConfidence, reviewedByUser: false),
             source: BodyLocationSource(interaction: .bodyMap3D)
         )
     }

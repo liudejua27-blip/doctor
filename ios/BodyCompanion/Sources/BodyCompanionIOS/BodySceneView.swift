@@ -119,6 +119,9 @@ public struct BodySceneView: UIViewRepresentable {
         private static let focusedDistanceMultiplier: Float = 0.74
         private static let rootEntityName = "body_visual_root"
         private static let sceneAnchorName = "body_scene_anchor"
+        private static let collisionRootName = "body_collision_root"
+        private static let bodyCollisionGroup = CollisionGroup(rawValue: 1 << 8)
+        private static let markerCollisionGroup = CollisionGroup(rawValue: 1 << 9)
 
         private let onLoadAttempted: () -> Void
         private let onReady: () -> Void
@@ -128,6 +131,7 @@ public struct BodySceneView: UIViewRepresentable {
         private var userHeightMeters: Float?
         private weak var arView: ARView?
         private var visualRoot: Entity?
+        private var collisionRoot: Entity?
         private var camera: PerspectiveCamera?
         private var markerEntities: [UUID: ModelEntity] = [:]
         private var regionEntities: [String: ModelEntity] = [:]
@@ -202,6 +206,10 @@ public struct BodySceneView: UIViewRepresentable {
                 reportFailure("approved AssetManifest 未配置；生产路径保持 2D 回退")
                 return
             }
+            guard Body3DAssetRuntimeMetadata.shared.loadedFromArtifacts else {
+                reportFailure("3D 映射产物未通过校验；已回退到 2D")
+                return
+            }
             loadPrototypeAsset()
         }
 
@@ -212,14 +220,21 @@ public struct BodySceneView: UIViewRepresentable {
             // exists only to prove the current internal probe reached loader
             // entry; the parent validates its per-request attempt identity.
             onLoadAttempted()
-            guard let url = Bundle.module.url(forResource: BodyAssetCandidateNeutralProcedural.modelResourceName, withExtension: BodyAssetCandidateNeutralProcedural.modelResourceExtension) else {
+            // The internal AppHost is the only target that owns candidate
+            // resources. Reusable/production package products have no 3D
+            // candidate files and deliberately fall back when this lookup is
+            // empty.
+            guard let renderURL = Bundle.main.url(forResource: BodyAssetCandidateNeutralProcedural.modelResourceName, withExtension: BodyAssetCandidateNeutralProcedural.modelResourceExtension),
+                  let collisionURL = Bundle.main.url(forResource: BodyAssetCandidateNeutralProcedural.collisionResourceName, withExtension: BodyAssetCandidateNeutralProcedural.collisionResourceExtension) else {
                 reportFailure("内部候选 3D 资产缺失；已回退到 2D")
                 return
             }
 
             do {
-                let loaded = try Entity.load(contentsOf: url)
-                loaded.generateCollisionShapes(recursive: true)
+                let renderEntity = try Entity.load(contentsOf: renderURL)
+                let collisionEntity = try Entity.load(contentsOf: collisionURL)
+                collisionEntity.generateCollisionShapes(recursive: true)
+                configureCollisionEntities(in: collisionEntity)
 
                 let root = Entity()
                 root.name = Self.rootEntityName
@@ -230,7 +245,11 @@ public struct BodySceneView: UIViewRepresentable {
                 userScale = 1
                 preferredFocusTarget = placement.focusTarget
                 focusDistance = placement.focusDistance
-                root.addChild(loaded)
+                root.addChild(renderEntity)
+                let collisionRoot = Entity()
+                collisionRoot.name = Self.collisionRootName
+                collisionRoot.addChild(collisionEntity)
+                root.addChild(collisionRoot)
 
                 let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
                 anchor.name = Self.sceneAnchorName
@@ -244,8 +263,9 @@ public struct BodySceneView: UIViewRepresentable {
                 arView.scene.addAnchor(cameraAnchor)
                 self.camera = camera
                 self.visualRoot = root
+                self.collisionRoot = collisionRoot
                 self.appliedUserHeightMeters = userHeightMeters
-                indexRegionEntities(from: loaded)
+                indexRegionEntities(from: renderEntity)
                 self.hasLoaded = true
                 applyCameraPresetIfNeeded(force: true)
                 syncMarks(currentMarks)
@@ -298,6 +318,7 @@ public struct BodySceneView: UIViewRepresentable {
                     dot = ModelEntity(mesh: .generateSphere(radius: 0.028))
                     dot.name = "marker_" + mark.id.uuidString
                     dot.generateCollisionShapes(recursive: true)
+                    configureMarkerCollision(dot)
                     parent.addChild(dot)
                     markerEntities[mark.id] = dot
                 }
@@ -345,7 +366,11 @@ public struct BodySceneView: UIViewRepresentable {
             appliedFocusedRegionID = focusedRegionID
 
             let target = focusTarget() ?? preferredFocusTarget
-            let distance: Float = focusedRegionID == nil ? focusDistance : max(0.95, focusDistance * Self.focusedDistanceMultiplier)
+            let presetDistance = Body3DAssetRuntimeMetadata.shared.cameraPreset(cameraPreset)?.distanceMeters
+                ?? BodyAssetCandidateNeutralProcedural.canonicalHeightMeters * Self.cameraDistanceHeightRatio
+            let distance: Float = focusedRegionID == nil
+                ? max(1.0, presetDistance)
+                : max(0.95, presetDistance * Self.focusedDistanceMultiplier)
             let yOffset = max(0.03, target.y * 0.08)
             let position: SIMD3<Float>
             switch cameraPreset {
@@ -354,6 +379,11 @@ public struct BodySceneView: UIViewRepresentable {
             case .left: position = target + SIMD3<Float>(-distance, yOffset, 0)
             case .right: position = target + SIMD3<Float>(distance, yOffset, 0)
             case .top: position = target + SIMD3<Float>(0, distance + yOffset, 0)
+            }
+            if let preset = Body3DAssetRuntimeMetadata.shared.cameraPreset(cameraPreset) {
+                var cameraComponent = camera.camera
+                cameraComponent.fieldOfViewInDegrees = preset.fovDegrees
+                camera.camera = cameraComponent
             }
             camera.look(at: target, from: position, relativeTo: nil)
             updateRegionHighlights()
@@ -387,24 +417,32 @@ public struct BodySceneView: UIViewRepresentable {
 
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let view = arView else { return }
-            let hits = view.hitTest(gesture.location(in: view), query: .nearest, mask: .all)
+            let hits = view.hitTest(
+                gesture.location(in: view),
+                query: .nearest,
+                mask: Self.bodyCollisionGroup.union(Self.markerCollisionGroup)
+            )
             guard let hit = hits.first else { return }
 
             if let markerID = markerID(from: hit.entity) {
                 onMarkerTapped(markerID)
                 return
             }
-            guard let semanticEntity = stableRegionEntity(from: hit.entity) else { return }
-            let entityID = semanticEntity.name
+            guard let collisionEntity = stableCollisionEntity(from: hit.entity) else { return }
+            let entityID = BodyAssetCandidateNeutralProcedural.collisionMeshID
 
-            let position = semanticEntity.convert(position: hit.position, from: nil)
-            let convertedNormal = semanticEntity.convert(normal: hit.normal, from: nil)
+            let position = collisionEntity.convert(position: hit.position, from: nil)
+            let convertedNormal = collisionEntity.convert(normal: hit.normal, from: nil)
             let normal = simd_length(convertedNormal) > 0 ? simd_normalize(convertedNormal) : SIMD3<Float>(0, 0, 1)
             let triangleInfo = extractTriangleInfo(from: hit)
+            guard triangleInfo.triangleIndex != nil, triangleInfo.barycentric != nil else {
+                reportFailure("当前设备未提供可审计的三角面命中；已回退到 2D")
+                return
+            }
             onHitEvidence(
                 BodyHitEvidence(
                     entityID: entityID,
-                    meshID: nil,
+                    meshID: BodyAssetCandidateNeutralProcedural.collisionMeshID,
                     localPosition: Point3D(x: Double(position.x), y: Double(position.y), z: Double(position.z)),
                     localNormal: Point3D(x: Double(normal.x), y: Double(normal.y), z: Double(normal.z)),
                     triangleIndex: triangleInfo.triangleIndex,
@@ -443,11 +481,10 @@ public struct BodySceneView: UIViewRepresentable {
             return nil
         }
 
-        private func stableRegionEntity(from entity: Entity) -> Entity? {
+        private func stableCollisionEntity(from entity: Entity) -> Entity? {
             var current: Entity? = entity
             while let candidate = current {
-                if candidate.name.hasPrefix("body_"),
-                   BodyRegionCatalog.option(forEntityID: candidate.name) != nil {
+                if candidate.name == BodyAssetCandidateNeutralProcedural.collisionMeshID {
                     return candidate
                 }
                 current = candidate.parent
@@ -456,10 +493,33 @@ public struct BodySceneView: UIViewRepresentable {
         }
 
         private func markerParent(for anchor: BodyLocationAnchor3D) -> Entity? {
-            guard let option = BodyRegionCatalog.option(forEntityID: anchor.entityID) else {
-                return nil
+            if anchor.meshID == BodyAssetCandidateNeutralProcedural.collisionMeshID {
+                return collisionRoot
             }
+            guard let option = BodyRegionCatalog.option(forEntityID: anchor.entityID) else { return nil }
             return regionEntities[option.id]
+        }
+
+        private func configureCollisionEntities(in entity: Entity) {
+            if var collision = entity.components[CollisionComponent.self] {
+                collision.filter = CollisionFilter(
+                    group: Self.bodyCollisionGroup,
+                    mask: Self.bodyCollisionGroup.union(Self.markerCollisionGroup)
+                )
+                entity.components.set(collision)
+            }
+            for child in entity.children {
+                configureCollisionEntities(in: child)
+            }
+        }
+
+        private func configureMarkerCollision(_ entity: Entity) {
+            guard var collision = entity.components[CollisionComponent.self] else { return }
+            collision.filter = CollisionFilter(
+                group: Self.markerCollisionGroup,
+                mask: Self.bodyCollisionGroup.union(Self.markerCollisionGroup)
+            )
+            entity.components.set(collision)
         }
 
         private static func targetHeight(for userHeightMeters: Float?) -> Float {

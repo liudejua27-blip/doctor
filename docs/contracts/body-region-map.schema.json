@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://body-companion.invalid/contracts/body-region-map.schema.json",
+  "title": "BodyCollisionTriangleRegionMap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "asset_id",
+    "asset_version",
+    "topology_id",
+    "collision_mesh_id",
+    "collision_triangle_count",
+    "entries",
+    "generated_at",
+    "mapping_kind",
+    "mapping_version"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0"},
+    "asset_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,119}$"},
+    "asset_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "topology_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+    "collision_mesh_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+    "collision_triangle_count": {"type": "integer", "minimum": 1},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "generated_at": {"type": "string", "format": "date-time"},
+    "mapping_kind": {"type": "string", "const": "collision_triangle_region_map"},
+    "mapping_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"}
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id",
+        "mesh_id",
+        "collision_mesh_id",
+        "face_start",
+        "face_end",
+        "region_id",
+        "laterality",
+        "surface",
+        "confidence",
+        "boundary_candidates"
+      ],
+      "properties": {
+        "entry_id": {"type": "string", "pattern": "^[0-9]{3,8}$"},
+        "mesh_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+        "collision_mesh_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+        "face_start": {"type": "integer", "minimum": 0},
+        "face_end": {"type": "integer", "minimum": 0},
+        "region_id": {"type": "string", "pattern": "^body\\.[a-z0-9_]+\\.general$"},
+        "laterality": {"type": "string", "enum": ["midline", "left", "right", "bilateral", "unspecified"]},
+        "surface": {"type": "string", "enum": ["anterior", "posterior", "medial", "lateral", "superior", "inferior", "circumferential", "unspecified"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "boundary_candidates": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/boundary_candidate"}
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"face_start": {"type": "integer"}, "face_end": {"type": "integer"}}}, "then": {"properties": {"face_end": {"minimum": 0}}}}
+      ]
+    },
+    "boundary_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["region_id", "laterality", "surface", "confidence"],
+      "properties": {
+        "region_id": {"type": "string", "pattern": "^body\\.[a-z0-9_]+\\.general$"},
+        "laterality": {"type": "string", "enum": ["midline", "left", "right", "bilateral", "unspecified"]},
+        "surface": {"type": "string", "enum": ["anterior", "posterior", "medial", "lateral", "superior", "inferior", "circumferential", "unspecified"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    }
+  }
+}

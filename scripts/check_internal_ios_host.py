@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 HOST = ROOT / "ios" / "BodyCompanion" / "AppHost"
 PROJECT = HOST / "BodyCompanionInternal.xcodeproj"
 APP_SOURCE = HOST / "BodyCompanionInternal"
+HOST_RESOURCES = APP_SOURCE / "Resources"
+PACKAGE_RESOURCES = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "Resources"
 UI_TEST_SOURCE = HOST / "BodyCompanionInternalUITests" / "BodyCompanionInternalUITests.swift"
 BODY_MAP_SCREEN_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "BodyMapScreen.swift"
 SIGNAL_INTAKE_SCREEN_SOURCE = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionIOS" / "SignalIntakeScreen.swift"
@@ -43,6 +45,11 @@ def main() -> int:
         APP_SOURCE / "BodyCompanionInternalApp.swift",
         APP_SOURCE / "InternalHostLaunchOptions.swift",
         APP_SOURCE / "Info.plist",
+        HOST_RESOURCES / "BodyNeutralPrototype.usdz",
+        HOST_RESOURCES / "BodyNeutralPrototypeCollision.usdz",
+        HOST_RESOURCES / "body-neutral-procedural-v1.camera_presets.json",
+        HOST_RESOURCES / "body-neutral-procedural-v1.region_map.json",
+        HOST_RESOURCES / "body-neutral-procedural-v1.surface_correspondence.json",
         UI_TEST_SOURCE,
         BODY_MAP_SCREEN_SOURCE,
         SIGNAL_INTAKE_SCREEN_SOURCE,
@@ -62,6 +69,10 @@ def main() -> int:
         "com.apple.product-type.application",
         "com.apple.product-type.bundle.ui-testing",
         "TEST_TARGET_NAME = BodyCompanionInternal;",
+        "BodyNeutralPrototype.usdz in Resources",
+        "BodyNeutralPrototypeCollision.usdz in Resources",
+        "body-neutral-procedural-v1.region_map.json in Resources",
+        "body-neutral-procedural-v1.surface_correspondence.json in Resources",
     ):
         if expected not in project:
             fail(f"invalid_project_wiring:{expected}")
@@ -69,6 +80,8 @@ def main() -> int:
         fail("prototype_executable_must_not_be_host_dependency")
     if "SystemCapabilities" in project or ".entitlements" in project:
         fail("unexpected_capability_or_entitlements")
+    if PACKAGE_RESOURCES.exists() and any(PACKAGE_RESOURCES.iterdir()):
+        fail("candidate_resources_must_not_live_in_reusable_swift_package")
 
     scheme = (PROJECT / "xcshareddata" / "xcschemes" / "BodyCompanionInternal.xcscheme").read_text(encoding="utf-8")
     for expected in ("BodyCompanionInternalUITests.xctest", "DebugInternal", "BodyCompanionInternal.app"):

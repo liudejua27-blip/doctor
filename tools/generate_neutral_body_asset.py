@@ -20,7 +20,7 @@ import bpy
 from mathutils import Vector
 
 
-OUTPUT = Path(__file__).resolve().parents[1] / "ios/BodyCompanion/Sources/BodyCompanionIOS/Resources/BodyNeutralPrototype.usdz"
+OUTPUT = Path(__file__).resolve().parents[1] / "ios/BodyCompanion/AppHost/BodyCompanionInternal/Resources/BodyNeutralPrototype.usdz"
 ASSET_ID = "body-neutral-procedural-v1"
 ASSET_VERSION = "1.2.0"
 TOPOLOGY_ID = "body-neutral-procedural-topology-v2"

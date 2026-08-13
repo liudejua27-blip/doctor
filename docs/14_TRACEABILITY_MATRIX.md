@@ -91,7 +91,7 @@
 
 | assetId/version | 模式 | 作者链/许可 | anatomyMap | golden hit set | 性能/无障碍 | 状态 |
 |---|---|---|---|---|---|---|
-| [`body-neutral-procedural-v1@1.2.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | 无已签字 anatomy/region map；仅有 30 个稳定视觉分段 Mesh（含下背）与 Y-up/米制/identity root | 无；`usdchecker --arkit` 与确定性 SHA 只是容器/完整性证据，不是 hit set | 未测；真机命中、FPS/内存、VoiceOver 全部待完成 | Candidate / internal only |
+| [`body-neutral-procedural-v1@1.2.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender/纯 Python 生成；生产权利/解剖签字未完成 | 独立 `body_collision_v1`、30 个稳定 render Mesh（含下背）、Y-up/米制/identity root；region map/correspondence 已生成但未解剖签字 | 无已签字黄金集；自动门禁只证明 1,904 个 collision face range 连续覆盖、容器/哈希/签名完整，不证明真机 faceIndex | 未测；真机命中、FPS/内存、VoiceOver 全部待完成 | Candidate / internal only |
 | `TBD-professional` | 专业 3D | 未取得 | TBD | TBD | TBD | Blocked P1 |
 
 RehabMate `body.glb` 不得进入生产候选。任何 `TBD`、candidate、未知/撤回权利或缺少真实文件签名的资产都必须回退 2D/列表。

@@ -97,6 +97,29 @@ final class BodyLocationTests: XCTestCase {
         XCTAssertFalse(location.mapping.reviewedByUser)
     }
 
+    func test3DMappingCarriesAssetRegionMapConfidence() {
+        let evidence = BodyHitEvidence(
+            entityID: "body_collision_v1",
+            meshID: "body_collision_v1",
+            localPosition: Point3D(x: 0, y: 1, z: 0),
+            localNormal: Point3D(x: 0, y: 1, z: 0),
+            triangleIndex: 3,
+            barycentric: (0.2, 0.3, 0.5),
+            assetID: "candidate",
+            assetVersion: "1.2.0"
+        )
+        let location = BodyLocationMapper.from3D(
+            evidence,
+            regionID: "body.chest.general",
+            laterality: .left,
+            surface: .anterior,
+            mappingConfidence: 0.86
+        )
+
+        XCTAssertEqual(location?.mapping.method, .assetRegionMap)
+        XCTAssertEqual(location?.mapping.confidence ?? -1, 0.86, accuracy: 0.0001)
+    }
+
     func test3DMappingAcceptsTriangleCoordinatesConvertedToThreeComponentBarycentric() {
         let triangleU = 0.25
         let triangleV = 0.35

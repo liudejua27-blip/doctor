@@ -45,7 +45,7 @@
 | TCU-T-014 | Regression | Unit/Contract | 全量后端、Swift、文档 | 原有安全、确认、草稿和禁止引用测试继续通过 | CI/local |
 | TCU-T-015 | 视觉身高边界 | Unit/Build | 米/厘米档位、越界或无效输入 | 仅 `1.35–2.20m` 生效；不改变资产基准、锚点或持久化事实 | Swift + source scan |
 | TCU-T-016 | TCU-AC-006A | Unit/UI | ready 后加载看门狗届时 | 保持 `threeDReady`；仅未就绪的当前 attempt 回退 2D | Swift Core + Simulator probe |
-| TCU-T-017 | ADR-0018 | Contract/Supply chain | 只改 approved/权利/审核/性能/签名，仍缺独立 collision、region map、surface correspondence 或 camera preset | Schema/Swift/baseline 全部拒绝 metadata eligible | JSON Schema + Swift + Python |
+| TCU-T-017 | ADR-0018 | Contract/Supply chain | 删除/替换 render、独立 collision、region map、surface correspondence、camera preset、manifest self-hash 或离线签名任一产物；或把候选资源放回可复用 Swift Package | Schema/Swift/baseline/asset readback 全部 fail closed，candidate 只能回退 2D | JSON Schema + Swift + Python + AppHost static gate |
 | TCU-T-018 | ADR-0018 | Asset/CI | Manifest/Swift/USD custom identity 任一漂移 | 自动门禁失败；`usdchecker --arkit`、根/坐标、实体集、三角数和 ZIP 对齐同时读回 | macOS CI + local |
 
 ## 4. 负向与停止规则
