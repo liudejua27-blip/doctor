@@ -43,11 +43,14 @@
 
 1. 新增 `BodyAssetManifest` Schema 1.0，`additionalProperties=false`，清单版本不可变。
 2. 清单必须包含资产 ID/版本/变体/拓扑、来源、权利、完整性、Canonical 坐标、artifact、LOD、映射、审核、性能、署名和回退字段。
-3. `release_status=approved` 只有在商业/App Store 权利、签名状态、解剖审核和性能状态均通过时才可满足 metadata gate；`blocked/retired` 永不允许运行时加载。
-4. `BodyAssetRuntimeGate` 只做 typed metadata decision，不读取文件、不下载、不验证真实签名密钥、不创建 `BodyLocation`、Event、Consent 或 Agent 结果。
-5. RealityKit loader 未来必须以 gate 结果为前置条件，并在自己的发布流水线再次验证真实文件哈希/签名；当前 `BodySceneView` 保持 2D fallback。
-6. 任何默认/专业资产进入仓库或构建包前必须更新第三方清单、许可证证据、哈希、修改说明、AssetManifest registry 和设备/解剖验收证据。
-7. RehabMate Web/Three.js/GSAP、`body.glb`、`muscles.js`、最近中心、`face.a`、点击三态和世界坐标针点不在此 ADR 的可复用范围内。
+3. `release_status=approved` 只有在商业/App Store 权利、非零清单摘要、签名状态、解剖审核和性能状态均通过时才可满足 metadata gate；`blocked/retired` 永不允许运行时加载。
+4. 默认/专业 3D 的 approved 清单还必须同时引用必需的 render、独立 collision、region map、surface correspondence 与 camera preset artifact；collision 不得与 render 共用 URI 或文件摘要。candidate 可显式共用便于内部探针，但不能仅靠改写批准字段越过该结构门禁。
+5. `BodyAssetRuntimeGate` 只做 typed metadata decision，不读取文件、不下载、不验证真实签名密钥、不创建 `BodyLocation`、Event、Consent 或 Agent 结果。
+6. RealityKit loader 必须以 gate 结果为前置条件，并在发布流水线验证每个 artifact 的实际哈希/签名。`integrity.source_sha256` 是来源交付物的摘要，不得被解释为所有 bundle artifact 必须共用的哈希。
+7. Bundle、Manifest、Swift 绑定常量和 USD custom metadata 的 asset/version/topology 必须由同一自动检查读回；资产容器仍须过 `usdchecker --arkit`、对齐、层级、三角数和稳定 mesh 集验证。
+8. 任何默认/专业资产进入仓库或构建包前必须更新第三方清单、许可证证据、哈希、修改说明、AssetManifest registry 和设备/解剖验收证据。
+9. `app_store_distribution=false` 的资产不得进入任何生产 archive；正式 App target 建立前必须拆分 internal-only resource target 或建立 archive denylist/产物扫描。
+10. RehabMate Web/Three.js/GSAP、`body.glb`、`muscles.js`、最近中心、`face.a`、点击三态和世界坐标针点不在此 ADR 的可复用范围内。
 
 ## 后果
 
@@ -89,4 +92,5 @@
 
 | 日期 | 变更 | 作者/批准人 |
 |---|---|---|
+| 2026-08-13 | 将 approved 3D 的独立 collision/region map/surface correspondence/camera preset、非零清单摘要、跨层身份读回与生产 archive 排除写入不可绕过门禁 | Codex / 待资产、法务、iOS、QA 评审 |
 | 2026-08-06 | 建立 metadata-only AssetManifest 与运行时门禁边界 | Codex / 待资产、法务、解剖、iOS、QA 审核 |

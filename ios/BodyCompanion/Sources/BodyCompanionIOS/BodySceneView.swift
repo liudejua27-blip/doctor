@@ -28,6 +28,7 @@ public enum BodyCameraPreset: String, CaseIterable, Hashable, Sendable {
 public struct BodySceneView: UIViewRepresentable {
     public let allowsPrototypeCandidate: Bool
     public let cameraPreset: BodyCameraPreset
+    public let userHeightMeters: Float?
     public let marks: [BodyMark]
     public let focusedRegionID: String?
     public let selectedMarkID: UUID?
@@ -40,6 +41,7 @@ public struct BodySceneView: UIViewRepresentable {
     public init(
         allowsPrototypeCandidate: Bool = false,
         cameraPreset: BodyCameraPreset = .front,
+        userHeightMeters: Float? = nil,
         markers: [BodyLocation] = [],
         marks: [BodyMark] = [],
         focusedRegionID: String? = nil,
@@ -52,6 +54,7 @@ public struct BodySceneView: UIViewRepresentable {
     ) {
         self.allowsPrototypeCandidate = allowsPrototypeCandidate
         self.cameraPreset = cameraPreset
+        self.userHeightMeters = userHeightMeters
         self.marks = marks.isEmpty
             ? markers.enumerated().map { index, marker in BodyMark(kind: .pin, location: marker, colorToken: index) }
             : marks
@@ -68,6 +71,7 @@ public struct BodySceneView: UIViewRepresentable {
         Coordinator(
             allowsPrototypeCandidate: allowsPrototypeCandidate,
             cameraPreset: cameraPreset,
+            userHeightMeters: userHeightMeters,
             marks: marks,
             focusedRegionID: focusedRegionID,
             selectedMarkID: selectedMarkID,
@@ -91,18 +95,37 @@ public struct BodySceneView: UIViewRepresentable {
         context.coordinator.cameraPreset = cameraPreset
         context.coordinator.focusedRegionID = focusedRegionID
         context.coordinator.selectedMarkID = selectedMarkID
+        context.coordinator.setUserHeightMeters(userHeightMeters)
         context.coordinator.syncMarks(marks)
         context.coordinator.applyCameraPresetIfNeeded()
     }
 
     @MainActor
     public final class Coordinator: NSObject {
+        private struct ScenePlacement {
+            let scale: Float
+            let rootPosition: SIMD3<Float>
+            let focusTarget: SIMD3<Float>
+            let focusDistance: Float
+        }
+
         private let allowsPrototypeCandidate: Bool
+        private static let minUserHeightMeters: Float = 1.35
+        private static let maxUserHeightMeters: Float = 2.20
+        private static let minModelScale: Float = 0.45
+        private static let maxModelScale: Float = 2.2
+        private static let focusHeightRatio: Float = 0.5
+        private static let cameraDistanceHeightRatio: Float = 1.56
+        private static let focusedDistanceMultiplier: Float = 0.74
+        private static let rootEntityName = "body_visual_root"
+        private static let sceneAnchorName = "body_scene_anchor"
+
         private let onLoadAttempted: () -> Void
         private let onReady: () -> Void
         private let onFailure: (String) -> Void
         private let onHitEvidence: (BodyHitEvidence) -> Void
         private let onMarkerTapped: (UUID) -> Void
+        private var userHeightMeters: Float?
         private weak var arView: ARView?
         private var visualRoot: Entity?
         private var camera: PerspectiveCamera?
@@ -116,6 +139,11 @@ public struct BodySceneView: UIViewRepresentable {
         fileprivate var focusedRegionID: String?
         fileprivate var selectedMarkID: UUID?
         private var currentMarks: [BodyMark]
+        private var baseScale: Float = 1
+        private var userScale: Float = 1
+        private var preferredFocusTarget: SIMD3<Float>
+        private var focusDistance: Float
+        private var appliedUserHeightMeters: Float?
 
         private static let pinPalette: [UIColor] = [
             .systemRed, .systemBlue, .systemOrange, .systemPurple, .systemGreen,
@@ -126,6 +154,7 @@ public struct BodySceneView: UIViewRepresentable {
         init(
             allowsPrototypeCandidate: Bool,
             cameraPreset: BodyCameraPreset,
+            userHeightMeters: Float?,
             marks: [BodyMark],
             focusedRegionID: String?,
             selectedMarkID: UUID?,
@@ -145,6 +174,13 @@ public struct BodySceneView: UIViewRepresentable {
             self.onFailure = onFailure
             self.onHitEvidence = onHitEvidence
             self.onMarkerTapped = onMarkerTapped
+            self.userHeightMeters = userHeightMeters
+            self.preferredFocusTarget = SIMD3<Float>(
+                0,
+                BodyAssetCandidateNeutralProcedural.canonicalHeightMeters * Coordinator.focusHeightRatio,
+                0
+            )
+            self.focusDistance = BodyAssetCandidateNeutralProcedural.canonicalHeightMeters * Coordinator.cameraDistanceHeightRatio
             super.init()
         }
 
@@ -176,24 +212,28 @@ public struct BodySceneView: UIViewRepresentable {
             // exists only to prove the current internal probe reached loader
             // entry; the parent validates its per-request attempt identity.
             onLoadAttempted()
-            guard let url = Bundle.module.url(forResource: "BodyNeutralPrototype", withExtension: "usdz") else {
+            guard let url = Bundle.module.url(forResource: BodyAssetCandidateNeutralProcedural.modelResourceName, withExtension: BodyAssetCandidateNeutralProcedural.modelResourceExtension) else {
                 reportFailure("内部候选 3D 资产缺失；已回退到 2D")
                 return
             }
 
             do {
-                let loaded = try ModelEntity.loadModel(contentsOf: url)
-                loaded.name = "body_neutral_prototype"
+                let loaded = try Entity.load(contentsOf: url)
                 loaded.generateCollisionShapes(recursive: true)
 
                 let root = Entity()
-                root.name = "body_visual_root"
+                root.name = Self.rootEntityName
+                let placement = Self.prepareScenePlacement(userHeightMeters: userHeightMeters)
+                root.scale = SIMD3<Float>(repeating: placement.scale)
+                root.position = placement.rootPosition
+                baseScale = placement.scale
+                userScale = 1
+                preferredFocusTarget = placement.focusTarget
+                focusDistance = placement.focusDistance
                 root.addChild(loaded)
-                root.scale = SIMD3<Float>(repeating: 0.9)
-                root.position = SIMD3<Float>(0, 0, 0)
 
                 let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
-                anchor.name = "body_scene_anchor"
+                anchor.name = Self.sceneAnchorName
                 anchor.addChild(root)
                 arView.scene.addAnchor(anchor)
 
@@ -204,6 +244,7 @@ public struct BodySceneView: UIViewRepresentable {
                 arView.scene.addAnchor(cameraAnchor)
                 self.camera = camera
                 self.visualRoot = root
+                self.appliedUserHeightMeters = userHeightMeters
                 indexRegionEntities(from: loaded)
                 self.hasLoaded = true
                 applyCameraPresetIfNeeded(force: true)
@@ -214,13 +255,17 @@ public struct BodySceneView: UIViewRepresentable {
             }
         }
 
-        private func indexRegionEntities(from entity: Entity) {
+        private func indexRegionEntities(
+            from entity: Entity,
+            inheritedOption: BodyRegionOption? = nil
+        ) {
+            let option = BodyRegionCatalog.option(forEntityID: entity.name) ?? inheritedOption
             if let model = entity as? ModelEntity,
-               let option = BodyRegionCatalog.option(forEntityID: entity.name) {
+               let option {
                 regionEntities[option.id] = model
             }
             for child in entity.children {
-                indexRegionEntities(from: child)
+                indexRegionEntities(from: child, inheritedOption: option)
             }
         }
 
@@ -242,14 +287,18 @@ public struct BodySceneView: UIViewRepresentable {
                     Float(anchor.localPosition.y),
                     Float(anchor.localPosition.z)
                 )
+                let parent = markerParent(for: anchor) ?? root
                 let dot: ModelEntity
                 if let existing = markerEntities[mark.id] {
                     dot = existing
+                    if dot.parent !== parent {
+                        parent.addChild(dot)
+                    }
                 } else {
                     dot = ModelEntity(mesh: .generateSphere(radius: 0.028))
                     dot.name = "marker_" + mark.id.uuidString
                     dot.generateCollisionShapes(recursive: true)
-                    root.addChild(dot)
+                    parent.addChild(dot)
                     markerEntities[mark.id] = dot
                 }
                 dot.position = position
@@ -265,8 +314,16 @@ public struct BodySceneView: UIViewRepresentable {
         private func updateRegionHighlights() {
             for (key, entity) in regionEntities {
                 let mark = currentMarks.first {
-                    $0.kind == .zone && $0.isVisible &&
-                        "\($0.location.regionID)|\($0.location.laterality.rawValue)" == key
+                    guard $0.kind == .zone,
+                          $0.isVisible,
+                          let option = BodyRegionCatalog.option(
+                              regionID: $0.location.regionID,
+                              laterality: $0.location.laterality,
+                              surface: $0.location.surface
+                          ) else {
+                        return false
+                    }
+                    return option.id == key
                 }
                 let isFocused = mark?.location.regionID == focusedRegionID
                 let color: UIColor = if mark == nil {
@@ -287,15 +344,16 @@ public struct BodySceneView: UIViewRepresentable {
             appliedCameraPreset = cameraPreset
             appliedFocusedRegionID = focusedRegionID
 
-            let target = focusTarget() ?? SIMD3<Float>(0, 0.9, 0)
-            let distance: Float = focusedRegionID == nil ? 2.9 : 1.25
+            let target = focusTarget() ?? preferredFocusTarget
+            let distance: Float = focusedRegionID == nil ? focusDistance : max(0.95, focusDistance * Self.focusedDistanceMultiplier)
+            let yOffset = max(0.03, target.y * 0.08)
             let position: SIMD3<Float>
             switch cameraPreset {
-            case .front: position = target + SIMD3<Float>(0, 0.08, distance)
-            case .back: position = target + SIMD3<Float>(0, 0.08, -distance)
-            case .left: position = target + SIMD3<Float>(-distance, 0.08, 0)
-            case .right: position = target + SIMD3<Float>(distance, 0.08, 0)
-            case .top: position = target + SIMD3<Float>(0, distance, 0.12)
+            case .front: position = target + SIMD3<Float>(0, yOffset, distance)
+            case .back: position = target + SIMD3<Float>(0, yOffset, -distance)
+            case .left: position = target + SIMD3<Float>(-distance, yOffset, 0)
+            case .right: position = target + SIMD3<Float>(distance, yOffset, 0)
+            case .top: position = target + SIMD3<Float>(0, distance + yOffset, 0)
             }
             camera.look(at: target, from: position, relativeTo: nil)
             updateRegionHighlights()
@@ -320,14 +378,15 @@ public struct BodySceneView: UIViewRepresentable {
 
         @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
             guard let root = visualRoot else { return }
-            let factor = min(max(Float(gesture.scale), 0.92), 1.08)
-            let next = min(max(root.scale.x * factor, 0.55), 1.35)
-            root.scale = SIMD3<Float>(repeating: next)
+            let factor = min(max(Float(gesture.scale), 0.92), 1.1)
+            let nextUserScale = min(max(userScale * factor, 0.55), 2.0)
+            userScale = nextUserScale
+            root.scale = SIMD3<Float>(repeating: baseScale * userScale)
             gesture.scale = 1
         }
 
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let view = arView, let root = visualRoot else { return }
+            guard let view = arView else { return }
             let hits = view.hitTest(gesture.location(in: view), query: .nearest, mask: .all)
             guard let hit = hits.first else { return }
 
@@ -335,20 +394,41 @@ public struct BodySceneView: UIViewRepresentable {
                 onMarkerTapped(markerID)
                 return
             }
-            guard let entityID = stableEntityID(from: hit.entity) else { return }
+            guard let semanticEntity = stableRegionEntity(from: hit.entity) else { return }
+            let entityID = semanticEntity.name
 
-            let position = root.convert(position: hit.position, from: nil)
-            let convertedNormal = root.convert(normal: hit.normal, from: nil)
+            let position = semanticEntity.convert(position: hit.position, from: nil)
+            let convertedNormal = semanticEntity.convert(normal: hit.normal, from: nil)
             let normal = simd_length(convertedNormal) > 0 ? simd_normalize(convertedNormal) : SIMD3<Float>(0, 0, 1)
+            let triangleInfo = extractTriangleInfo(from: hit)
             onHitEvidence(
                 BodyHitEvidence(
                     entityID: entityID,
+                    meshID: nil,
                     localPosition: Point3D(x: Double(position.x), y: Double(position.y), z: Double(position.z)),
                     localNormal: Point3D(x: Double(normal.x), y: Double(normal.y), z: Double(normal.z)),
-                    assetID: "body-neutral-procedural-v1",
-                    assetVersion: "1.1.0"
+                    triangleIndex: triangleInfo.triangleIndex,
+                    barycentric: triangleInfo.barycentric,
+                    uv: nil,
+                    assetID: BodyAssetCandidateNeutralProcedural.assetID,
+                    assetVersion: BodyAssetCandidateNeutralProcedural.assetVersion
                 )
             )
+        }
+
+        fileprivate func setUserHeightMeters(_ userHeightMeters: Float?) {
+            guard hasLoaded, let root = visualRoot else { return }
+            if userHeightMeters == self.appliedUserHeightMeters { return }
+            self.userHeightMeters = userHeightMeters
+            self.appliedUserHeightMeters = userHeightMeters
+
+            let placement = Self.prepareScenePlacement(userHeightMeters: userHeightMeters)
+            root.scale = SIMD3<Float>(repeating: placement.scale * userScale)
+            root.position = placement.rootPosition
+            baseScale = placement.scale
+            preferredFocusTarget = placement.focusTarget
+            focusDistance = placement.focusDistance
+            applyCameraPresetIfNeeded(force: true)
         }
 
         private func markerID(from entity: Entity) -> UUID? {
@@ -363,15 +443,75 @@ public struct BodySceneView: UIViewRepresentable {
             return nil
         }
 
-        private func stableEntityID(from entity: Entity) -> String? {
+        private func stableRegionEntity(from entity: Entity) -> Entity? {
             var current: Entity? = entity
             while let candidate = current {
-                if candidate.name.hasPrefix("body_") {
-                    return candidate.name
+                if candidate.name.hasPrefix("body_"),
+                   BodyRegionCatalog.option(forEntityID: candidate.name) != nil {
+                    return candidate
                 }
                 current = candidate.parent
             }
             return nil
+        }
+
+        private func markerParent(for anchor: BodyLocationAnchor3D) -> Entity? {
+            guard let option = BodyRegionCatalog.option(forEntityID: anchor.entityID) else {
+                return nil
+            }
+            return regionEntities[option.id]
+        }
+
+        private static func targetHeight(for userHeightMeters: Float?) -> Float {
+            guard let userHeight = userHeightMeters else {
+                return BodyAssetCandidateNeutralProcedural.canonicalHeightMeters
+            }
+            return max(minUserHeightMeters, min(maxUserHeightMeters, userHeight))
+        }
+
+        private static func prepareScenePlacement(userHeightMeters: Float?) -> ScenePlacement {
+            // Canonical height and ground are versioned asset facts. Runtime
+            // visual bounds may vary after RealityKit processing and must not
+            // redefine the body-space origin, axes, or reference height.
+            let targetHeight = Self.targetHeight(for: userHeightMeters)
+            let scale = max(
+                Self.minModelScale,
+                min(
+                    Self.maxModelScale,
+                    targetHeight / BodyAssetCandidateNeutralProcedural.canonicalHeightMeters
+                )
+            )
+            let position = SIMD3<Float>(
+                0,
+                -BodyAssetCandidateNeutralProcedural.canonicalGroundYMeters * scale,
+                0
+            )
+            let target = SIMD3<Float>(0, targetHeight * Self.focusHeightRatio, 0)
+            let distance = max(1.0, min(4.2, targetHeight * Self.cameraDistanceHeightRatio))
+            return ScenePlacement(scale: scale, rootPosition: position, focusTarget: target, focusDistance: distance)
+        }
+
+        private func extractTriangleInfo(
+            from hit: CollisionCastHit
+        ) -> (triangleIndex: Int?, barycentric: (Double, Double, Double)?) {
+            guard #available(iOS 18.0, *),
+                  let triangleHit = hit.triangleHit else {
+                return (triangleIndex: nil, barycentric: nil)
+            }
+
+            let u = Double(triangleHit.uv.x)
+            let v = Double(triangleHit.uv.y)
+            let w = 1 - u - v
+            guard triangleHit.faceIndex >= 0,
+                  u.isFinite, v.isFinite, w.isFinite,
+                  u >= 0, v >= 0, w >= 0,
+                  u <= 1, v <= 1, w <= 1 else {
+                return (triangleIndex: nil, barycentric: nil)
+            }
+            return (
+                triangleIndex: triangleHit.faceIndex,
+                barycentric: (u, v, w)
+            )
         }
 
         private func reportFailure(_ message: String) {
@@ -398,6 +538,7 @@ public struct BodySceneView: View {
     public init(
         allowsPrototypeCandidate: Bool = false,
         cameraPreset: BodyCameraPreset = .front,
+        userHeightMeters: Float? = nil,
         markers: [BodyLocation] = [],
         marks: [BodyMark] = [],
         focusedRegionID: String? = nil,

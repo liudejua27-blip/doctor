@@ -610,7 +610,7 @@ public struct SignalIntakeScreen: View {
         switch model.safety.status {
         case .r0, .r1: "exclamationmark.triangle.fill"
         case .r2: "person.crop.circle.badge.questionmark"
-        case .noRuleTriggered: "checkmark.shield"
+        case .noRuleTriggered: "shield"
         case .notRun, .undetermined, .unavailable: "questionmark.shield"
         }
     }

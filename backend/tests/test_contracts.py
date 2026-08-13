@@ -60,7 +60,7 @@ def test_normal_agent_question_turn_matches_agent_turn_schema():
         required_action_code="PROTOTYPE_NONE",
         content_id="prototype.none",
         content_release_id="prototype.none",
-        display_message="",
+        display_message="synthetic no-op rule",
     )
     runner = AssessmentAgentRunner(
         TestModel(
@@ -236,7 +236,7 @@ def test_application_safety_question_turn_matches_agent_turn_schema():
         required_action_code="PROTOTYPE_SAFETY_CLARIFICATION",
         content_id="prototype.safety.clarification",
         content_release_id="prototype.none",
-        display_message="",
+        display_message="synthetic clarification rule",
     )
     service = AssessmentService(SafetyEngine(RuleCatalog(version="rules.test", rules=(rule,), available=True)))
     outcome = service.assess(request())

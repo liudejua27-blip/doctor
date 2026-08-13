@@ -1,29 +1,134 @@
 import BodyCompanionCore
+import Foundation
 import SwiftUI
+
+private struct HeightProfilePreset: Hashable, Identifiable {
+    let id: String
+    let heightMeters: Float?
+
+    init(heightMeters: Float) {
+        self.heightMeters = heightMeters
+        self.id = String(format: "%.2f", heightMeters)
+    }
+
+    private init(custom: Void) {
+        self.heightMeters = nil
+        self.id = "custom"
+    }
+
+    static let custom = HeightProfilePreset(custom: ())
+    static let supportedHeightRangeMeters: ClosedRange<Float> = 1.35...2.20
+
+    var label: String {
+        guard let heightMeters else { return "自定义" }
+        return String(format: "%.2fm", heightMeters)
+    }
+
+    static let defaultHeights: [Float] = [1.60, 1.70, 1.80]
+
+    static func presetOptions(from rawHeights: [Float]) -> [HeightProfilePreset] {
+        let normalized = rawHeights
+            .compactMap(Self.normalizedHeightMeters)
+            .sorted()
+            .reduce(into: [Float]()) { acc, value in
+                if acc.first(where: { abs($0 - value) < 0.0001 }) == nil {
+                    acc.append(value)
+                }
+            }
+        return normalized.map(HeightProfilePreset.init(heightMeters:))
+    }
+
+    static func nearestPreset(
+        for heightMeters: Float,
+        from presets: [HeightProfilePreset]
+    ) -> HeightProfilePreset? {
+        let candidates = presets.compactMap { preset in
+            preset.heightMeters.map { (height: $0, preset: preset) }
+        }
+        return candidates.min(by: { abs($0.height - heightMeters) < abs($1.height - heightMeters) })?.preset
+    }
+
+    static func normalizedHeightMeters(_ value: Float?) -> Float? {
+        guard let value else { return nil }
+        guard value > 0 else { return nil }
+        let meters = value > 3 ? value / 100 : value
+        guard supportedHeightRangeMeters.contains(meters) else { return nil }
+        return meters
+    }
+}
 
 public struct BodyMapScreen: View {
     @State private var model: BodyMapModel
     @State private var cameraPreset: BodyCameraPreset = .front
+    @State private var selectedHeightPreset: HeightProfilePreset = .custom
+    @State private var customHeightInput: String = "1.75"
     @State private var isTextRegionPickerPresented = false
+    private let heightProfilePresets: [HeightProfilePreset]
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let onLocationsChanged: ([BodyLocation]) -> Bool
     private let onContinue: () -> Void
     private let prototype3DEnabled: Bool
+    private let profileHeightMeters: Float?
+
+    private static let defaultHeightMeters: Float = 1.75
+    private static let customHeightSnapToleranceMeters: Float = 0.05
 
     /// `prototype3DEnabled` is intentionally explicit. The current executable
     /// is an internal prototype; a production caller must leave it false until
     /// an approved BodyAssetManifest is wired into the release target.
     public init(
         model: BodyMapModel = BodyMapModel(),
+        userProfileHeightMeters: Float? = nil,
+        heightPresetHeightsMeters: [Float]? = nil,
         prototype3DEnabled: Bool = false,
         onLocationsChanged: @escaping ([BodyLocation]) -> Bool = { _ in true },
         onContinue: @escaping () -> Void = {}
     ) {
         _model = State(initialValue: model)
+        let normalizedProfileHeight = Self.normalizedHeightMeters(from: userProfileHeightMeters)
+        let normalizedPresetHeights = heightPresetHeightsMeters.flatMap(HeightProfilePreset.presetOptions(from:)) ?? HeightProfilePreset.presetOptions(from: HeightProfilePreset.defaultHeights)
+        heightProfilePresets = normalizedPresetHeights
+        profileHeightMeters = normalizedProfileHeight
+        let preset = normalizedProfileHeight.flatMap {
+            HeightProfilePreset.nearestPreset(for: $0, from: normalizedPresetHeights)
+        } ?? normalizedPresetHeights.first(where: { $0.id == "1.70" })
+            ?? normalizedPresetHeights.first
+            ?? HeightProfilePreset(heightMeters: 1.70)
+        _selectedHeightPreset = State(initialValue: preset)
+        _customHeightInput = State(
+            initialValue: {
+                if let normalized = normalizedProfileHeight {
+                    return String(format: "%.2f", normalized)
+                }
+                return String(format: "%.2f", Self.defaultHeightMeters)
+            }()
+        )
         self.prototype3DEnabled = prototype3DEnabled
         self.onLocationsChanged = onLocationsChanged
         self.onContinue = onContinue
+    }
+
+    private static func normalizedHeightMeters(from value: Float?) -> Float? {
+        HeightProfilePreset.normalizedHeightMeters(value)
+    }
+
+    private static func normalizedHeightMeters(from input: String) -> Float? {
+        let normalized = input
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "，", with: ",")
+            .replacingOccurrences(of: ",", with: ".")
+        guard let parsed = Float(normalized) else { return nil }
+        return HeightProfilePreset.normalizedHeightMeters(parsed)
+    }
+
+    private func syncInitialHeightPresetIfNeeded() {
+        guard let profileHeightMeters else { return }
+        selectedHeightPreset = HeightProfilePreset.nearestPreset(
+            for: profileHeightMeters,
+            from: heightProfilePresets
+        ) ?? selectedHeightPreset
+        customHeightInput = String(format: "%.2f", profileHeightMeters)
     }
 
     public var body: some View {
@@ -171,6 +276,9 @@ public struct BodyMapScreen: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+        }
+        .onAppear {
+            syncInitialHeightPresetIfNeeded()
         }
         .onChange(of: model.marks) { previousMarks, _ in
             // The map owns only provisional locations. Typed health facts
@@ -321,20 +429,50 @@ public struct BodyMapScreen: View {
             .foregroundStyle(BodyCompanionTheme.secondaryInk)
     }
 
+    private var userHeightForThreeD: Float? {
+        guard let selectedHeight = selectedHeightPreset.heightMeters else {
+            return Self.normalizedHeightMeters(from: customHeightInput)
+        }
+        return selectedHeight
+    }
+
+    private var heightProfilePickerItems: [HeightProfilePreset] {
+        heightProfilePresets + [HeightProfilePreset.custom]
+    }
+
+    private var heightHint: String {
+        if let height = userHeightForThreeD {
+            return "身高参考：\(String(format: "%.2f", height))m"
+        }
+        return "请填写 1.35–2.20 米（例如 1.75）后生效"
+    }
+
+    private func snapCustomHeightToNearestPresetIfNeeded() {
+        guard selectedHeightPreset == .custom else { return }
+        guard let customHeight = Self.normalizedHeightMeters(from: customHeightInput) else { return }
+        guard let nearestPreset = HeightProfilePreset.nearestPreset(for: customHeight, from: heightProfilePresets) else {
+            return
+        }
+        let delta = abs(customHeight - (nearestPreset.heightMeters ?? customHeight))
+        guard delta <= Self.customHeightSnapToleranceMeters else { return }
+        selectedHeightPreset = nearestPreset
+        customHeightInput = String(format: "%.2f", nearestPreset.heightMeters ?? customHeight)
+    }
+
     @ViewBuilder
     private var candidateThreeDContent: some View {
         if let attemptID = model.activeThreeDAttemptID {
             let isReady = model.isCurrentThreeDReady(for: attemptID)
             VStack(alignment: .leading, spacing: 8) {
-            if !isReady {
-                CompanionStatusPill("正在加载内部候选模型", systemImage: "hourglass", tint: BodyCompanionTheme.warm)
-                    .accessibilityLabel("正在加载内部候选模型；未经生产审核")
-                    .accessibilityIdentifier("body-map.candidate-3d-loading")
-            } else {
-                CompanionStatusPill("内部候选模型 · 未经生产审核", systemImage: "flask", tint: BodyCompanionTheme.warm)
-                    .accessibilityLabel("内部候选模型，未经生产审核")
-                    .accessibilityIdentifier("body-map.candidate-3d-ready")
-            }
+                if !isReady {
+                    CompanionStatusPill("正在加载内部候选模型", systemImage: "hourglass", tint: BodyCompanionTheme.warm)
+                        .accessibilityLabel("正在加载内部候选模型；未经生产审核")
+                        .accessibilityIdentifier("body-map.candidate-3d-loading")
+                } else {
+                    CompanionStatusPill("内部候选模型 · 未经生产审核", systemImage: "flask", tint: BodyCompanionTheme.warm)
+                        .accessibilityLabel("内部候选模型，未经生产审核")
+                        .accessibilityIdentifier("body-map.candidate-3d-ready")
+                }
 
             if model.hasRecordedCurrentThreeDLoadAttempt {
                 Text("内部候选加载请求已发起")
@@ -349,6 +487,42 @@ public struct BodyMapScreen: View {
                 }
             }
             .pickerStyle(.segmented)
+
+            Picker("人体高度档位", selection: $selectedHeightPreset) {
+                ForEach(heightProfilePickerItems) { preset in
+                    Text(preset.label).tag(preset)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if selectedHeightPreset == .custom {
+                HStack(spacing: 8) {
+                    TextField("输入身高（米）", text: $customHeightInput)
+                        .textFieldStyle(.roundedBorder)
+                        .bodyMapDecimalInput()
+                        .onChange(of: customHeightInput) { _, newValue in
+                            if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                selectedHeightPreset = .custom
+                            }
+                        }
+                        .onSubmit {
+                            snapCustomHeightToNearestPresetIfNeeded()
+                        }
+                        .submitLabel(.done)
+                        .accessibilityIdentifier("body-map.threed-height-custom")
+                    Text("m")
+                        .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                }
+                Text(heightHint)
+                    .font(.caption2)
+                    .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                    .accessibilityIdentifier("body-map.threed-height-hint")
+            } else {
+                Text(heightHint)
+                    .font(.caption2)
+                    .foregroundStyle(BodyCompanionTheme.secondaryInk)
+                    .accessibilityIdentifier("body-map.threed-height-hint")
+            }
 
             Button {
                 isTextRegionPickerPresented = true
@@ -366,6 +540,7 @@ public struct BodyMapScreen: View {
             BodySceneView(
                 allowsPrototypeCandidate: true,
                 cameraPreset: cameraPreset,
+                userHeightMeters: userHeightForThreeD,
                 marks: model.marks,
                 focusedRegionID: model.focusedRegionID,
                 selectedMarkID: model.selectedMarkID,
@@ -397,9 +572,9 @@ public struct BodyMapScreen: View {
             .accessibilityLabel("原生 3D 身体地图；可拖动旋转、双指缩放并轻点部位。当前为\(model.markingMode.displayName)模式。若不可用，可切换到 2D 或部位列表。")
             }
             .task(id: attemptID) {
-            try? await Task.sleep(nanoseconds: 8_000_000_000)
-            guard !Task.isCancelled else { return }
-            model.mark3DFailed("内部候选 3D 初始化超时；已回退到 2D", for: attemptID)
+                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                guard !Task.isCancelled else { return }
+                model.mark3DLoadingTimedOut("内部候选 3D 初始化超时；已回退到 2D", for: attemptID)
             }
         } else {
             // This should be unreachable because request3D() creates the ID
@@ -483,7 +658,7 @@ private struct BodyMap2DView: View {
             depth: option.depth,
             source: source,
             view: model.view,
-            point: point,
+            point: model.markingMode == .pin ? point : nil,
             userLabel: option.label
         )
         _ = model.applySelection(BodyLocationMapper.from2D(selection))
@@ -569,7 +744,11 @@ private struct BodyMapCanvas: View {
                 }
 
                 ForEach(marks.filter { $0.kind == .zone && $0.isVisible }) { mark in
-                    if let option = BodyRegionCatalog.option(regionID: mark.location.regionID, laterality: mark.location.laterality),
+                    if let option = BodyRegionCatalog.option(
+                        regionID: mark.location.regionID,
+                        laterality: mark.location.laterality,
+                        surface: mark.location.surface
+                    ),
                        let geometry = option.geometry(for: view) {
                         BodyRegionHitShape(geometry: geometry)
                             .fill(BodyCompanionTheme.accent.opacity(0.30))
@@ -652,6 +831,18 @@ private struct BodyMapCanvas: View {
 
     private func markerColor(for mark: BodyMark) -> Color {
         mark.kind == .zone ? BodyCompanionTheme.accent : pinColor(mark.colorToken)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func bodyMapDecimalInput() -> some View {
+#if os(iOS)
+        textInputAutocapitalization(.never)
+            .keyboardType(.decimalPad)
+#else
+        self
+#endif
     }
 }
 

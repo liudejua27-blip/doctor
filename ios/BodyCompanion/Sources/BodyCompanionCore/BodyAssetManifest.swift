@@ -55,6 +55,19 @@ public enum BodyAssetFallbackKind: String, Codable, CaseIterable, Sendable {
     case accessibleList = "accessible_list"
 }
 
+public enum BodyAssetCandidateNeutralProcedural {
+    public static let assetID = "body-neutral-procedural-v1"
+    public static let assetVersion = "1.2.0"
+    public static let topologyID = "body-neutral-procedural-topology-v2"
+    public static let modelResourceName = "BodyNeutralPrototype"
+    public static let modelResourceExtension = "usdz"
+
+    // Canonical-space constants are frozen with assetVersion/topologyID. They
+    // must be revised together instead of being inferred from runtime bounds.
+    public static let canonicalHeightMeters: Float = 1.86
+    public static let canonicalGroundYMeters: Float = 0
+}
+
 public enum BodyAssetManifestError: String, Error, Equatable, Sendable {
     case unsupportedSchemaVersion
     case invalidAssetID
@@ -647,9 +660,36 @@ public struct BodyAssetManifest: Codable, Equatable, Hashable, Sendable, Identif
         if releaseStatus == .approved {
             guard rights.commercialUse, rights.appStoreDistribution,
                   integrity.signatureStatus == .verified,
+                  integrity.manifestSHA256 != "sha256:" + String(repeating: "0", count: 64),
                   review.anatomyStatus == .approved,
                   performance.status == .passed else {
                 throw BodyAssetManifestError.approvedGateIncomplete
+            }
+            if variant != .bodyMap2D {
+                let productionRoles: Set<BodyAssetArtifactRole> = [
+                    .render, .collision, .regionMap, .surfaceCorrespondence, .cameraPreset,
+                ]
+                guard productionRoles.isSubset(of: roles) else {
+                    throw BodyAssetManifestError.approvedGateIncomplete
+                }
+
+                let requiredRender = artifacts.filter { $0.required && $0.role == .render }
+                let requiredCollision = artifacts.filter { $0.required && $0.role == .collision }
+                let requiredRegionMap = artifacts.filter { $0.required && $0.role == .regionMap }
+                let requiredCorrespondence = artifacts.filter { $0.required && $0.role == .surfaceCorrespondence }
+                let requiredCameraPreset = artifacts.filter { $0.required && $0.role == .cameraPreset }
+                guard requiredRender.allSatisfy({ [.usdz, .usdc].contains($0.format) }),
+                      requiredCollision.allSatisfy({ [.usdz, .usdc, .bin].contains($0.format) }),
+                      requiredRegionMap.allSatisfy({ [.json, .bin].contains($0.format) }),
+                      requiredCorrespondence.allSatisfy({ [.json, .bin].contains($0.format) }),
+                      requiredCameraPreset.allSatisfy({ $0.format == .json }),
+                      requiredCollision.allSatisfy({ collision in
+                          requiredRender.allSatisfy { render in
+                              collision.uri != render.uri && collision.sha256 != render.sha256
+                          }
+                      }) else {
+                    throw BodyAssetManifestError.approvedGateIncomplete
+                }
             }
         }
     }

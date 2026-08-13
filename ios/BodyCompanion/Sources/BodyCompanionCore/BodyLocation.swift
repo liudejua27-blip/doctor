@@ -352,6 +352,7 @@ public struct BodyHitEvidence: Hashable, Sendable {
     public let localNormal: Point3D?
     public let triangleIndex: Int?
     public let barycentric: (Double, Double, Double)?
+    public let uv: UV?
     public let assetID: String
     public let assetVersion: String
 
@@ -362,6 +363,7 @@ public struct BodyHitEvidence: Hashable, Sendable {
         localNormal: Point3D? = nil,
         triangleIndex: Int? = nil,
         barycentric: (Double, Double, Double)? = nil,
+        uv: UV? = nil,
         assetID: String,
         assetVersion: String
     ) {
@@ -371,6 +373,7 @@ public struct BodyHitEvidence: Hashable, Sendable {
         self.localNormal = localNormal
         self.triangleIndex = triangleIndex
         self.barycentric = barycentric
+        self.uv = uv
         self.assetID = assetID
         self.assetVersion = assetVersion
     }
@@ -379,7 +382,9 @@ public struct BodyHitEvidence: Hashable, Sendable {
         lhs.entityID == rhs.entityID && lhs.meshID == rhs.meshID && lhs.localPosition == rhs.localPosition &&
             lhs.localNormal == rhs.localNormal && lhs.triangleIndex == rhs.triangleIndex &&
             lhs.barycentric?.0 == rhs.barycentric?.0 && lhs.barycentric?.1 == rhs.barycentric?.1 &&
-            lhs.barycentric?.2 == rhs.barycentric?.2 && lhs.assetID == rhs.assetID && lhs.assetVersion == rhs.assetVersion
+            lhs.barycentric?.2 == rhs.barycentric?.2 &&
+            lhs.uv?.u == rhs.uv?.u && lhs.uv?.v == rhs.uv?.v &&
+            lhs.assetID == rhs.assetID && lhs.assetVersion == rhs.assetVersion
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -391,6 +396,8 @@ public struct BodyHitEvidence: Hashable, Sendable {
         hasher.combine(barycentric?.0)
         hasher.combine(barycentric?.1)
         hasher.combine(barycentric?.2)
+        hasher.combine(uv?.u)
+        hasher.combine(uv?.v)
         hasher.combine(assetID)
         hasher.combine(assetVersion)
     }
@@ -480,7 +487,8 @@ public enum BodyLocationMapper {
             localPosition: evidence.localPosition,
             localNormal: normal,
             triangleIndex: evidence.triangleIndex,
-            barycentric: barycentric
+            barycentric: barycentric,
+            uv: evidence.uv
         )
         return BodyLocation(
             id: markerID,

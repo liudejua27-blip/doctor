@@ -133,7 +133,8 @@ def _check_asset_manifests(errors: list[str]) -> int:
         for error in Draft202012Validator(schema).iter_errors(manifest):
             location = ".".join(str(item) for item in error.absolute_path)
             errors.append(f"{path.relative_to(ROOT)}: asset manifest {location}: {error.message}")
-        for artifact in manifest.get("artifacts", []):
+        artifacts = manifest.get("artifacts", [])
+        for artifact in artifacts:
             uri = str(artifact.get("uri", ""))
             if not uri.startswith("bundle://"):
                 continue
@@ -145,10 +146,58 @@ def _check_asset_manifests(errors: list[str]) -> int:
             expected = artifact.get("sha256")
             if expected != f"sha256:{digest}":
                 errors.append(f"{path.relative_to(ROOT)}: artifact hash mismatch for {uri}")
-            if manifest.get("integrity", {}).get("source_sha256") != f"sha256:{digest}":
-                errors.append(f"{path.relative_to(ROOT)}: source hash mismatch for {uri}")
-        if manifest.get("release_status") == "approved" and manifest.get("integrity", {}).get("manifest_sha256", "").endswith("0" * 64):
-            errors.append(f"{path.relative_to(ROOT)}: approved manifest cannot use a zero manifest hash")
+        if manifest.get("release_status") == "approved":
+            if manifest.get("integrity", {}).get("manifest_sha256", "").endswith("0" * 64):
+                errors.append(f"{path.relative_to(ROOT)}: approved manifest cannot use a zero manifest hash")
+            if manifest.get("variant") in {"default_neutral", "professional_muscle_joint"}:
+                required = [artifact for artifact in artifacts if artifact.get("required") is True]
+                by_role = {role: [item for item in required if item.get("role") == role] for role in (
+                    "render", "collision", "region_map", "surface_correspondence", "camera_preset"
+                )}
+                missing_roles = sorted(role for role, items in by_role.items() if not items)
+                if missing_roles:
+                    errors.append(f"{path.relative_to(ROOT)}: approved 3D manifest missing roles {missing_roles}")
+                for render in by_role["render"]:
+                    for collision in by_role["collision"]:
+                        if render.get("uri") == collision.get("uri") or render.get("sha256") == collision.get("sha256"):
+                            errors.append(
+                                f"{path.relative_to(ROOT)}: approved collision must be independent from render"
+                            )
+
+        if manifest.get("asset_id") == "body-neutral-procedural-v1":
+            swift_path = ROOT / "ios" / "BodyCompanion" / "Sources" / "BodyCompanionCore" / "BodyAssetManifest.swift"
+            try:
+                swift_source = swift_path.read_text(encoding="utf-8")
+                expected_constants = {
+                    "asset_id": "assetID",
+                    "asset_version": "assetVersion",
+                    "topology_id": "topologyID",
+                }
+                for manifest_key, swift_name in expected_constants.items():
+                    match = re.search(
+                        rf'public static let {swift_name} = "([^"]+)"',
+                        swift_source,
+                    )
+                    if match is None or match.group(1) != manifest.get(manifest_key):
+                        errors.append(
+                            f"{path.relative_to(ROOT)}: manifest/Swift identity mismatch for {manifest_key}"
+                        )
+                resource_match = re.search(
+                    r'public static let modelResourceName = "([^"]+)"', swift_source
+                )
+                extension_match = re.search(
+                    r'public static let modelResourceExtension = "([^"]+)"', swift_source
+                )
+                render_uris = {
+                    item.get("uri") for item in artifacts
+                    if item.get("role") == "render" and item.get("required") is True
+                }
+                if resource_match is None or extension_match is None or render_uris != {
+                    f"bundle://{resource_match.group(1)}.{extension_match.group(1)}"
+                }:
+                    errors.append(f"{path.relative_to(ROOT)}: manifest/Swift render resource mismatch")
+            except OSError as exc:
+                errors.append(f"{swift_path.relative_to(ROOT)}: cannot verify candidate identity: {exc}")
     return len(manifests)
 
 
@@ -206,6 +255,7 @@ def _check_ci_baseline(errors: list[str]) -> None:
         "python scripts/check_baseline.py",
         "python -m pytest backend/tests --tb=short",
         "swift test",
+        "python3 scripts/check_body_asset_release.py",
         "--triple arm64-apple-ios17.0",
         "-c backend/constraints-test.txt",
         "BODY_COMPANION_HOST_DIAGNOSTICS_DIR: ${{ runner.temp }}/body-companion-host-smoke",

@@ -75,7 +75,7 @@ def confirmation_service(marker_id: str, candidate: dict) -> AssessmentService:
         required_action_code="PROTOTYPE_NONE",
         content_id="prototype.none",
         content_release_id="prototype.none",
-        display_message="",
+        display_message="synthetic no-op rule",
     )
     # The digest is computed from the exact typed payload we give TestModel.
     # Rebuild it once here rather than weakening the server-side validator.

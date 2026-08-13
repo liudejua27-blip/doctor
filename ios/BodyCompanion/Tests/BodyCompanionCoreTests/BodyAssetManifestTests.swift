@@ -3,6 +3,16 @@ import XCTest
 @testable import BodyCompanionCore
 
 final class BodyAssetManifestTests: XCTestCase {
+    func testNeutralProceduralCandidateBindingIsExplicit() {
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.assetID, "body-neutral-procedural-v1")
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.assetVersion, "1.2.0")
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.topologyID, "body-neutral-procedural-topology-v2")
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.modelResourceName, "BodyNeutralPrototype")
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.modelResourceExtension, "usdz")
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.canonicalHeightMeters, 1.86)
+        XCTAssertEqual(BodyAssetCandidateNeutralProcedural.canonicalGroundYMeters, 0)
+    }
+
     func testCandidateManifestIsValidButRuntimeFallsBack() throws {
         let manifest = try makeManifest(status: .candidate)
 
@@ -30,6 +40,18 @@ final class BodyAssetManifestTests: XCTestCase {
             XCTAssertEqual(error as? BodyAssetManifestError, .approvedGateIncomplete)
         }
         XCTAssertThrowsError(try makeManifest(status: .approved, signatureStatus: .unverified)) { error in
+            XCTAssertEqual(error as? BodyAssetManifestError, .approvedGateIncomplete)
+        }
+        XCTAssertThrowsError(try makeManifest(status: .approved, zeroManifestSHA256: true)) { error in
+            XCTAssertEqual(error as? BodyAssetManifestError, .approvedGateIncomplete)
+        }
+    }
+
+    func testApprovedThreeDManifestRequiresIndependentReleaseArtifacts() {
+        XCTAssertThrowsError(try makeManifest(status: .approved, includeProductionArtifacts: false)) { error in
+            XCTAssertEqual(error as? BodyAssetManifestError, .approvedGateIncomplete)
+        }
+        XCTAssertThrowsError(try makeManifest(status: .approved, collisionSharesRender: true)) { error in
             XCTAssertEqual(error as? BodyAssetManifestError, .approvedGateIncomplete)
         }
     }
@@ -200,8 +222,11 @@ final class BodyAssetManifestTests: XCTestCase {
         includeCollision: Bool = true,
         includeLODRender: Bool = true,
         includeRegionMap: Bool = true,
+        includeProductionArtifacts: Bool = true,
+        collisionSharesRender: Bool = false,
+        zeroManifestSHA256: Bool = false,
         duplicateArtifactID: Bool = false,
-        sourceSHA256: String = "sha256:" + String(repeating: "0", count: 64)
+        sourceSHA256: String = "sha256:" + String(repeating: "5", count: 64)
     ) throws -> BodyAssetManifest {
         let timestamp = "2026-08-06T00:00:00.000Z"
         let isApproved = status == .approved
@@ -225,13 +250,15 @@ final class BodyAssetManifestTests: XCTestCase {
                     artifactID: duplicateArtifactID ? renderID : "synthetic-collision",
                     role: .collision,
                     format: .usdc,
-                    uri: "bundle://synthetic/collision.usdc",
-                    sha256: "sha256:" + String(repeating: "2", count: 64),
+                    uri: collisionSharesRender ? "bundle://synthetic/default.usdz" : "bundle://synthetic/collision.usdc",
+                    sha256: collisionSharesRender
+                        ? (sourceSHA256 == "sha256:not-a-hash" ? sourceSHA256 : "sha256:" + String(repeating: "1", count: 64))
+                        : "sha256:" + String(repeating: "2", count: 64),
                     required: true
                 )
             )
         }
-        if variant == .bodyMap2D && includeRegionMap {
+        if (variant == .bodyMap2D && includeRegionMap) || (isApproved && variant != .bodyMap2D && includeProductionArtifacts) {
             artifacts.append(
                 BodyAssetArtifact(
                     artifactID: "synthetic-region-map",
@@ -239,6 +266,28 @@ final class BodyAssetManifestTests: XCTestCase {
                     format: .json,
                     uri: "bundle://synthetic/region-map.json",
                     sha256: "sha256:" + String(repeating: "3", count: 64),
+                    required: true
+                )
+            )
+        }
+        if isApproved && variant != .bodyMap2D && includeProductionArtifacts {
+            artifacts.append(
+                BodyAssetArtifact(
+                    artifactID: "synthetic-surface-correspondence",
+                    role: .surfaceCorrespondence,
+                    format: .json,
+                    uri: "bundle://synthetic/surface-correspondence.json",
+                    sha256: "sha256:" + String(repeating: "6", count: 64),
+                    required: true
+                )
+            )
+            artifacts.append(
+                BodyAssetArtifact(
+                    artifactID: "synthetic-camera-preset",
+                    role: .cameraPreset,
+                    format: .json,
+                    uri: "bundle://synthetic/camera-preset.json",
+                    sha256: "sha256:" + String(repeating: "7", count: 64),
                     required: true
                 )
             )
@@ -267,7 +316,7 @@ final class BodyAssetManifestTests: XCTestCase {
             ),
             integrity: BodyAssetIntegrity(
                 sourceSHA256: sourceSHA256,
-                manifestSHA256: "sha256:" + String(repeating: "4", count: 64),
+                manifestSHA256: "sha256:" + String(repeating: zeroManifestSHA256 ? "0" : "4", count: 64),
                 signatureStatus: resolvedSignature,
                 signingKeyID: resolvedSignature == .verified ? "synthetic-key" : nil
             ),

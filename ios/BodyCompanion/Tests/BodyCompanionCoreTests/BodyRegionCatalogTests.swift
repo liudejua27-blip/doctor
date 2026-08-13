@@ -50,8 +50,8 @@ final class BodyRegionCatalogTests: XCTestCase {
         let backKnees = BodyRegionCatalog.options(matching: "KNEE", for: .back)
 
         XCTAssertEqual(frontKnees.map(\.id), [
-            "body.knee.general|left",
-            "body.knee.general|right",
+            "body.knee.general|left|lateral",
+            "body.knee.general|right|lateral",
         ])
         XCTAssertEqual(backKnees.map(\.id), frontKnees.map(\.id))
         XCTAssertTrue(BodyRegionCatalog.options(matching: "upper back", for: .front).isEmpty)
@@ -79,5 +79,48 @@ final class BodyRegionCatalogTests: XCTestCase {
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_right_upper_back")?.surface, .posterior)
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_left_shoulder")?.laterality, .left)
         XCTAssertEqual(BodyRegionCatalog.option(forEntityID: "body_right_hip")?.regionID, "body.hip.general")
+    }
+
+    func testOptionIdentityIncludesSurface() {
+        let anterior = BodyRegionOption(
+            regionID: "body.test.general",
+            laterality: .midline,
+            surface: .anterior,
+            label: "测试前面",
+            englishLabel: "Test front",
+            frontGeometry: nil,
+            backGeometry: nil
+        )
+        let posterior = BodyRegionOption(
+            regionID: "body.test.general",
+            laterality: .midline,
+            surface: .posterior,
+            label: "测试后面",
+            englishLabel: "Test back",
+            frontGeometry: nil,
+            backGeometry: nil
+        )
+
+        XCTAssertEqual(anterior.id, "body.test.general|midline|anterior")
+        XCTAssertEqual(posterior.id, "body.test.general|midline|posterior")
+        XCTAssertNotEqual(anterior.id, posterior.id)
+    }
+
+    func testExactCatalogResolverIncludesSurface() {
+        XCTAssertEqual(
+            BodyRegionCatalog.option(
+                regionID: "body.chest.general",
+                laterality: .left,
+                surface: .anterior
+            )?.label,
+            "左胸前"
+        )
+        XCTAssertNil(
+            BodyRegionCatalog.option(
+                regionID: "body.chest.general",
+                laterality: .left,
+                surface: .posterior
+            )
+        )
     }
 }

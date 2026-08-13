@@ -10,6 +10,8 @@ python3 scripts/check_internal_ios_host.py
 bash scripts/run_internal_ios_host_tests.sh
 ```
 
+> 该 AppHost 入口不读取 `BODY_COMPANION_HEIGHT_PRESET_SET`；该环境变量仅在 `BodyCompanionPrototype`（macOS 可执行）中生效，用于快速调整 3D 身高档位集合。
+
 如需固定目标，可在执行前设置 `BODY_COMPANION_SIMULATOR_UDID`；脚本只会选择可用的 iPhone Simulator，且不改变设备内容或启动任何生产服务。
 
 通过只可记录为 `Simulator host smoke passed`。它不证明真机、签名、VoiceOver、最大 Dynamic Type、Reduce Motion、3D 性能/碰撞、资产许可、临床安全或生产发布。规范和完整测试范围见 [FEAT-IOS-P0-RUNTIME-01](../../../docs/28_IOS_P0_RUNTIME_HOST.md) 与 [TEST-IOS-P0-RUNTIME-01](../../../docs/29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)。

@@ -7,9 +7,16 @@ public struct InternalP0RuntimeConfiguration: Sendable, Equatable {
     /// Whether an explicitly requested internal candidate may be attempted.
     /// The normal P0 default remains 2D/list first and fail-closed.
     public let candidate3DEnabled: Bool
+    /// Optional user height in meters used as the default 3D height preset source.
+    /// Caller should already have validated the value for plausible user input.
+    public let userProfileHeightMeters: Float?
 
-    public init(candidate3DEnabled: Bool = false) {
+    public init(
+        candidate3DEnabled: Bool = false,
+        userProfileHeightMeters: Float? = nil
+    ) {
         self.candidate3DEnabled = candidate3DEnabled
+        self.userProfileHeightMeters = userProfileHeightMeters
     }
 
     /// Safe default for all callers, including Debug builds.

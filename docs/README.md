@@ -71,6 +71,8 @@ flowchart TD
 - [GOV-01 GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md)：具名责任、地区、年龄、产品分类、外测与宣传边界的书面批准入口；当前 `Pending`。
 - [FEAT-IOS-P0-RUNTIME-01 内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md)：受版本控制的内部 Simulator App Host、显式关闭能力集、默认 P0 UI smoke、候选 3D probe 与 accessibility-size 结构 smoke 已在 `4cc46e2` / run `31350639359` 通过远端 CI 重建；本地 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）与 full Host script exit 0（446.330s）也已完成。远端与本地都只形成 Simulator 证据；真机、完整辅助功能、3D 性能/碰撞、资产、签名和生产门禁仍未关闭。
 - [TEST-IOS-P0-RUNTIME-01 内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md)：构建、安装、启动、2D/列表回退、无网络/权限/持久化负向检查、候选 Scene loader-entry/终态、完整感觉/unknown 入口和局部 accessibility-size 结构回归；本地和远端 CI 均只形成 Simulator 证据。
+- [FEAT-TRUSTED-COMPANION-01 可信身体助手升级](31_TRUSTED_COMPANION_UPGRADE.md)：把单一记录入口、后端 safety fail-closed、2D/3D 定位修复与原创候选资产收敛为同一内部切片；不新增健康语义或发布授权。
+- [TEST-TRUSTED-COMPANION-01 升级测试计划](32_TRUSTED_COMPANION_UPGRADE_TEST_PLAN.md)：覆盖前端状态、空规则目录、TriangleHit/Zone/Pin、资产可复现和 2D 回退。
 
 实现入口：
 
@@ -99,6 +101,8 @@ flowchart TD
 | GOV-01 | [GATE-02 责任与产品边界决策包](27_GATE_02_RESPONSIBILITY_AND_PRODUCT_BOUNDARY.md) | 具名责任、地区、外测与宣传边界的书面决策和退出条件 | Pending written approval |
 | FEAT-IOS-P0-RUNTIME-01 | [内部 iOS App Host](28_IOS_P0_RUNTIME_HOST.md) | 仅限内部 Simulator 的可安装 App Host、显式能力关闭和 UI smoke | Implemented / Simulator verified / internal only |
 | TEST-IOS-P0-RUNTIME-01 | [内部 Host 测试计划](29_IOS_P0_RUNTIME_HOST_TEST_PLAN.md) | Host 的 Simulator 构建、启动、P0 路径及负向能力检查 | `4cc46e2` / run `31350639359`：Backend/contracts、Swift 94/94、SDK build、Host boundary 与 internal Host smoke 全部成功（iPhone 16 / iOS 18.5 / Xcode 16.4）；本地 iPhone 17 Pro / iOS 26.5 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）及 full Host script exit 0（446.330s）。仅 Simulator 证据；不证明真机、完整辅助功能、3D 性能/碰撞、资产、签名或发布 |
+| FEAT-TRUSTED-COMPANION-01 | [可信身体助手升级](31_TRUSTED_COMPANION_UPGRADE.md) | 单入口 P0 体验、后端 safety fail-closed、2D/3D 位置和候选资产升级 | Implemented internal local slice / Simulator only；未提交，外部发布和全部安全/资产门禁保持打开 |
+| TEST-TRUSTED-COMPANION-01 | [可信身体助手升级测试计划](32_TRUSTED_COMPANION_UPGRADE_TEST_PLAN.md) | 前端、后端、3D 同一事实链的自动化、Simulator 与资产验证 | 本地 Backend 204、Swift 102、Host 13、ARKit USD/跨层身份/baseline/build 通过；完整收据和限制见 EVIDENCE-01 |
 | TRACE-01 | [追踪矩阵](14_TRACEABILITY_MATRIX.md) | 当前需求到实现/验证/门禁的追踪 | Active traceability |
 | TERM-01 | [统一术语](15_GLOSSARY.md) | 唯一名词和字段语义真源 | Baseline Draft |
 | EVIDENCE-01 | [当前工程样机验证记录](16_EXECUTION_EVIDENCE.md) | 可复现命令、已证明边界与未证明能力 | Evidence snapshot / Prototype-only |

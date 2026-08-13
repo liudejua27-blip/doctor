@@ -51,7 +51,8 @@ final class BodyCompanionInternalUITests: XCTestCase {
         assertExists(app.descendants(matching: .any).matching(identifier: "screen.today").firstMatch)
         assertExists(app.buttons["intake-entry.start-record"])
         XCTAssertFalse(app.buttons["intake-entry.resume-draft"].exists)
-        XCTAssertTrue(app.staticTexts["这不是诊断；每一步都可以保留为未确认草稿，稍后继续。"].exists)
+        XCTAssertTrue(app.staticTexts["身体地图只表达“我感觉在这里”，不判断病因或受损组织。"].exists)
+        assertExists(app.descendants(matching: .any).matching(identifier: "today.journey").firstMatch)
     }
 
     @MainActor
@@ -363,6 +364,11 @@ final class BodyCompanionInternalUITests: XCTestCase {
         if candidateReady.exists {
             XCTAssertFalse(fallback.exists)
             assertExists(app.descendants(matching: .any).matching(identifier: "body-map.3d-scene").firstMatch)
+            // Let the app-side eight-second watchdog pass. A delayed timeout
+            // must not demote a Scene that already acknowledged readiness.
+            RunLoop.current.run(until: Date().addingTimeInterval(8.5))
+            assertExists(candidateReady)
+            XCTAssertFalse(fallback.exists)
             assertTextPickerCanOpen(in: app)
         } else {
             assertExists(fallback)
@@ -444,7 +450,7 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .matching(identifier: "body-map.text-picker")
             .firstMatch
         assertExists(pickerList)
-        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
+        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left-lateral"]
         // At accessibility sizes the sheet keeps results below its explanatory
         // text, so the lazy List has not materialized this row until it is
         // scrolled into view. Limit the gesture to the sheet list so the
@@ -507,8 +513,8 @@ final class BodyCompanionInternalUITests: XCTestCase {
             .matching(identifier: "body-map.text-picker")
             .firstMatch
         assertExists(pickerList)
-        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left"]
-        let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right"]
+        let leftKnee = app.buttons["body-map.text-picker.option-body.knee.general-left-lateral"]
+        let rightKnee = app.buttons["body-map.text-picker.option-body.knee.general-right-lateral"]
         scrollPickerOptionIntoView(leftKnee, in: pickerList)
         leftKnee.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         scrollPickerOptionIntoView(rightKnee, in: pickerList)

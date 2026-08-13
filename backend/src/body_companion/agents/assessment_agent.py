@@ -146,7 +146,9 @@ def build_assessment_agent(model: Any, *, agent_version: str = "p1b-agent-1") ->
         output_type=AgentCandidate,
         system_prompt=AGENT_SYSTEM_PROMPT,
         retries=1,
-        metadata={"agent_version": agent_version, "include_content": False},
+        # Agent metadata becomes observability attributes; it is not an
+        # instrumentation privacy switch. Keep this mapping non-sensitive.
+        metadata={"agent_version": agent_version},
     )
 
     @agent.tool(name="read_confirmed_events")

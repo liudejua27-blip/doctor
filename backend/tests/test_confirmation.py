@@ -13,7 +13,7 @@ from body_companion.domain.confirmation import (
     PrototypeApprovalStore,
 )
 from body_companion.domain.policy import digest_for
-from body_companion.domain.safety import RuleCatalog, SafetyEngine
+from body_companion.domain.safety import RuleCatalog, RuleDefinition, SafetyEngine
 from body_companion.domain.types import (
     AssessmentDraft,
     BodyLocation,
@@ -26,6 +26,7 @@ from body_companion.domain.types import (
     TemporalPattern,
     DraftCandidate,
     EpisodeSelection,
+    RuleHit,
 )
 
 
@@ -76,7 +77,18 @@ def draft() -> tuple[AssessmentDraft, DraftCandidate]:
 
 
 def safety():
-    return SafetyEngine(RuleCatalog(version="rules.test", available=True)).evaluate(user_text="synthetic")
+    nonmatching_rule = RuleDefinition(
+        rule_id="test.not_matched",
+        required_question_id=None,
+        evaluate=lambda _ctx: RuleHit(rule_id="test.not_matched", result="not_matched"),
+        required_action_code="PROTOTYPE_ACTION",
+        content_id="prototype.action.unconfigured",
+        content_release_id="prototype.none",
+        display_message="synthetic",
+    )
+    return SafetyEngine(
+        RuleCatalog(version="rules.test", rules=(nonmatching_rule,), available=True)
+    ).evaluate(user_text="synthetic")
 
 
 def confirmation(candidate, *, session_id, turn_id, revision=2):

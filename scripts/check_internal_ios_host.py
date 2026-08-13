@@ -115,7 +115,7 @@ def main() -> int:
         '"BODY_COMPANION_ENABLE_CANDIDATE_3D"',
         '"body-map.text-picker-open"',
         '"body-map.text-picker.search"',
-        '"body-map.text-picker.option-body.knee.general-left"',
+        '"body-map.text-picker.option-body.knee.general-left-lateral"',
         '"body-map.text-picker.selection-notice"',
         '"body-map.pending-mark-summary"',
         '"body-map.continuation-unavailable"',

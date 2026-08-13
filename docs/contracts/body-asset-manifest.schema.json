@@ -57,6 +57,30 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"}
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "release_status": {"const": "approved"},
+          "variant": {"enum": ["default_neutral", "professional_muscle_joint"]}
+        },
+        "required": ["release_status", "variant"]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "allOf": [
+              {"contains": {"properties": {"role": {"const": "render"}, "required": {"const": true}}, "required": ["role", "required"]}},
+              {"contains": {"properties": {"role": {"const": "collision"}, "required": {"const": true}}, "required": ["role", "required"]}},
+              {"contains": {"properties": {"role": {"const": "region_map"}, "required": {"const": true}}, "required": ["role", "required"]}},
+              {"contains": {"properties": {"role": {"const": "surface_correspondence"}, "required": {"const": true}}, "required": ["role", "required"]}},
+              {"contains": {"properties": {"role": {"const": "camera_preset"}, "required": {"const": true}}, "required": ["role", "required"]}}
+            ]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "Sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "Source": {

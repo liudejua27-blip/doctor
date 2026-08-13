@@ -297,7 +297,7 @@ def test_application_service_propagates_only_actual_typed_context_sources():
         required_action_code="PROTOTYPE_NONE",
         content_id="prototype.none",
         content_release_id="prototype.none",
-        display_message="",
+        display_message="synthetic no-op rule",
     )
     service = AssessmentService(SafetyEngine(RuleCatalog(version="rules.p3", rules=(rule,), available=True)), runner)
     request = AssessmentRequest(

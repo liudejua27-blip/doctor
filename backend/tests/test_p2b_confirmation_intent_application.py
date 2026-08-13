@@ -22,7 +22,7 @@ from body_companion.domain.agent_turn_application import AgentTurnApplicationRes
 from body_companion.domain.confirmation import CONFIRMABLE_FIELDS, ConfirmationRequest, PrototypeApprovalStore
 from body_companion.domain.events import PrototypeEventStore
 from body_companion.domain.policy import digest_for
-from body_companion.domain.safety import RuleCatalog, SafetyEngine
+from body_companion.domain.safety import RuleCatalog, RuleDefinition, SafetyEngine
 from body_companion.domain.session_turn_projection import SessionTurnProjectionResult
 from body_companion.domain.types import (
     AgentQuestion,
@@ -178,8 +178,22 @@ def _safety(*, tier: str = "R3", supported: bool = True, ordinary: bool | None =
     if ordinary is None:
         ordinary = tier == "R3"
     if tier == "R3":
+        nonmatching_rule = RuleDefinition(
+            rule_id="test.not_matched",
+            required_question_id=None,
+            evaluate=lambda _ctx: RuleHit(rule_id="test.not_matched", result="not_matched"),
+            required_action_code="PROTOTYPE_ACTION",
+            content_id="prototype.action.unconfigured",
+            content_release_id="prototype.none",
+            display_message="synthetic",
+        )
         return SafetyEngine(
-            RuleCatalog(version="rules.p2b.test", available=True, scenario_supported=supported)
+            RuleCatalog(
+                version="rules.p2b.test",
+                rules=(nonmatching_rule,),
+                available=True,
+                scenario_supported=supported,
+            )
         ).evaluate(user_text="synthetic")
     return SafetyEvaluation(
         status="complete",
@@ -193,7 +207,9 @@ def _safety(*, tier: str = "R3", supported: bool = True, ordinary: bool | None =
         unresolved_safety=False,
         ordinary_agent_allowed=ordinary,
         answers=[],
-        rule_hits=[RuleHit(rule_id="synthetic.r2", result="matched", tier=tier)],  # type: ignore[arg-type]
+        rule_hits=[
+            RuleHit(rule_id="synthetic.r2", result="matched", tier=tier, evidence_refs=["synthetic.fact"])
+        ],  # type: ignore[arg-type]
         required_action_code=None,
         content_id=None,
         content_release_id=None,

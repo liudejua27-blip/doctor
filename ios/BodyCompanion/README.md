@@ -30,6 +30,25 @@ python3 ../scripts/check_internal_ios_host.py
 bash ../scripts/run_internal_ios_host_tests.sh
 ```
 
+### 内部可选环境变量
+
+以下环境变量仅影响 `BodyCompanionPrototype`（macOS）启动行为，可用于快速切换 3D 身高档位分辨率：
+
+- `BODY_COMPANION_HEIGHT_PRESET_SET`：逗号分隔身高档位（单位：米），如 `1.55,1.65,1.75,1.85`。
+- `BODY_COMPANION_USER_HEIGHT_METERS`：已登录用户身高，优先单位米，可用于预选最近档位。
+- `BODY_COMPANION_USER_HEIGHT_CM`：当用户身高仅有厘米值时可用，优先于无效的米值。
+
+示例：
+
+```bash
+cd /Users/liuchongjiang/Documents/3D人体/ios/BodyCompanion
+BODY_COMPANION_HEIGHT_PRESET_SET=1.55,1.65,1.75,1.85 \
+BODY_COMPANION_USER_HEIGHT_METERS=1.72 \
+swift run BodyCompanionPrototype
+```
+
+未设置 `BODY_COMPANION_HEIGHT_PRESET_SET` 时，Prototype 会使用默认档位集合（`1.55,1.65,1.75,1.85,1.60,1.70,1.80`）。
+
 `4cc46e2` 的 Swift Core 94 tests、0 failures、远端 CI run `31350639359` 的 iPhone 16 / iOS Simulator 18.5 Host smoke、以及本地 iPhone 17 Pro / iOS 26.5 的 targeted H015 1/0/0（77.241s）、多位置 unknown 1/0/0（49.167s）和完整 `run_internal_host_tests.sh` exit 0（446.330s）均已通过。远端 smoke 成功日志不输出精确 XCTest 数。历史失败 run 仍保留用于回溯；所有结果仅为受控 Simulator 证据，不外推为真实设备、VoiceOver、完整 Dynamic Type、深色/高对比度、Reduce Motion、3D 性能/碰撞、签名或生产资产通过。详细边界见：
 
 远端兼容性收据：SHA `9b6e10a` / run `31348638741` 的 `XCTIssue.isFailure` 编译失败已在 `4cc46e2` 改为跨版本 `XCTIssue.type == .assertionFailure`；随后 run `31350639359` 在 Xcode 16.4 / iPhone 16 / iOS Simulator 18.5 的 Host smoke 成功。仍仅为内部 Simulator 收据。

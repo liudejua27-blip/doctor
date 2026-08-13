@@ -475,6 +475,15 @@ class RuleHit(StrictModel):
     tier: Literal["R0", "R1", "R2", "R3"] | None = None
     evidence_refs: list[str] = Field(default_factory=list, max_length=50)
 
+    @model_validator(mode="after")
+    def validate_result_semantics(self) -> "RuleHit":
+        if self.result == "matched":
+            if self.tier is None or not self.evidence_refs or any(not ref.strip() for ref in self.evidence_refs):
+                raise ValueError("matched rule hit requires a tier and non-empty evidence references")
+        elif self.tier is not None:
+            raise ValueError("only a matched rule hit may carry a tier")
+        return self
+
 
 class SafetyEvaluation(StrictModel):
     status: SafetyStatus

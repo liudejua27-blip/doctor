@@ -44,7 +44,7 @@ public struct BodyRegionOption: Identifiable, Hashable, Sendable {
         backGeometry: BodyRegionGeometry?,
         priority: Int = 0
     ) {
-        self.id = "\(regionID)|\(laterality.rawValue)"
+        self.id = "\(regionID)|\(laterality.rawValue)|\(surface.rawValue)"
         self.regionID = regionID
         self.laterality = laterality
         self.surface = surface
@@ -132,8 +132,16 @@ public enum BodyRegionCatalog {
             .first
     }
 
-    public static func option(regionID: String, laterality: Laterality) -> BodyRegionOption? {
-        all.first { $0.regionID == regionID && $0.laterality == laterality }
+    public static func option(
+        regionID: String,
+        laterality: Laterality,
+        surface: BodySurface
+    ) -> BodyRegionOption? {
+        all.first {
+            $0.regionID == regionID &&
+                $0.laterality == laterality &&
+                $0.surface == surface
+        }
     }
 
     /// Resolves only the stable names emitted by the project's own procedural
@@ -167,7 +175,7 @@ public enum BodyRegionCatalog {
         if laterality == .midline {
             return all.first { $0.regionID == regionID && $0.laterality == .midline }
         }
-        return option(regionID: regionID, laterality: laterality)
+        return all.first { $0.regionID == regionID && $0.laterality == laterality }
     }
 
     private static func option(

@@ -48,6 +48,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify body asset package and cross-layer identity
+        run: python3 scripts/check_body_asset_release.py
       - name: Run Swift tests
         working-directory: ios/BodyCompanion
         run: swift test

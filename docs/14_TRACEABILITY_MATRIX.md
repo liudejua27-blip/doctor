@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |---|---|
 | 文档 ID | TRACE-01 |
-| 版本 | 3.0.15-draft |
+| 版本 | 3.0.17-draft |
 | 状态 | Active traceability |
 | 负责人 | 产品架构 + QA 负责人 |
 | 目的 | 将长期需求直接映射到核心设计、机器契约、当前实现和发布门禁 |
@@ -25,7 +25,7 @@
 |---|---|---|---|---|---|
 | PRD-F01 30 秒结构化记录 | UX-01、IOS-01、DATA-01、CONFLICT-003、CONFLICT-004 | `ios-signal-intake`、`body-signal-event` | Swift typed intake 状态机；多位置感觉必须显式关联 Marker，新增位置不复制感觉；`0105cd7` 已由 94 项 Core/12 项 Host flow 覆盖完整稳定感觉目录和安全修订边界。`4cc46e2` 的本地 H015、多位置 unknown 与远端 run `31350639359` Host smoke 全部通过；稳定 selector、中心点击和 bounded scroll 已锁定。位置及其他安全相关事实的高风险修订仍由 CONFLICT-004 阻断；当前会话草稿统一“继续/确认放弃后新建” | Prototype verified / P1D 感觉安全修订及局部 accessibility-size 结构已有 Simulator 证据；外部发布仍阻断 | GATE-03/06/07/08 |
 | PRD-F02 AI 追问与分析 | AGENT-01、SAFE-01、ADR-0002、ADR-0019、CONFLICT-001、CONFLICT-002、FEAT-COMP-01 §10.2 | `agent-turn`、内部 handoff schemas；P1I `QuestionPlan` 契约待批准 | PydanticAI typed Agent、Safety-first、PolicyValidator；R2 仅安全/专业准备，普通 Agent 仅 R3。P1I 的目录/失效/测试评审输入已定义，但现有 Agent 仍可表达多题，不能当作单题计划实现 | Prototype verified; P1I / 情境化产品能力未实现 | GATE-02/03/04/07/08 |
-| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实；`9fc54d4` 的本地文字目录只产生 `Zone + Area + body_part_search`，Pin 模式也不伪造 Point/3D anchor；canonical 位置投影保持地图与 typed draft 一致，同 ID 语义替换会重新复核感觉，删除不会保留空感觉关联。Canvas Zone=`Area + region_mask_id`（无 2D point）、Canvas Pin 才可使用真实 point，以及 Zone 三元组 `(region_id,laterality,surface)` 的复选/不同 surface 共存，现仅在规格和计划 `TEST-BODY-016`～`018`、`TEST-BODY-V2-023`～`026` 中定义，尚无实现或执行收据；文字目录的既有 Area-only 证据不得外推到这些语义。 | Implementation in progress / Canvas Zone semantics correction planned and unverified | GATE-06/07/08 |
+| PRD-F03A 2D/默认 3D 定位 | BODY-01、IOS-01、FEAT-BODY-MAP-V1/V2、FEAT-TRUSTED-COMPANION-01、ADR-0003/0004/0018 | `body-location`、`body-asset-manifest` | 全身 2D/列表、原生 RealityKit loader、Zone/Pin/位置摘要状态、metadata gate；地图仅同步 `BodyLocation`，不覆盖结构化事实。本轮已实现并以 Swift Core/Simulator 锁定 Canvas Zone=`Area + region_mask_id`（无 2D point）、Canvas Pin 才使用真实 point、Zone 三元组 `(region_id,laterality,surface)` 共存。candidate 3D 使用 mesh-local 位置/法线、配对 triangle+barycentric、surface UV=nil；已 ready 场景不再被 8 秒看门狗误降级。文字目录依然只产生 `Zone + Area + body_part_search`，所有标记仍为未确认草稿。 | Implemented internal prototype / Core + Simulator evidence；默认生产 3D 仍被资产与设备门禁阻断 | GATE-06/07/08 |
 | PRD-F03B 专业 3D | BODY-01、IOS-01 | 专业 Asset/Anatomy Manifest | 无生产资产 | Planned P1 | 首发后独立门禁 |
 | PRD-F04 八类身体信号 | TERM-01、DATA-01 | intake/event schemas | 客户端 typed 草稿与服务端严格适配 | Prototype verified | GATE-03/07/08 |
 | PRD-F05 复查与趋势 | UX-01、DATA-01、API-01 | Event/CheckIn operations | 未形成正式数据闭环 | Planned | GATE-05/07 |
@@ -38,6 +38,7 @@
 | PRD-F10 修正/导出/删除 | DATA-01、PRIV-01、API-01 | revision/export/deletion operations | 未实现生产闭环 | Planned | GATE-04/05/07 |
 | PRD-F11 情境化身体不适决策闭环 | FEAT-COMP-01、UX-01、AGENT-01、SAFE-01、PRIV-01、ADR-0019、CONFLICT-001、CONFLICT-002 | 待 ADR 批准后新增上下文、资料收据、行动引用、报告显示类型与 P1I `QuestionPlan` 契约 | P0 明亮中文入口/地图/结构化草稿壳已编译；多位置感觉显式关联与 R2 普通 Agent 抑制已落地；P1I 审核附录与 COMP-T-024～030 已定义；无情境化 API、目录或生产实现 | Draft / P0 prototype only | GATE-02/03/04/07/08 |
 | PRD-F01/F03A 内部运行宿主 | FEAT-IOS-P0-RUNTIME-01、IOS-01、PRIV-01、QA-01 | 无新增契约；沿用 `body-location`、`ios-signal-intake@1.1`、`ios-draft-envelope@1.1` | `4cc46e2` / run `31350639359` 的 Backend/contracts、Swift 94/94、SDK build、Host boundary 与 internal Host smoke 全成功；本地 iPhone 17 Pro / iOS 26.5 targeted H015、多位置 unknown 与 full Host script 通过。`safeAreaInset`/`Button` class 不作为跨 OS 契约 | Implemented internal engineering prototype / Simulator only；设备与生产门禁仍打开 | GATE-02/06/07/08 仍打开 |
+| PRD-F01/F03A/F11 可信助手升级 | FEAT-TRUSTED-COMPANION-01、TEST-TRUSTED-COMPANION-01、IOS-01、AGENT-01、BODY-01、ADR-0003/0004/0018 | 沿用 `body-location`、`body-asset-manifest` 与既有内部 DTO；不新增公开 operation/健康字段 | 单入口与能力边界、损坏/异常 safety catalog 整体 fail-closed、Canvas Zone/Pin+surface、candidate 3D 1.2.0 与 triangle/barycentric 修复已落地；本地 Backend 204、Swift 102、13 项 Host smoke、ARKit USD 与跨层身份校验通过，见 EVIDENCE-01 | Implemented internal local slice / Simulator only；未提交，且不得外推医学能力、跨设备记忆或生产 3D | GATE-02/03/04/05/06/07/08 |
 
 ## 3. 安全不变量追踪
 
@@ -90,7 +91,7 @@
 
 | assetId/version | 模式 | 作者链/许可 | anatomyMap | golden hit set | 性能/无障碍 | 状态 |
 |---|---|---|---|---|---|---|
-| [`body-neutral-procedural-v1@1.1.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | prototype region metadata；下背/根变换/碰撞待复核 | 未测真机 | Candidate / internal only |
+| [`body-neutral-procedural-v1@1.2.0`](21_BODY_ASSET_PROVENANCE.md) | 默认 3D（内部 prototype） | 本项目原创 Blender 生成；生产权利/解剖签字未完成 | 无已签字 anatomy/region map；仅有 30 个稳定视觉分段 Mesh（含下背）与 Y-up/米制/identity root | 无；`usdchecker --arkit` 与确定性 SHA 只是容器/完整性证据，不是 hit set | 未测；真机命中、FPS/内存、VoiceOver 全部待完成 | Candidate / internal only |
 | `TBD-professional` | 专业 3D | 未取得 | TBD | TBD | TBD | Blocked P1 |
 
 RehabMate `body.glb` 不得进入生产候选。任何 `TBD`、candidate、未知/撤回权利或缺少真实文件签名的资产都必须回退 2D/列表。

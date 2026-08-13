@@ -116,7 +116,8 @@ public final class BodyMapModel {
         }
         if let mark = marks.first(where: {
             $0.kind == .zone && $0.location.regionID == location.regionID &&
-                $0.location.laterality == location.laterality
+                $0.location.laterality == location.laterality &&
+                $0.location.surface == location.surface
         }) {
             // A repeated tap is selection, not a health-state or deletion
             // shortcut. The user must use an explicit delete action for a
@@ -344,6 +345,14 @@ public final class BodyMapModel {
         } else {
             guard mode == .threeD else { return }
         }
+        switchTo2D(reason: message)
+    }
+
+    /// Ends only a still-loading current attempt. A delayed watchdog must not
+    /// demote a scene that has already reported ready, nor affect a newer
+    /// request that replaced the one which scheduled it.
+    public func mark3DLoadingTimedOut(_ message: String, for attemptID: UUID) {
+        guard isCurrentThreeDLoadingAttempt(attemptID) else { return }
         switchTo2D(reason: message)
     }
 

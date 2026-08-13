@@ -5,16 +5,18 @@ import XCTest
 final class BodyMarkingTests: XCTestCase {
     private func location(
         _ regionID: String = "body.knee.general",
-        laterality: Laterality = .left
+        laterality: Laterality = .left,
+        surface: BodySurface = .lateral,
+        point: Point2D? = Point2D(x: 0.44, y: 0.77)
     ) -> BodyLocation {
         BodyLocationMapper.from2D(
             BodyRegionSelection(
                 regionID: regionID,
                 laterality: laterality,
-                surface: .lateral,
+                surface: surface,
                 source: .bodyMap2D,
                 view: .front,
-                point: Point2D(x: 0.44, y: 0.77),
+                point: point,
                 userLabel: "左膝附近"
             )
         )
@@ -53,6 +55,38 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(Set(model.marks.map(\.kind)), [.zone, .pin])
         XCTAssertEqual(model.marks.filter { $0.kind == .zone }.count, 1)
         XCTAssertEqual(model.marks.filter { $0.kind == .pin }.count, 1)
+    }
+
+    func testZonesWithSameRegionAndLateralityButDifferentSurfaceCoexist() {
+        let model = BodyMapModel()
+        model.markingMode = .zone
+
+        let anterior = location(
+            "body.test.torso",
+            laterality: .midline,
+            surface: .anterior,
+            point: nil
+        )
+        let posterior = location(
+            "body.test.torso",
+            laterality: .midline,
+            surface: .posterior,
+            point: nil
+        )
+
+        XCTAssertTrue(model.applySelection(anterior).isAdded)
+        XCTAssertTrue(model.applySelection(posterior).isAdded)
+        XCTAssertEqual(model.marks.count, 2)
+        XCTAssertEqual(Set(model.marks.map(\.location.surface)), [.anterior, .posterior])
+
+        let repeatedAnterior = location(
+            "body.test.torso",
+            laterality: .midline,
+            surface: .anterior,
+            point: nil
+        )
+        XCTAssertEqual(model.applySelection(repeatedAnterior), .updated(model.marks[0].id))
+        XCTAssertEqual(model.marks.count, 2)
     }
 
     func testTotalMarkerLimitIsTwentyAcrossZoneAndPinWithoutDiscardingMarks() {
@@ -206,6 +240,26 @@ final class BodyMarkingTests: XCTestCase {
         XCTAssertEqual(model.loadState, .loading)
         model.mark3DReady(for: replacementAttempt)
         XCTAssertEqual(model.loadState, .threeDReady)
+    }
+
+    func testThreeDLoadingWatchdogCannotDemoteReadyOrReplacementAttempt() {
+        let model = BodyMapModel()
+        let readyAttempt = model.request3D()
+        model.mark3DLoadAttempted(for: readyAttempt)
+        model.mark3DReady(for: readyAttempt)
+
+        model.mark3DLoadingTimedOut("late timeout", for: readyAttempt)
+        XCTAssertEqual(model.mode, .threeD)
+        XCTAssertEqual(model.loadState, .threeDReady)
+
+        let replacementAttempt = model.request3D()
+        model.mark3DLoadingTimedOut("stale timeout", for: readyAttempt)
+        XCTAssertEqual(model.activeThreeDAttemptID, replacementAttempt)
+        XCTAssertEqual(model.loadState, .loading)
+
+        model.mark3DLoadingTimedOut("current timeout", for: replacementAttempt)
+        XCTAssertEqual(model.mode, .twoD)
+        XCTAssertEqual(model.loadState, .fallback2D("current timeout"))
     }
 
     func testRemovingFocusedMarkClearsFocusButLeavesOtherRegion() {

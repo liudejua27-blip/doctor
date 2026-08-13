@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from pydantic_ai import Agent as PydanticAIAgent
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.models.test import TestModel
@@ -12,6 +14,7 @@ from body_companion.agents.assessment_agent import (
     AgentDependencies,
     AssessmentAgentRunner,
     ToolAuthorizationError,
+    build_assessment_agent,
 )
 from body_companion.domain.agent_context import (
     AgentConsentGrant,
@@ -20,6 +23,16 @@ from body_companion.domain.agent_context import (
     BodyProfileContext,
 )
 from body_companion.domain.types import AgentQuestion
+
+
+def test_agent_constructor_metadata_contains_only_non_sensitive_version() -> None:
+    with patch(
+        "body_companion.agents.assessment_agent.Agent",
+        wraps=PydanticAIAgent,
+    ) as agent_factory:
+        build_assessment_agent(TestModel(), agent_version="agent-test")
+
+    assert agent_factory.call_args.kwargs["metadata"] == {"agent_version": "agent-test"}
 
 
 def test_pydantic_ai_runner_returns_typed_candidate():
